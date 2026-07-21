@@ -1,0 +1,245 @@
+/* ============================================================
+   NewLife Marketing — Blog v2 (pipeline-generated post template)
+   ADDITIVE ONLY. Every rule below is scoped under .post-shell so
+   nothing here overrides or duplicates a rule in css/style.css.
+   Uses only existing design tokens defined in style.css's :root
+   (--ink, --surface, --surface-2, --line, --white, --muted, --dim,
+   --blue, --blue-hot, --blue-dim, --font-display, --font-body,
+   --radius, --shadow) — no new colors or fonts introduced.
+   The 59 existing blog posts do not load this file and are
+   completely unaffected by it.
+   ============================================================ */
+
+/* ---------- Article shell: share rail + main column ---------- */
+.post-shell {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .post-shell { grid-template-columns: 1fr; }
+}
+
+/* Blog posts sit right under the header — the generic .band top padding
+   (built for full marketing sections) leaves too much dead air here.
+   This only tightens the TOP; the shared .band bottom padding is untouched. */
+.band.post-band { padding-top: clamp(1.25rem, 3vw, 2.25rem); }
+
+/* ---------- Shared small label used by both share rails ---------- */
+.post-shell .ps-label {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.68rem;
+  color: var(--dim);
+}
+
+/* ---------- Left rail: vertical share strip (parallel to the whole body) ---------- */
+.post-share-rail {
+  position: sticky;
+  top: 6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+.post-share-rail .ps-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  margin-bottom: 0.25rem;
+}
+@media (max-width: 900px) {
+  .post-share-rail {
+    position: static;
+    flex-direction: row;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  .post-share-rail .ps-label { writing-mode: horizontal-tb; margin: 0 0.5rem 0 0; }
+}
+
+/* share icon buttons — reused in the rail and the footer row */
+.ps-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: none;
+  flex: none;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.ps-icon svg { width: 18px; height: 18px; fill: currentColor; }
+.ps-icon:hover, .ps-icon.copied { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+
+/* footer (horizontal) share row */
+.post-share-row { display: flex; align-items: center; gap: 0.75rem; }
+.post-share-row .ps-label { margin-right: 0.25rem; }
+
+/* ---------- Masthead: text column beside featured image ---------- */
+.post-masthead {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 2.5rem;
+  align-items: center;
+  margin-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+@media (max-width: 780px) {
+  .post-masthead { grid-template-columns: 1fr; gap: 1.5rem; }
+}
+.post-backlink {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--blue);
+  text-decoration: none;
+  margin-bottom: 0.9rem;
+}
+.post-backlink:hover { color: var(--blue-hot); }
+.post-date-line { font-size: 0.85rem; color: var(--dim); margin-bottom: 0.6rem; }
+/* post titles are full sentences, not short hero taglines — the sitewide
+   h1 (clamp up to 4.75rem) is sized for marketing pages and wraps a real
+   post title into far too many lines at masthead column width */
+.post-masthead h1 {
+  font-size: clamp(1.8rem, 3.6vw, 2.75rem);
+  margin-bottom: 0.9rem;
+}
+
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 1.1rem;
+}
+.post-tags .tag-sep { color: var(--line); }
+
+.post-byline { display: flex; align-items: center; gap: 0.7rem; }
+.post-byline img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  flex: none;
+}
+.post-byline-text { font-size: 0.85rem; line-height: 1.4; }
+.post-byline-text .by-name { color: var(--white); font-weight: 700; }
+.post-byline-text .by-name a { color: inherit; text-decoration: none; }
+.post-byline-text .by-name a:hover { color: var(--blue); }
+.post-byline-text .by-date { color: var(--dim); display: block; }
+
+.post-masthead-media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  margin: 0;
+}
+.post-masthead-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 780px) { .post-masthead-media { aspect-ratio: 16 / 9; } }
+
+/* ---------- Intro row: intro copy + sidebar widget (upper body only) ---------- */
+.post-introrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 2.5rem;
+  align-items: start;
+  margin-bottom: clamp(2rem, 5vw, 3rem);
+}
+@media (max-width: 900px) {
+  .post-introrow { grid-template-columns: 1fr; }
+}
+.post-intro { max-width: 46rem; }
+.post-intro p { color: var(--muted); }
+.post-toc-label {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 700;
+  color: var(--white);
+  margin: 1.4rem 0 0.6rem;
+}
+.post-toc { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
+.post-toc li::before { content: "\2192"; color: var(--blue); margin-right: 0.5rem; }
+.post-toc a { color: var(--muted); text-decoration: none; font-weight: 600; }
+.post-toc a:hover { color: var(--blue); }
+
+.post-sidebar {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+.post-sidebar h4 {
+  font-family: var(--font-display);
+  font-style: italic;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+  margin: 0 0 1rem;
+}
+.post-sidebar ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.85rem; }
+.post-sidebar a { display: block; color: var(--white); text-decoration: none; font-weight: 600; font-size: 0.92rem; }
+.post-sidebar a:hover { color: var(--blue); }
+.post-sidebar .sb-meta { display: block; font-size: 0.78rem; color: var(--dim); margin-top: 0.15rem; font-weight: 400; }
+@media (max-width: 900px) { .post-sidebar { margin-top: 0.5rem; } }
+
+/* ---------- Body sections (whitespace only, no divider rules) ---------- */
+.post-body { max-width: 46rem; }
+.post-section { margin-top: clamp(2.25rem, 5vw, 3.25rem); }
+.post-section:first-child { margin-top: 0; }
+.post-section p { color: var(--muted); }
+
+/* inline video, full column width, right after the paragraph introducing it */
+.post-video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  margin: 1.4rem 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.post-video video, .post-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* full-width image + short caption, at the end of a section or sub-section opener */
+.post-image { margin: 1.4rem 0 0.5rem; }
+.post-image img { width: 100%; border-radius: var(--radius); border: 1px solid var(--line); }
+.post-image figcaption { font-size: 0.82rem; color: var(--dim); margin-top: 0.5rem; font-style: italic; }
+
+/* ---------- Conclusion ---------- */
+.post-conclusion { max-width: 46rem; margin-top: clamp(2.5rem, 5vw, 3.5rem); }
+.post-conclusion p { color: var(--muted); }
+.post-takeaways { list-style: none; margin: 1.2rem 0 0; padding: 0; display: grid; gap: 0.65rem; }
+.post-takeaways li { position: relative; padding-left: 1.7rem; color: var(--muted); }
+.post-takeaways li::before { content: "\2713"; position: absolute; left: 0; top: 0; color: var(--blue); font-weight: 800; }
+
+/* ---------- In-article CTA (single instance, near bottom) ---------- */
+.post-cta { max-width: 46rem; margin-top: clamp(2.5rem, 5vw, 3.5rem); }
+.post-cta p { color: var(--muted); }
+.post-cta a { color: var(--blue); font-weight: 700; text-decoration: none; }
+.post-cta a:hover { color: var(--blue-hot); }
+
+/* ---------- Related articles ---------- */
+.post-related { max-width: var(--max); margin-top: clamp(3rem, 6vw, 4.5rem); }
+
+/* ---------- Footer meta block (repeated share row + author bio + tags) ---------- */
+.post-footer-meta {
+  max-width: 46rem;
+  margin-top: clamp(3rem, 6vw, 4.5rem);
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 1.75rem;
+}

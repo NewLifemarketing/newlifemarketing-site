@@ -1,0 +1,179 @@
+name: Auto-publish blog PR
+
+# Validates a blog/{slug} PR against the pipeline's hard safety limits, then
+# squash-merges it automatically if (and only if) every check passes. This
+# is where merging actually happens — the pipeline's site-publisher agent
+# only ever opens the PR and must never merge it itself; do not weaken that
+# rule in the agent instead of here.
+#
+# Triggers:
+#   - automatically when a PR from a branch named blog/* is opened/updated
+#     against main
+#   - manually via workflow_dispatch, passing the PR number, for testing
+#     against an existing PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to validate and (if it passes) merge"
+        required: true
+        type: number
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: auto-publish-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-merge:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.pull_request.head.ref, 'blog/')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Resolve PR number
+        id: pr
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "number=${{ github.event.inputs.pr_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Look up PR metadata
+        id: meta
+        run: |
+          gh pr view ${{ steps.pr.outputs.number }} --repo ${{ github.repository }} \
+            --json headRefName,baseRefName,title,url,state \
+            > pr_meta.json
+          echo "head_ref=$(jq -r .headRefName pr_meta.json)" >> "$GITHUB_OUTPUT"
+          echo "pr_title=$(jq -r .title pr_meta.json)" >> "$GITHUB_OUTPUT"
+          echo "pr_url=$(jq -r .url pr_meta.json)" >> "$GITHUB_OUTPUT"
+          echo "pr_state=$(jq -r .state pr_meta.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Guard — only ever act on blog/* branches, only while open
+        run: |
+          if [[ "${{ steps.meta.outputs.head_ref }}" != blog/* ]]; then
+            echo "PR #${{ steps.pr.outputs.number }} head branch '${{ steps.meta.outputs.head_ref }}' does not start with blog/ — refusing to touch it."
+            exit 1
+          fi
+          if [ "${{ steps.meta.outputs.pr_state }}" != "OPEN" ]; then
+            echo "PR #${{ steps.pr.outputs.number }} is not open (state: ${{ steps.meta.outputs.pr_state }}) — nothing to do."
+            exit 1
+          fi
+
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ steps.pr.outputs.number }}/head
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run validation gate
+        id: validate
+        run: |
+          set +e
+          node .github/scripts/validate-blog-pr.mjs
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Read validation result
+        id: result
+        if: always()
+        run: |
+          if [ ! -f validation-result.json ]; then
+            echo '{"failures":["validate-blog-pr.mjs crashed before producing a result — check the workflow run logs for the actual error."]}' > validation-result.json
+          fi
+          echo "post_title=$(jq -r '.title // empty' validation-result.json)" >> "$GITHUB_OUTPUT"
+          echo "post_url=$(jq -r '.url // empty' validation-result.json)" >> "$GITHUB_OUTPUT"
+          # Build a plain bullet list of failures for the PR comment/email
+          jq -r '.failures[]? | "- " + .' validation-result.json > failures.txt || true
+
+      # ---------------------------------------------------------------
+      # PASS path
+      # ---------------------------------------------------------------
+      - name: Squash-merge the PR
+        if: steps.validate.outputs.exit_code == '0'
+        run: |
+          gh pr merge ${{ steps.pr.outputs.number }} --repo ${{ github.repository }} \
+            --squash --delete-branch \
+            --subject "Add blog post: ${{ steps.result.outputs.post_title || steps.meta.outputs.pr_title }}"
+
+      - name: Send "published" email
+        if: steps.validate.outputs.exit_code == '0'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          POST_TITLE: ${{ steps.result.outputs.post_title || steps.meta.outputs.pr_title }}
+          POST_URL: ${{ steps.result.outputs.post_url }}
+        run: |
+          BODY_TEXT=$(printf '%s just went live.\n\n%s' "$POST_TITLE" "$POST_URL")
+          PAYLOAD=$(jq -n \
+            --arg from "onboarding@resend.dev" \
+            --arg to "contact@newlifemarketing.ca" \
+            --arg subject "New blog post published: $POST_TITLE" \
+            --arg text "$BODY_TEXT" \
+            '{from: $from, to: [$to], subject: $subject, text: $text}')
+          curl -fsS https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
+
+      # ---------------------------------------------------------------
+      # FAIL path
+      # ---------------------------------------------------------------
+      - name: Ensure the validation-failed label exists
+        if: steps.validate.outputs.exit_code != '0'
+        run: |
+          gh label create "validation-failed" --repo ${{ github.repository }} \
+            --color "d73a4a" --description "Auto-publish validation gate failed" || true
+
+      - name: Comment failures and label the PR
+        if: steps.validate.outputs.exit_code != '0'
+        run: |
+          {
+            echo "**Auto-publish validation failed — not merged.**"
+            echo
+            echo "The following checks failed:"
+            echo
+            cat failures.txt
+          } > comment_body.txt
+          gh pr comment ${{ steps.pr.outputs.number }} --repo ${{ github.repository }} --body-file comment_body.txt
+          gh pr edit ${{ steps.pr.outputs.number }} --repo ${{ github.repository }} --add-label "validation-failed"
+
+      - name: Send "needs review" email
+        if: steps.validate.outputs.exit_code != '0'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          POST_TITLE: ${{ steps.result.outputs.post_title || steps.meta.outputs.pr_title }}
+          PR_URL: ${{ steps.meta.outputs.pr_url }}
+        run: |
+          FAILURES=$(cat failures.txt)
+          BODY_TEXT=$(printf 'Auto-publish validation failed for: %s\n\nFailed checks:\n%s\n\nPR: %s' "$POST_TITLE" "$FAILURES" "$PR_URL")
+          PAYLOAD=$(jq -n \
+            --arg from "onboarding@resend.dev" \
+            --arg to "rudy@newlifemarketing.ca" \
+            --arg subject "Blog post needs review: $POST_TITLE" \
+            --arg text "$BODY_TEXT" \
+            '{from: $from, to: [$to], subject: $subject, text: $text}')
+          curl -fsS https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
+
+      - name: Fail the job if validation failed
+        if: steps.validate.outputs.exit_code != '0'
+        run: exit 1
