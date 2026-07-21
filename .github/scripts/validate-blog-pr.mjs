@@ -23,8 +23,16 @@ function fail(msg) {
   failures.push(msg);
 }
 
+// Windows checkouts with core.autocrlf normalize LF -> CRLF on disk, while
+// `git show <ref>:<path>` returns the raw (LF) blob — normalize both sides
+// before any diff/equality comparison so that's never mistaken for a real
+// content change.
+function normalizeNewlines(s) {
+  return s.replace(/\r\n/g, "\n");
+}
+
 function readFile(p) {
-  return fs.readFileSync(p, "utf8");
+  return normalizeNewlines(fs.readFileSync(p, "utf8"));
 }
 
 function exists(relPath) {
@@ -37,10 +45,12 @@ function git(args) {
 
 function showAtRef(ref, relPath) {
   try {
-    return execFileSync("git", ["show", `${ref}:${relPath}`], {
-      cwd: REPO_ROOT,
-      encoding: "utf8",
-    });
+    return normalizeNewlines(
+      execFileSync("git", ["show", `${ref}:${relPath}`], {
+        cwd: REPO_ROOT,
+        encoding: "utf8",
+      })
+    );
   } catch {
     return null; // file didn't exist at that ref
   }
@@ -137,10 +147,14 @@ if (modified.includes("blog/index.html")) {
   if (oldContent === null) {
     fail("blog/index.html modified but no previous version found at merge-base.");
   } else {
-    const { oldMiddle, newMiddle } = pureInsertionMiddle(oldContent, newContent);
+    const { oldMiddle } = pureInsertionMiddle(oldContent, newContent);
     if (oldMiddle !== "") {
       fail("blog/index.html was not purely additive — existing cards were changed, removed, or reordered.");
-    } else if (slug && !newMiddle.includes(`href="/blog/${slug}/"`)) {
+    } else if (slug && !newContent.includes(`href="/blog/${slug}/"`)) {
+      // Checked against the whole file, not just the greedily-trimmed diff
+      // region — adjacent cards share identical boilerplate
+      // (`<a class="card reveal blog-card" href="/blog/`), so the prefix/
+      // suffix split can cut through the middle of the inserted href itself.
       fail(`blog/index.html's inserted content doesn't link to the new post (/blog/${slug}/).`);
     }
   }
@@ -155,10 +169,10 @@ if (modified.includes("sitemap.xml")) {
   if (oldContent === null) {
     fail("sitemap.xml modified but no previous version found at merge-base.");
   } else {
-    const { oldMiddle, newMiddle } = pureInsertionMiddle(oldContent, newContent);
+    const { oldMiddle } = pureInsertionMiddle(oldContent, newContent);
     if (oldMiddle !== "") {
       fail("sitemap.xml was not purely additive — existing <url> entries were changed, removed, or reordered.");
-    } else if (slug && !newMiddle.includes(`${SITE_ORIGIN}/blog/${slug}/`)) {
+    } else if (slug && !newContent.includes(`${SITE_ORIGIN}/blog/${slug}/`)) {
       fail(`sitemap.xml's inserted content doesn't reference the new post's canonical URL.`);
     }
   }
@@ -225,24 +239,31 @@ if (newPostPath && exists(newPostPath)) {
     fail(`Leftover "[NEEDS SOURCE" marker found in ${newPostPath} — fact-checker must resolve every marker before publish.`);
   }
 
-  // title tag length
+  // title tag length — measured against the page title only. blog-writer.md
+  // defines `title_tag` (the <=60-char value) as the bare page title; the
+  // " | NewLife..." brand suffix is appended by the template afterward and
+  // is not part of the measured string.
   const titleMatch = html.match(/<title>([\s\S]*?)<\/title>/i);
   if (!titleMatch) {
     fail(`No <title> tag found in ${newPostPath}.`);
   } else {
-    title = titleMatch[1].trim();
+    const fullTitle = titleMatch[1].trim();
+    title = fullTitle.split(/\s*\|\s*/)[0].trim();
     if (title.length > 60) {
       fail(`Title tag is ${title.length} characters (max 60): "${title}"`);
     }
   }
 
-  // meta description length
+  // meta description length. The content-attribute regex must only stop at
+  // the SAME quote character that opened it — [^"']* incorrectly treats an
+  // apostrophe inside the description (e.g. "Here's") as the closing quote
+  // and truncates the match.
   const metaTagMatch = html.match(/<meta[^>]*name=["']description["'][^>]*>/i);
   if (!metaTagMatch) {
     fail(`No <meta name="description"> tag found in ${newPostPath}.`);
   } else {
-    const contentMatch = metaTagMatch[0].match(/content=["']([^"']*)["']/i);
-    metaDescription = contentMatch ? contentMatch[1] : null;
+    const contentMatch = metaTagMatch[0].match(/content=(["'])([\s\S]*?)\1/i);
+    metaDescription = contentMatch ? contentMatch[2] : null;
     if (metaDescription === null) {
       fail(`<meta name="description"> tag has no content attribute in ${newPostPath}.`);
     } else if (metaDescription.length < 150 || metaDescription.length > 160) {
@@ -261,7 +282,10 @@ if (newPostPath && exists(newPostPath)) {
       if (!exists(otherPath)) continue;
       const otherHtml = readFile(path.join(REPO_ROOT, otherPath));
       const otherTitleMatch = otherHtml.match(/<title>([\s\S]*?)<\/title>/i);
-      if (otherTitleMatch && otherTitleMatch[1].trim() === title) {
+      const otherTitle = otherTitleMatch
+        ? otherTitleMatch[1].trim().split(/\s*\|\s*/)[0].trim()
+        : null;
+      if (otherTitle && otherTitle === title) {
         fail(`Duplicate <title> — matches existing post blog/${otherSlug}/: "${title}"`);
         break;
       }
