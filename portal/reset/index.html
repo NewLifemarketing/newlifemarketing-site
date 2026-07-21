@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Set a New Password | NewLife Marketing Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,700;1,700;1,800;1,900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/portal/portal.css">
+</head>
+<body>
+<a class="pl-back" href="/portal/">← Back to sign in</a>
+<main class="pl-login">
+  <form class="pl-login-card" id="pl-reset-form" novalidate>
+    <a class="pl-logo" href="/">NewLife <span class="blue">Marketing</span></a>
+    <p class="pl-sub">Set a new password</p>
+
+    <div class="pl-field">
+      <label for="pl-pw">New password</label>
+      <input id="pl-pw" name="password" type="password" autocomplete="new-password" placeholder="At least 8 characters" required>
+    </div>
+    <div class="pl-field">
+      <label for="pl-pw2">Confirm password</label>
+      <input id="pl-pw2" name="confirm" type="password" autocomplete="new-password" placeholder="Re-enter password" required>
+    </div>
+
+    <div id="pl-reset-msg" style="display:none;font-size:0.82rem;color:var(--muted);margin-bottom:1rem"></div>
+
+    <button class="pl-btn full" type="submit">Update password</button>
+    <p class="pl-note">Open this page from the reset link we email you.</p>
+  </form>
+</main>
+<script src="/portal/vendor/supabase.js"></script>
+<script src="/portal/config.js"></script>
+<script src="/portal/auth.js"></script>
+</body>
+</html>

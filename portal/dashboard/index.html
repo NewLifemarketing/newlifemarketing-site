@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Dashboard | NewLife Marketing Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,700;1,700;1,800;1,900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/portal/portal.css">
+</head>
+<body>
+<div class="pl-app" id="pl-app">
+  <div class="pl-scrim" data-close-nav></div>
+
+  <!-- Sidebar -->
+  <aside class="pl-sidebar">
+    <div class="pl-sidebar-head">
+      <a class="pl-logo" href="/portal/dashboard/">NewLife <span class="blue">Portal</span></a>
+    </div>
+    <nav class="pl-nav" aria-label="Portal sections">
+      <span class="pl-nav-label">Getting started</span>
+      <button class="pl-nav-item active" data-view="onboarding">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Onboarding <span class="badge">Start here</span>
+      </button>
+      <span class="pl-nav-label">Reporting</span>
+      <button class="pl-nav-item" data-view="meta">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+        Meta Ads
+      </button>
+      <button class="pl-nav-item" data-view="google">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        Google Ads
+      </button>
+      <button class="pl-nav-item" data-view="gbp">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        Google Business Profile
+      </button>
+      <span class="pl-nav-label">Coming soon</span>
+      <button class="pl-nav-item soon" disabled>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6 4 4 6-6"/></svg>
+        SEO <span class="pl-nav-soon">Soon</span>
+      </button>
+      <button class="pl-nav-item soon" disabled>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Social <span class="pl-nav-soon">Soon</span>
+      </button>
+      <button class="pl-nav-item soon" disabled>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        Invoices <span class="pl-nav-soon">Soon</span>
+      </button>
+    </nav>
+    <div class="pl-sidebar-foot">
+      <div class="pl-user">
+        <div class="pl-avatar" id="pl-initials">CR</div>
+        <div>
+          <div class="nm" id="pl-clientname">Sample Client</div>
+          <div class="biz" id="pl-clientbiz">Demo Business Inc.</div>
+        </div>
+      </div>
+      <a class="pl-btn ghost sm full" href="/portal/" id="pl-logout">Log out</a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="pl-main">
+    <div class="pl-topbar">
+      <button class="pl-menu-btn" data-open-nav aria-label="Open menu">☰</button>
+      <h1 id="pl-view-title">Onboarding</h1>
+      <select class="pl-daterange" id="pl-daterange" aria-label="Date range" hidden>
+        <option>Last 7 days</option>
+        <option selected>Last 30 days</option>
+        <option>Last 90 days</option>
+        <option>Year to date</option>
+      </select>
+    </div>
+
+    <!-- ONBOARDING -->
+    <section class="pl-view active" data-view="onboarding" aria-label="Onboarding">
+      <div class="pl-panel">
+        <div class="pl-progress-head">
+          <div>
+            <h2 style="margin:0 0 0.15rem">Welcome — let's get you launched</h2>
+            <p class="pl-muted" style="margin:0;font-size:0.9rem">Complete these steps so we can build and launch your growth system.</p>
+          </div>
+          <span class="pl-progress-pct" style="margin-left:auto">50%</span>
+        </div>
+        <div class="pl-progress-bar"><i style="width:50%"></i></div>
+      </div>
+
+      <div class="pl-panel">
+        <h3>Your onboarding checklist</h3>
+        <div class="pl-steps">
+          <div class="pl-step done"><div class="check">✓</div><div><div class="s-title">Discovery call</div><div class="s-desc">Kickoff conversation about your goals, market and numbers.</div></div><div class="s-status">Complete</div></div>
+          <div class="pl-step done"><div class="check">✓</div><div><div class="s-title">Contract signed</div><div class="s-desc">Scope and terms agreed and signed.</div></div><div class="s-status">Complete</div></div>
+          <div class="pl-step active"><div class="check">3</div><div><div class="s-title">Account access</div><div class="s-desc">Grant us access to Meta, Google Ads and your Google Business Profile (below).</div></div><div class="s-status">In progress</div></div>
+          <div class="pl-step"><div class="check">4</div><div><div class="s-title">Strategy &amp; branding</div><div class="s-desc">Offer, angles, funnel and creative direction — agreed before filming.</div></div><div class="s-status todo">To do</div></div>
+          <div class="pl-step"><div class="check">5</div><div><div class="s-title">Filming &amp; design</div><div class="s-desc">Shoot day at your location; a month of content produced.</div></div><div class="s-status todo">To do</div></div>
+          <div class="pl-step"><div class="check">6</div><div><div class="s-title">Launch &amp; growth</div><div class="s-desc">Campaigns go live, tracking verified, continuous optimization.</div></div><div class="s-status todo">To do</div></div>
+        </div>
+      </div>
+
+      <div class="pl-cards-2">
+        <div class="pl-panel">
+          <h3>Documents to download</h3>
+          <ul class="pl-filelist">
+            <li><span>📄</span><div><div class="f-name">Service agreement</div><div class="f-meta">PDF · signed copy</div></div><a class="pl-btn ghost sm f-dl" href="#" data-sample-dl>Download</a></li>
+            <li><span>📝</span><div><div class="f-name">Brand questionnaire</div><div class="f-meta">PDF · fill &amp; return</div></div><a class="pl-btn ghost sm f-dl" href="#" data-sample-dl>Download</a></li>
+            <li><span>📘</span><div><div class="f-name">Getting-started guide</div><div class="f-meta">PDF · what to expect</div></div><a class="pl-btn ghost sm f-dl" href="#" data-sample-dl>Download</a></li>
+            <li><span>🎬</span><div><div class="f-name">Shoot-day prep checklist</div><div class="f-meta">PDF</div></div><a class="pl-btn ghost sm f-dl" href="#" data-sample-dl>Download</a></li>
+          </ul>
+        </div>
+        <div class="pl-panel">
+          <h3>Upload your assets</h3>
+          <p class="pl-muted" style="font-size:0.85rem;margin-top:0">Logos, brand files, product photos, access notes — anything we need.</p>
+          <div class="pl-drop" id="pl-drop">
+            <div class="big">⬆️</div>
+            <div><strong>Drop files here</strong> or click to browse</div>
+            <div class="pl-dim" style="font-size:0.78rem;margin-top:0.3rem">PNG, JPG, PDF, ZIP, AI, PSD · up to 100&nbsp;MB each</div>
+            <input type="file" id="pl-fileinput" multiple hidden>
+          </div>
+          <ul class="pl-uploaded" id="pl-uploaded"></ul>
+        </div>
+      </div>
+
+      <div class="pl-panel">
+        <h3>Business intake</h3>
+        <p class="pl-muted" style="font-size:0.85rem;margin-top:0">Tell us about your business and goals so we can build the right strategy.</p>
+        <form class="pl-form-grid" onsubmit="return false">
+          <div><label>Business name</label><input type="text" placeholder="Your business"></div>
+          <div><label>Website</label><input type="url" placeholder="https://"></div>
+          <div><label>Industry</label><input type="text" placeholder="e.g. Construction, Restaurant"></div>
+          <div><label>Primary service area</label><input type="text" placeholder="e.g. Barrie & Simcoe County"></div>
+          <div class="full"><label>Your #1 goal for the next 90 days</label><input type="text" placeholder="e.g. more booked jobs, higher ROAS"></div>
+          <div class="full"><label>Anything else we should know?</label><textarea rows="3" placeholder="Offers, seasonality, competitors, brand do's and don'ts…"></textarea></div>
+          <div class="full"><button class="pl-btn" type="submit">Save intake</button></div>
+        </form>
+      </div>
+
+      <div class="pl-panel">
+        <h3>Grant account access</h3>
+        <p class="pl-muted" style="font-size:0.85rem;margin-top:0">We manage campaigns inside <em>your</em> accounts — you always own them. Add us as a partner/manager:</p>
+        <div class="pl-access">
+          <div class="a-card">
+            <h4>Meta Business</h4>
+            <p>Add NewLife as a partner in Business Settings → Partners. Share your Ad Account &amp; Page.</p>
+            <div><span class="a-status pending">● Pending</span></div>
+          </div>
+          <div class="a-card">
+            <h4>Google Ads</h4>
+            <p>Accept our manager (MCC) link request, or share your 10-digit customer ID.</p>
+            <div><span class="a-status pending">● Pending</span></div>
+          </div>
+          <div class="a-card">
+            <h4>Google Business Profile</h4>
+            <p>Add us as a manager on your Business Profile so we can post and pull insights.</p>
+            <div><span class="a-status granted">● Granted</span></div>
+          </div>
+        </div>
+        <p class="pl-dim" style="font-size:0.78rem;margin-top:1rem">Step-by-step instructions for each are in the getting-started guide above.</p>
+      </div>
+    </section>
+
+    <!-- META ADS -->
+    <section class="pl-view" data-view="meta" aria-label="Meta Ads reporting">
+      <p class="pl-muted" style="margin-top:0">Meta &amp; Instagram performance <span class="pl-sample-tag">Sample data</span></p>
+      <div class="pl-kpis">
+        <div class="pl-kpi"><div class="k-label">Amount spent</div><div class="k-value">$4,583</div><div class="k-delta up">▲ 12% vs prev</div></div>
+        <div class="pl-kpi"><div class="k-label">Leads</div><div class="k-value">218</div><div class="k-delta up">▲ 18%</div></div>
+        <div class="pl-kpi"><div class="k-label">Purchases ROAS</div><div class="k-value">3.9x</div><div class="k-delta up">▲ 0.4</div></div>
+        <div class="pl-kpi"><div class="k-label">CTR</div><div class="k-value">2.4%</div><div class="k-delta up">▲ 0.3%</div></div>
+        <div class="pl-kpi"><div class="k-label">CPC</div><div class="k-value">$0.70</div><div class="k-delta down">▼ 8%</div></div>
+        <div class="pl-kpi"><div class="k-label">Conversions</div><div class="k-value">3,824</div><div class="k-delta up">▲ 21%</div></div>
+      </div>
+      <div class="pl-grid-2">
+        <div class="pl-panel"><div class="pl-panel-head"><h3>Spend &amp; conversions over time</h3></div><div class="pl-chart-wrap"><canvas id="chart-meta-trend"></canvas></div></div>
+        <div class="pl-panel"><div class="pl-panel-head"><h3>Spend by campaign</h3></div><div class="pl-chart-wrap"><canvas id="chart-meta-donut"></canvas></div></div>
+      </div>
+      <div class="pl-panel">
+        <div class="pl-panel-head"><h3>Campaigns</h3></div>
+        <div class="pl-table-scroll"><table class="pl-table">
+          <thead><tr><th>Campaign</th><th class="num">Reach</th><th class="num">Spend</th><th class="num">Results</th><th class="num">ROAS</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Prospecting — Broad</td><td class="num">89,400</td><td class="num">$3,120</td><td class="num">342</td><td class="num hot">2.6x</td><td><span class="pill active">Active</span></td></tr>
+            <tr><td>Retargeting — Engaged 30d</td><td class="num">24,600</td><td class="num">$1,840</td><td class="num">296</td><td class="num hot">6.1x</td><td><span class="pill active">Active</span></td></tr>
+            <tr><td>Advantage+ — Catalog</td><td class="num">41,200</td><td class="num">$2,210</td><td class="num">227</td><td class="num hot">4.2x</td><td><span class="pill active">Active</span></td></tr>
+            <tr><td>Prospecting — Interests</td><td class="num">31,800</td><td class="num">$1,250</td><td class="num">168</td><td class="num hot">3.4x</td><td><span class="pill learning">Learning</span></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- GOOGLE ADS -->
+    <section class="pl-view" data-view="google" aria-label="Google Ads reporting">
+      <p class="pl-muted" style="margin-top:0">Google Search, PMax &amp; YouTube <span class="pl-sample-tag">Sample data</span></p>
+      <div class="pl-kpis">
+        <div class="pl-kpi"><div class="k-label">Cost</div><div class="k-value">$4,560</div><div class="k-delta up">▲ 6%</div></div>
+        <div class="pl-kpi"><div class="k-label">Leads</div><div class="k-value">312</div><div class="k-delta up">▲ 18%</div></div>
+        <div class="pl-kpi"><div class="k-label">Conv. value</div><div class="k-value">$34.6K</div><div class="k-delta up">▲ 26%</div></div>
+        <div class="pl-kpi"><div class="k-label">CTR</div><div class="k-value">7.1%</div><div class="k-delta up">▲ 0.6%</div></div>
+        <div class="pl-kpi"><div class="k-label">CPC</div><div class="k-value">$0.93</div><div class="k-delta down">▼ 5%</div></div>
+        <div class="pl-kpi"><div class="k-label">Conversions</div><div class="k-value">312</div><div class="k-delta up">▲ 14%</div></div>
+      </div>
+      <div class="pl-grid-2">
+        <div class="pl-panel"><div class="pl-panel-head"><h3>Conversions over time</h3></div><div class="pl-chart-wrap"><canvas id="chart-google-trend"></canvas></div></div>
+        <div class="pl-panel"><div class="pl-panel-head"><h3>Cost by campaign type</h3></div><div class="pl-chart-wrap"><canvas id="chart-google-bar"></canvas></div></div>
+      </div>
+      <div class="pl-panel">
+        <div class="pl-panel-head"><h3>Campaigns</h3></div>
+        <div class="pl-table-scroll"><table class="pl-table">
+          <thead><tr><th>Campaign</th><th class="num">Cost</th><th class="num">Clicks</th><th class="num">Conv.</th><th class="num">Conv. value</th></tr></thead>
+          <tbody>
+            <tr><td>Search — Brand</td><td class="num">$410</td><td class="num">980</td><td class="num">96</td><td class="num hot">$9,800</td></tr>
+            <tr><td>Search — Non-brand</td><td class="num">$2,140</td><td class="num">1,240</td><td class="num">118</td><td class="num hot">$14,300</td></tr>
+            <tr><td>Performance Max</td><td class="num">$1,480</td><td class="num">2,050</td><td class="num">74</td><td class="num hot">$8,100</td></tr>
+            <tr><td>YouTube — Remarketing</td><td class="num">$530</td><td class="num">610</td><td class="num">24</td><td class="num hot">$2,400</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- GBP -->
+    <section class="pl-view" data-view="gbp" aria-label="Google Business Profile reporting">
+      <p class="pl-muted" style="margin-top:0">Google Business Profile insights <span class="pl-sample-tag">Sample data</span></p>
+      <div class="pl-kpis">
+        <div class="pl-kpi"><div class="k-label">Calls</div><div class="k-value">214</div><div class="k-delta up">▲ 38%</div></div>
+        <div class="pl-kpi"><div class="k-label">Direction requests</div><div class="k-value">486</div><div class="k-delta up">▲ 22%</div></div>
+        <div class="pl-kpi"><div class="k-label">Website clicks</div><div class="k-value">903</div><div class="k-delta up">▲ 14%</div></div>
+        <div class="pl-kpi"><div class="k-label">Profile views</div><div class="k-value">1,940</div><div class="k-delta up">▲ 62%</div></div>
+        <div class="pl-kpi"><div class="k-label">Reviews</div><div class="k-value">127</div><div class="k-delta up">▲ 9 new</div></div>
+        <div class="pl-kpi"><div class="k-label">Avg. rating</div><div class="k-value">5.0★</div><div class="k-delta up">▲ steady</div></div>
+      </div>
+      <div class="pl-grid-2">
+        <div class="pl-panel"><div class="pl-panel-head"><h3>Customer actions over time</h3></div><div class="pl-chart-wrap"><canvas id="chart-gbp-trend"></canvas></div></div>
+        <div class="pl-panel"><div class="pl-panel-head"><h3>How customers found you</h3></div><div class="pl-chart-wrap"><canvas id="chart-gbp-donut"></canvas></div></div>
+      </div>
+      <div class="pl-panel">
+        <div class="pl-panel-head"><h3>Top search queries</h3></div>
+        <div class="pl-table-scroll"><table class="pl-table">
+          <thead><tr><th>Search term</th><th class="num">Impressions</th><th class="num">Actions</th></tr></thead>
+          <tbody>
+            <tr><td>businesses near me</td><td class="num">4,120</td><td class="num hot">312</td></tr>
+            <tr><td>your business + city</td><td class="num">2,880</td><td class="num hot">421</td></tr>
+            <tr><td>service + "near me"</td><td class="num">1,640</td><td class="num hot">188</td></tr>
+            <tr><td>brand name</td><td class="num">1,210</td><td class="num hot">266</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="/portal/vendor/supabase.js"></script>
+<script src="/portal/config.js"></script>
+<script src="/portal/auth.js"></script>
+<script src="/portal/vendor/chart.umd.js"></script>
+<script src="/portal/portal.js"></script>
+</body>
+</html>

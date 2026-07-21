@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Client Login | NewLife Marketing Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,700;1,700;1,800;1,900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/portal/portal.css">
+</head>
+<body>
+<a class="pl-back" href="/">← Back to newlifemarketing.ca</a>
+<main class="pl-login">
+  <form class="pl-login-card" id="pl-login-form" novalidate>
+    <a class="pl-logo" href="/">NewLife <span class="blue">Marketing</span></a>
+    <p class="pl-sub">Client Portal</p>
+
+    <div class="pl-field">
+      <label for="pl-email">Email</label>
+      <input id="pl-email" name="email" type="email" autocomplete="email" placeholder="you@yourbusiness.ca" required>
+    </div>
+    <div class="pl-field">
+      <label for="pl-password">Password</label>
+      <input id="pl-password" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+    </div>
+    <div class="pl-row-between">
+      <label><input type="checkbox" name="remember"> Keep me signed in</label>
+      <a href="#" id="pl-forgot">Forgot password?</a>
+    </div>
+
+    <div id="pl-login-error" role="alert" style="display:none;font-size:0.82rem;color:#ff8080;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.4);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:1rem"></div>
+
+    <button class="pl-btn full" type="submit">Sign In</button>
+
+    <p class="pl-note">Client access only. Trouble signing in? Email
+      <a href="mailto:contact@newlifemarketing.ca">contact@newlifemarketing.ca</a>.</p>
+
+    <div class="pl-demo-hint">
+      <strong>Demo mode:</strong> any email + password opens the sample dashboard. Real Supabase
+      login switches on automatically once your keys are added to <code>config.js</code>.
+    </div>
+  </form>
+</main>
+<script src="/portal/vendor/supabase.js"></script>
+<script src="/portal/config.js"></script>
+<script src="/portal/auth.js"></script>
+</body>
+</html>
