@@ -160,7 +160,7 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
 .proof-stat .ps-short { display: none; }
 @media (max-width: 720px) {
   .proof-bar .wrap { grid-template-columns: auto 1fr; }
-  .proof-bar .proof-stat { text-align: right; font-size: 0.78rem; white-space: nowrap; }
+  .proof-bar .proof-stat { text-align: right; font-size: 0.78rem; }
   .proof-spacer { display: none; }
   /* keep the topbar to one tidy line on phones: Contact Us + short stat.
      Our Blog / Client Login live in the hamburger menu on mobile. */
