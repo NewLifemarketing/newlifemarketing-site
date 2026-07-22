@@ -1503,8 +1503,9 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 .pf-graphic:hover img { transform: scale(1.06); }
 .pf-graphic-needs { display: flex; align-items: center; justify-content: center; text-align: center; padding: 1rem; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .pf-graphic img { transition: none; } .pf-graphic:hover img { transform: none; } }
-/* portfolio pages: clean video tiles (no client-name overlay) + portrait graphic tiles matching the carousels */
-.pf-card .loop-thumb .lt-client, #vidgrid .lt-client { display: none; }
+/* portfolio pages: fully clean tiles (no text overlays) + portrait graphic tiles matching the carousels */
+.pf-card .loop-thumb .lt-client, #vidgrid .lt-client,
+.pf-card .loop-thumb .lt-label, #vidgrid .lt-label { display: none; }
 .pf-card[data-tags="graphic-design"] .loop-thumb { aspect-ratio: 3 / 4; }
 /* full-size graphic lightbox */
 .pf-lb { position: fixed; inset: 0; background: rgba(13,13,20,0.92); display: none; align-items: center; justify-content: center; z-index: 300; padding: 3vw; }
