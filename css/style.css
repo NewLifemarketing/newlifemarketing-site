@@ -157,12 +157,19 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
 }
 .proof-links a:hover { color: var(--white); }
 .proof-bar strong { color: var(--blue); font-weight: 700; }
+.proof-stat .ps-short { display: none; }
 @media (max-width: 720px) {
   .proof-bar .wrap { grid-template-columns: auto 1fr; }
-  .proof-bar .proof-stat { text-align: right; }
+  .proof-bar .proof-stat { text-align: right; font-size: 0.78rem; white-space: nowrap; }
   .proof-spacer { display: none; }
+  /* keep the topbar to one tidy line on phones: Contact Us + short stat.
+     Our Blog / Client Login live in the hamburger menu on mobile. */
+  .proof-links .pl-desktop { display: none; }
+  .proof-stat .ps-full { display: none; }
+  .proof-stat .ps-short { display: inline; }
 }
-@media (max-width: 720px) { .proof-bar .proof-stat { font-size: 0.78rem; } }
+/* homepage "Ads Built To Sell." catalog — clean tiles, no text overlays */
+.home-adwall .lt-label, .home-adwall .lt-client { display: none; }
 
 /* ---------- Header + mega menu ---------- */
 
