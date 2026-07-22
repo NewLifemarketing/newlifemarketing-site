@@ -1507,6 +1507,10 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 .pf-card .loop-thumb .lt-client, #vidgrid .lt-client,
 .pf-card .loop-thumb .lt-label, #vidgrid .lt-label { display: none; }
 .pf-card[data-tags="graphic-design"] .loop-thumb { aspect-ratio: 3 / 4; }
+/* graphic tiles ~30% smaller: 4-across on desktop instead of 3, still portrait */
+.pf-sec[data-tags="graphic-design"] .grid { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1000px) { .pf-sec[data-tags="graphic-design"] .grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 720px) { .pf-sec[data-tags="graphic-design"] .grid { grid-template-columns: repeat(2, 1fr); } }
 /* full-size graphic lightbox */
 .pf-lb { position: fixed; inset: 0; background: rgba(13,13,20,0.92); display: none; align-items: center; justify-content: center; z-index: 300; padding: 3vw; }
 .pf-lb.open { display: flex; }
