@@ -10,6 +10,30 @@
    completely unaffected by it.
    ============================================================ */
 
+/* ---------- Light theme scope: white post pages, matching the main site's
+   white marketing pages (same mechanism as .svc-page in style.css — redefine
+   the shared design tokens to their light-mode values). Apply `.post-light`
+   to both the post-band section and the closing cta-band section so the
+   whole page reads as one continuous white page, header/footer excepted
+   (those stay dark site-wide, same as on .svc-page pages). Additive only —
+   style.css and non-blog pages are untouched; this class simply doesn't
+   exist anywhere else. ---------- */
+.post-light {
+  --ink: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-2: #F5F6F8;
+  --line: #E4E7EC;
+  --white: #0D0D14;      /* was white text on dark → near-black on light */
+  --muted: #4B4B57;
+  --dim: #6C6C7A;
+  --shadow: 0 14px 40px rgba(13, 13, 20, 0.10);
+  color: #0D0D14;
+}
+section.post-light { background: #FFFFFF; }
+.post-light .btn { color: #FFFFFF; }
+.post-light .btn.ghost { background: transparent; color: var(--blue); border-color: var(--blue); }
+.post-light .btn.ghost:hover { background: var(--blue-dim); }
+
 /* ---------- Article shell: share rail + main column ---------- */
 .post-shell {
   display: grid;
