@@ -245,6 +245,53 @@
     });
   }
 
+  /* ---------- Contact form -> GoHighLevel webhook (separate from book-form) ---------- */
+  var contactForm = document.getElementById("contact-form");
+  if (contactForm) {
+    var CONTACT_WEBHOOK = "https://services.leadconnectorhq.com/hooks/RFnM9KZ3YGnxyFfaekIT/webhook-trigger/d1d8da26-2d8a-4501-98e4-30656ae0dec2";
+    var contactMsg = document.getElementById("contact-msg");
+    function showContactMsg(text, ok) {
+      if (!contactMsg) return;
+      contactMsg.textContent = text;
+      contactMsg.style.display = "block";
+      contactMsg.style.color = ok ? "var(--blue)" : "#C0392B";
+      contactMsg.style.fontWeight = "600";
+    }
+    contactForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var hp = contactForm.querySelector("[name=website_confirm]");
+      if (hp && hp.value) return; /* honeypot filled -> silent abort */
+      var g = function (n) {
+        var f = contactForm.querySelector("[name=" + n + "]");
+        return f ? f.value.trim() : "";
+      };
+      var payload = {
+        first_name: g("first_name"),
+        last_name: g("last_name"),
+        full_name: (g("first_name") + " " + g("last_name")).trim(),
+        email: g("email"),
+        phone: g("phone"),
+        message: g("message"),
+        source: "newlife_contact_form"
+      };
+      var btn = contactForm.querySelector("button[type=submit]");
+      if (btn) btn.disabled = true;
+      fetch(CONTACT_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        showContactMsg("✓ Message sent — we'll get back to you within one business day.", true);
+        contactForm.reset();
+        if (btn) btn.disabled = false;
+      }).catch(function () {
+        showContactMsg("Something went wrong sending your message — please try again, or email contact@newlifemarketing.ca.", false);
+        if (btn) btn.disabled = false;
+      });
+    });
+  }
+
   /* ---------- Filter chips ---------- */
   document.querySelectorAll("[data-filter-group]").forEach(function (group) {
     var chips = group.querySelectorAll(".chip");
