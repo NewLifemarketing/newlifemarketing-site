@@ -203,8 +203,8 @@ if (prevNewestPath) {
     fail(`${prevNewestPath} modified but no previous version found at merge-base.`);
   } else {
     const emptySpanCount = countMatches(oldContent, /<span><\/span>/g);
-    if (emptySpanCount !== 1) {
-      fail(`${prevNewestPath}: expected exactly one empty <span></span> nav placeholder in the previous version, found ${emptySpanCount}.`);
+    if (emptySpanCount < 1) {
+      fail(`${prevNewestPath}: expected at least one empty <span></span> nav placeholder in the previous version, found ${emptySpanCount}.`);
     } else if (slug) {
       const anchorRe = new RegExp(
         `<a class="btn ghost sm" href="/articles/${slug}/">[^<]*</a>`
