@@ -195,10 +195,53 @@
       var f = bookForm.querySelector("[name=" + k + "]");
       if (f && qs.get(k)) f.value = qs.get(k);
     });
+    var BOOK_WEBHOOK = "https://services.leadconnectorhq.com/hooks/RFnM9KZ3YGnxyFfaekIT/webhook-trigger/05fc846b-f348-4c3b-90e7-816a61b40467";
+    var bookMsg = document.getElementById("book-msg");
+    function showBookMsg(text, ok) {
+      if (!bookMsg) return;
+      bookMsg.textContent = text;
+      bookMsg.style.display = "block";
+      bookMsg.style.color = ok ? "var(--blue)" : "#C0392B";
+      bookMsg.style.fontWeight = "600";
+    }
     bookForm.addEventListener("submit", function (e) {
       e.preventDefault();
-      /* [NEEDS: GoHighLevel form endpoint — submissions currently route straight to the calendar page] */
-      window.location.href = "/book/call/";
+      var hp = bookForm.querySelector("[name=website_confirm]");
+      if (hp && hp.value) return; /* honeypot filled -> silent abort */
+      var g = function (n) {
+        var f = bookForm.querySelector("[name=" + n + "]");
+        return f ? f.value.trim() : "";
+      };
+      var full = g("name");
+      var sp = full.indexOf(" ");
+      var payload = {
+        first_name: sp === -1 ? full : full.slice(0, sp),
+        last_name: sp === -1 ? "" : full.slice(sp + 1),
+        full_name: full,
+        email: g("email"),
+        phone: g("phone"),
+        business_name: g("business"),
+        website_url: g("website"),
+        service_interest: g("service"),
+        budget_range: g("budget"),
+        primary_goal: g("goal"),
+        source: "newlife_website_form"
+      };
+      var btn = bookForm.querySelector("button[type=submit]");
+      if (btn) btn.disabled = true;
+      fetch(BOOK_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        showBookMsg("✓ Got it — taking you to pick your call time…", true);
+        bookForm.reset();
+        setTimeout(function () { window.location.href = "/book/call/"; }, 1200);
+      }).catch(function () {
+        showBookMsg("Something went wrong sending your info — please try again, or call 705-302-1097.", false);
+        if (btn) btn.disabled = false;
+      });
     });
   }
 
