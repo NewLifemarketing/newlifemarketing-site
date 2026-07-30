@@ -1,0 +1,72 @@
+/* ============================================================
+   NewLife Marketing — Article v1
+   ADDITIVE ONLY. Article pages already load css/style.css (fonts,
+   colors, .prose content width) — nothing here redeclares those.
+   Uses only existing design tokens from style.css's :root (--blue,
+   --muted, --dim, --line, --surface, --radius, --font-display).
+   Scoped under .article-body so nothing here touches .prose usage
+   on non-article pages (about/service pages also use .prose).
+   Adds only the four things blog posts don't have: a credibility
+   line under the headline, a chart wrapper + source caption,
+   superscript footnote markers, and a numbered Sources block.
+   ============================================================ */
+
+/* ---------- Credibility line under the headline ---------- */
+.article-credibility {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 1.6rem;
+}
+
+/* ---------- Chart wrapper: canvas + small muted source caption ---------- */
+.article-chart {
+  margin: 1.4rem 0;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.article-chart canvas { max-width: 100%; }
+.article-chart-caption {
+  margin: 0.85rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+/* ---------- Superscript footnote markers ---------- */
+.article-body sup.article-fnref {
+  font-size: 0.7em;
+  line-height: 0;
+}
+.article-body sup.article-fnref a {
+  color: var(--blue);
+  text-decoration: none;
+  font-weight: 700;
+}
+.article-body sup.article-fnref a:hover { color: var(--blue-hot); }
+
+/* ---------- Numbered Sources block ---------- */
+.article-sources {
+  margin-top: clamp(2.5rem, 5vw, 3.5rem);
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+.article-sources h2 {
+  font-family: var(--font-display);
+  font-style: italic;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+  margin: 0 0 1rem;
+}
+.article-sources ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.article-sources a { color: var(--blue); text-decoration: none; }
+.article-sources a:hover { color: var(--blue-hot); }
