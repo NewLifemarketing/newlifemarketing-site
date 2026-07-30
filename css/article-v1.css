@@ -18,6 +18,17 @@
    white.
    ============================================================ */
 
+/* ---------- Masthead: no hero image on article pages ----------
+   blog-v2.css's .post-masthead is a 2-column grid (copy + media figure)
+   built for blog posts, which always carry a featured image. Article
+   pages drop the image entirely, so without this override the copy
+   column would still only fill its 1.6fr track, leaving the 1fr media
+   track as a dead empty gap and squeezing the h1 into a narrower column
+   than the page actually has room for. */
+.article-body .post-masthead {
+  grid-template-columns: 1fr;
+}
+
 /* ---------- Credibility line under the headline ---------- */
 .article-body .article-credibility {
   font-size: 0.9em;
@@ -58,6 +69,32 @@
   text-align: left;
 }
 
+/* ---------- Gap between the intro's "We'll explore" list and the first H2 ----------
+   blog-v2.css zeroes .post-section:first-child's top margin because on
+   blog posts that first section normally follows .post-introrow, which
+   supplies its own margin-bottom. Article pages dropped .post-introrow
+   (the sidebar moved out into its own column), so nothing was left to
+   create that gap — restore it here, scoped to article pages only. */
+.article-body .post-body > .post-section:first-child {
+  margin-top: clamp(2.25rem, 5vw, 3.25rem);
+}
+
+/* ---------- Anchor scroll offset ----------
+   The site header is position: sticky; top: 0 (style.css), so without
+   this, jumping to an in-page anchor (a section, a figure, a footnote's
+   source, or a reference link) lands the target right under the header
+   instead of below it — the reader sees the NEXT item, not the one they
+   clicked. scroll-margin-top pushes the landing point down by roughly
+   the header's height plus a little breathing room. Matches the 6rem
+   offset already used for the sticky sidebar's `top` below, for the
+   same reason. */
+.article-body .post-section,
+.article-body .article-chart,
+.article-body .article-sources,
+.article-body .article-sources li {
+  scroll-margin-top: 6rem;
+}
+
 /* ---------- Superscript footnote markers ---------- */
 .article-body sup.article-fnref {
   font-size: 0.75em;
@@ -71,6 +108,161 @@
 .article-body sup.article-fnref a:hover {
   font-weight: 900;
 }
+
+/* ---------- Article shell: real two-column layout ----------
+   .post-shell (blog-v2.css) is normally a 2-column grid (share rail +
+   single content column). This modifier — added only on article markup,
+   never on blog posts — extends it to 3 columns so the tab box becomes a
+   true sidebar running alongside the ENTIRE article body, not a box
+   nested inside the intro row. That's what lets it be position: sticky
+   for the full scroll length, and it's also what fixes the old bug where
+   switching tabs (different content height per panel) reflowed the
+   paragraphs below it — the sidebar is now its own grid track, so its
+   height can never affect the content column's flow. */
+.post-shell--article {
+  grid-template-columns: 56px minmax(0, 1fr) 360px;
+  gap: 2.5rem;
+}
+@media (max-width: 1080px) {
+  .post-shell--article { grid-template-columns: 56px minmax(0, 1fr); }
+  .post-shell--article .article-tabs {
+    grid-column: 1 / -1;
+    position: static;
+    max-height: none;
+    margin-top: 1.5rem;
+  }
+}
+@media (max-width: 900px) {
+  .post-shell--article { grid-template-columns: 1fr; }
+}
+
+/* ---------- Sections/Figures/References tab box ----------
+   Replaces the blog template's .post-sidebar "Related Resources" box on
+   article pages. Deliberately does NOT reuse the .post-sidebar selector —
+   it's a new class (.article-tabs) that only exists in article markup, so
+   blog posts (which never carry this class) can't be touched by it. The
+   container styling (border/radius/background/padding) intentionally
+   matches .post-sidebar in blog-v2.css so the two read as the same
+   component with a tab strip added. Sticky + flex column so the tab strip
+   stays put while only the panel content scrolls internally once it's
+   taller than the available viewport space. */
+.article-tabs {
+  position: sticky;
+  top: 6rem;
+  align-self: start;
+  max-height: calc(100vh - 8rem);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.article-tabs-strip {
+  flex: none;
+  display: flex;
+  border-bottom: 1px solid var(--line);
+}
+.article-tabs-tab {
+  flex: 1;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font-family: var(--font-display);
+  font-style: italic;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  padding: 0.9rem 0.4rem;
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.article-tabs-tab:hover { color: var(--white); }
+.article-tabs-tab.is-active { color: var(--blue); border-bottom-color: var(--blue); }
+.article-tabs-panels {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.1rem 1.15rem;
+}
+.article-tabs-panel { display: none; }
+.article-tabs-panel.is-active { display: block; }
+
+/* Sections panel — with scroll-spy highlight */
+.article-tabs-sections { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.5rem; }
+.article-tabs-sections a {
+  display: block;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  border-left: 2px solid transparent;
+  padding-left: 0.65rem;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.article-tabs-sections a:hover { color: var(--white); }
+.article-tabs-sections a.is-current {
+  color: var(--blue);
+  border-left-color: var(--blue);
+  font-weight: 700;
+}
+
+/* Figures panel — label + live mini Chart.js render, whole item links to the figure */
+.article-tabs-figs { display: grid; gap: 1.25rem; }
+.article-tabs-figlink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+.article-tabs-figlink + .article-tabs-figlink {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+.article-tabs-figlink .fig-label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--white);
+  margin-bottom: 0.65rem;
+}
+.article-tabs-figlink:hover .fig-label { color: var(--blue); }
+/* Fixed-height box is required: Chart.js's responsive resize reads the
+   canvas's parent box for its target size. Without an explicit height
+   here the parent has no size of its own (it just wraps the canvas), so
+   parent and canvas each grow to match the other every resize tick —
+   an infinite feedback loop. maintainAspectRatio: false (set in the JS
+   config) lets the chart fill this fixed box instead of driving it. */
+.article-tabs-figchart {
+  position: relative;
+  height: 175px;
+}
+.article-tabs-figlink canvas { display: block; max-width: 100%; }
+
+/* References panel — same citation treatment as the bottom Sources block, condensed */
+.article-tabs-reflist { list-style: none; margin: 0; padding: 0; display: grid; }
+.article-tabs-reflist li {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.article-tabs-reflist li:first-child { padding-top: 0; }
+.article-tabs-reflist li:last-child { border-bottom: 0; padding-bottom: 0; }
+.article-tabs-reflist .ref-cite {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--white);
+}
+.article-tabs-reflist .ref-cite em { font-style: italic; }
+.article-tabs-reflist .ref-link {
+  margin: 0.35rem 0 0;
+  text-align: right;
+  font-size: 0.75rem;
+}
+.article-tabs-reflist a { color: var(--blue); text-decoration: underline; }
+.article-tabs-reflist a:hover { font-weight: 700; }
 
 /* ---------- Numbered Sources block: heading + rule, then list ---------- */
 .article-body .article-sources {
@@ -93,9 +285,28 @@
   margin: 0;
   padding-left: 1.25rem;
   display: grid;
-  gap: 1rem;
-  line-height: 1.8;
   color: var(--white);
+}
+.article-body .article-sources li {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.article-body .article-sources li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.article-body .article-sources .source-cite {
+  margin: 0;
+  font-size: 0.95em;
+  line-height: 1.7;
+}
+.article-body .article-sources .source-cite em {
+  font-style: italic;
+}
+.article-body .article-sources .source-link {
+  margin: 0.4rem 0 0;
+  text-align: right;
+  font-size: 0.85em;
 }
 .article-body .article-sources a {
   color: var(--blue);
