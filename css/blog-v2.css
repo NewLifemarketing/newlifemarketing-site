@@ -225,6 +225,14 @@ section.post-light { background: #FFFFFF; }
 .post-section:first-child { margin-top: 0; }
 .post-section p { color: var(--muted); }
 
+/* ---------- Anchor scroll offset ----------
+   The site header is position: sticky; top: 0 (style.css), so without
+   this, jumping to an in-page anchor (the "We'll explore" TOC links, an
+   FAQ anchor, any #id link) lands the target right under the header
+   instead of below it — the reader sees the NEXT section, not the one
+   they clicked. Matches the 6rem offset used in article-v1.css. */
+.post-section { scroll-margin-top: 6rem; }
+
 /* inline video, right after the paragraph introducing it. Default is a
    full-column-width 16:9 frame for regular landscape videos. Add the
    `vertical` modifier for a 9:16 YouTube Short so it renders as an
