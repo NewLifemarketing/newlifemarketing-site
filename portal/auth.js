@@ -141,17 +141,28 @@
         setInitials(session.user.email || "");
 
         sb.from("profiles")
-          .select("full_name, role, clients(name, business_name, sections)")
+          .select("client_id, full_name, role, clients(name, business_name, sections)")
           .eq("id", session.user.id)
           .single()
           .then(function (r) {
             var p = r.data;
+            /* Publish context for the reporting layer (portal.js) and signal
+               that it can start loading. Fires even when the profile is
+               missing so the UI can show a clean state instead of hanging. */
+            window.PORTAL_CTX = {
+              sb: sb,
+              session: session,
+              profile: p || null,
+              clientId: p ? p.client_id : null,
+              client: p && p.clients ? p.clients : null,
+              sections: (p && p.clients && p.clients.sections) ? p.clients.sections : []
+            };
+            document.dispatchEvent(new CustomEvent("portal:ready", { detail: window.PORTAL_CTX }));
             if (!p) return;
             var biz = p.clients ? (p.clients.business_name || p.clients.name) : "";
             if (nameEl && p.full_name) nameEl.textContent = p.full_name;
             if (bizEl && biz) bizEl.textContent = biz;
             setInitials(p.full_name || biz || session.user.email || "");
-            /* (Later) hide sidebar sections not in p.clients.sections here. */
           });
       });
 

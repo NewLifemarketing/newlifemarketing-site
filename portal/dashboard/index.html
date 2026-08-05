@@ -32,32 +32,36 @@
     </div>
     <nav class="pl-nav" aria-label="Portal sections">
       <span class="pl-nav-label">Getting started</span>
-      <button class="pl-nav-item active" data-view="onboarding">
+      <button class="pl-nav-item" data-view="onboarding">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Onboarding <span class="badge">Start here</span>
       </button>
       <span class="pl-nav-label">Reporting</span>
-      <button class="pl-nav-item" data-view="meta">
+      <button class="pl-nav-item active" data-view="overview" data-section="overview">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h4v8H3zM10 3h4v18h-4zM17 9h4v12h-4z"/></svg>
+        Overview
+      </button>
+      <button class="pl-nav-item" data-view="meta" data-section="meta">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
         Meta Ads
       </button>
-      <button class="pl-nav-item" data-view="google">
+      <button class="pl-nav-item" data-view="google" data-section="google_ads">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         Google Ads
       </button>
-      <button class="pl-nav-item" data-view="gbp">
+      <button class="pl-nav-item" data-view="gbp" data-section="gbp">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
         Google Business Profile
       </button>
-      <span class="pl-nav-label">Coming soon</span>
-      <button class="pl-nav-item soon" disabled>
+      <button class="pl-nav-item" data-view="seo" data-section="seo">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6 4 4 6-6"/></svg>
-        SEO <span class="pl-nav-soon">Soon</span>
+        SEO
       </button>
-      <button class="pl-nav-item soon" disabled>
+      <button class="pl-nav-item" data-view="organic" data-section="organic">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Social <span class="pl-nav-soon">Soon</span>
+        Organic
       </button>
+      <span class="pl-nav-label">Coming soon</span>
       <button class="pl-nav-item soon" disabled>
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
         Invoices <span class="pl-nav-soon">Soon</span>
@@ -79,17 +83,12 @@
   <div class="pl-main">
     <div class="pl-topbar">
       <button class="pl-menu-btn" data-open-nav aria-label="Open menu">☰</button>
-      <h1 id="pl-view-title">Onboarding</h1>
-      <select class="pl-daterange" id="pl-daterange" aria-label="Date range" hidden>
-        <option>Last 7 days</option>
-        <option selected>Last 30 days</option>
-        <option>Last 90 days</option>
-        <option>Year to date</option>
-      </select>
+      <h1 id="pl-view-title">Overview</h1>
+<select class="pl-daterange" id="pl-period" aria-label="Reporting period" hidden></select>
     </div>
 
     <!-- ONBOARDING -->
-    <section class="pl-view active" data-view="onboarding" aria-label="Onboarding">
+    <section class="pl-view" data-view="onboarding" aria-label="Onboarding">
       <div class="pl-panel">
         <div class="pl-progress-head">
           <div>
@@ -174,91 +173,57 @@
       </div>
     </section>
 
+    <!-- OVERVIEW (default) — derived client-side from every channel's summary block -->
+    <section class="pl-view active" data-view="overview" aria-label="Overview">
+      <div class="pl-report-meta" id="pl-meta-overview"></div>
+      <div class="pl-kpis" data-kpis="overview"></div>
+      <div id="pl-overview-channels"></div>
+      <div class="pl-empty" data-empty="overview" hidden></div>
+    </section>
+
     <!-- META ADS -->
     <section class="pl-view" data-view="meta" aria-label="Meta Ads reporting">
-      <p class="pl-muted" style="margin-top:0">Meta &amp; Instagram performance <span class="pl-sample-tag">Sample data</span></p>
-      <div class="pl-kpis">
-        <div class="pl-kpi"><div class="k-label">Amount spent</div><div class="k-value">$4,583</div><div class="k-delta up">▲ 12% vs prev</div></div>
-        <div class="pl-kpi"><div class="k-label">Leads</div><div class="k-value">218</div><div class="k-delta up">▲ 18%</div></div>
-        <div class="pl-kpi"><div class="k-label">Purchases ROAS</div><div class="k-value">3.9x</div><div class="k-delta up">▲ 0.4</div></div>
-        <div class="pl-kpi"><div class="k-label">CTR</div><div class="k-value">2.4%</div><div class="k-delta up">▲ 0.3%</div></div>
-        <div class="pl-kpi"><div class="k-label">CPC</div><div class="k-value">$0.70</div><div class="k-delta down">▼ 8%</div></div>
-        <div class="pl-kpi"><div class="k-label">Conversions</div><div class="k-value">3,824</div><div class="k-delta up">▲ 21%</div></div>
-      </div>
-      <div class="pl-grid-2">
-        <div class="pl-panel"><div class="pl-panel-head"><h3>Spend &amp; conversions over time</h3></div><div class="pl-chart-wrap"><canvas id="chart-meta-trend"></canvas></div></div>
-        <div class="pl-panel"><div class="pl-panel-head"><h3>Spend by campaign</h3></div><div class="pl-chart-wrap"><canvas id="chart-meta-donut"></canvas></div></div>
-      </div>
-      <div class="pl-panel">
-        <div class="pl-panel-head"><h3>Campaigns</h3></div>
-        <div class="pl-table-scroll"><table class="pl-table">
-          <thead><tr><th>Campaign</th><th class="num">Reach</th><th class="num">Spend</th><th class="num">Results</th><th class="num">ROAS</th><th>Status</th></tr></thead>
-          <tbody>
-            <tr><td>Prospecting — Broad</td><td class="num">89,400</td><td class="num">$3,120</td><td class="num">342</td><td class="num hot">2.6x</td><td><span class="pill active">Active</span></td></tr>
-            <tr><td>Retargeting — Engaged 30d</td><td class="num">24,600</td><td class="num">$1,840</td><td class="num">296</td><td class="num hot">6.1x</td><td><span class="pill active">Active</span></td></tr>
-            <tr><td>Advantage+ — Catalog</td><td class="num">41,200</td><td class="num">$2,210</td><td class="num">227</td><td class="num hot">4.2x</td><td><span class="pill active">Active</span></td></tr>
-            <tr><td>Prospecting — Interests</td><td class="num">31,800</td><td class="num">$1,250</td><td class="num">168</td><td class="num hot">3.4x</td><td><span class="pill learning">Learning</span></td></tr>
-          </tbody>
-        </table></div>
-      </div>
+      <div class="pl-report-meta" id="pl-meta-meta"></div>
+      <div class="pl-kpis" data-kpis="meta"></div>
+      <div data-charts="meta"></div>
+      <div data-tables="meta"></div>
+      <div class="pl-empty" data-empty="meta" hidden></div>
     </section>
 
     <!-- GOOGLE ADS -->
     <section class="pl-view" data-view="google" aria-label="Google Ads reporting">
-      <p class="pl-muted" style="margin-top:0">Google Search, PMax &amp; YouTube <span class="pl-sample-tag">Sample data</span></p>
-      <div class="pl-kpis">
-        <div class="pl-kpi"><div class="k-label">Cost</div><div class="k-value">$4,560</div><div class="k-delta up">▲ 6%</div></div>
-        <div class="pl-kpi"><div class="k-label">Leads</div><div class="k-value">312</div><div class="k-delta up">▲ 18%</div></div>
-        <div class="pl-kpi"><div class="k-label">Conv. value</div><div class="k-value">$34.6K</div><div class="k-delta up">▲ 26%</div></div>
-        <div class="pl-kpi"><div class="k-label">CTR</div><div class="k-value">7.1%</div><div class="k-delta up">▲ 0.6%</div></div>
-        <div class="pl-kpi"><div class="k-label">CPC</div><div class="k-value">$0.93</div><div class="k-delta down">▼ 5%</div></div>
-        <div class="pl-kpi"><div class="k-label">Conversions</div><div class="k-value">312</div><div class="k-delta up">▲ 14%</div></div>
-      </div>
-      <div class="pl-grid-2">
-        <div class="pl-panel"><div class="pl-panel-head"><h3>Conversions over time</h3></div><div class="pl-chart-wrap"><canvas id="chart-google-trend"></canvas></div></div>
-        <div class="pl-panel"><div class="pl-panel-head"><h3>Cost by campaign type</h3></div><div class="pl-chart-wrap"><canvas id="chart-google-bar"></canvas></div></div>
-      </div>
-      <div class="pl-panel">
-        <div class="pl-panel-head"><h3>Campaigns</h3></div>
-        <div class="pl-table-scroll"><table class="pl-table">
-          <thead><tr><th>Campaign</th><th class="num">Cost</th><th class="num">Clicks</th><th class="num">Conv.</th><th class="num">Conv. value</th></tr></thead>
-          <tbody>
-            <tr><td>Search — Brand</td><td class="num">$410</td><td class="num">980</td><td class="num">96</td><td class="num hot">$9,800</td></tr>
-            <tr><td>Search — Non-brand</td><td class="num">$2,140</td><td class="num">1,240</td><td class="num">118</td><td class="num hot">$14,300</td></tr>
-            <tr><td>Performance Max</td><td class="num">$1,480</td><td class="num">2,050</td><td class="num">74</td><td class="num hot">$8,100</td></tr>
-            <tr><td>YouTube — Remarketing</td><td class="num">$530</td><td class="num">610</td><td class="num">24</td><td class="num hot">$2,400</td></tr>
-          </tbody>
-        </table></div>
-      </div>
+      <div class="pl-report-meta" id="pl-meta-google"></div>
+      <div class="pl-kpis" data-kpis="google"></div>
+      <div data-charts="google"></div>
+      <div data-tables="google"></div>
+      <div class="pl-empty" data-empty="google" hidden></div>
     </section>
 
-    <!-- GBP -->
+    <!-- GOOGLE BUSINESS PROFILE -->
     <section class="pl-view" data-view="gbp" aria-label="Google Business Profile reporting">
-      <p class="pl-muted" style="margin-top:0">Google Business Profile insights <span class="pl-sample-tag">Sample data</span></p>
-      <div class="pl-kpis">
-        <div class="pl-kpi"><div class="k-label">Calls</div><div class="k-value">214</div><div class="k-delta up">▲ 38%</div></div>
-        <div class="pl-kpi"><div class="k-label">Direction requests</div><div class="k-value">486</div><div class="k-delta up">▲ 22%</div></div>
-        <div class="pl-kpi"><div class="k-label">Website clicks</div><div class="k-value">903</div><div class="k-delta up">▲ 14%</div></div>
-        <div class="pl-kpi"><div class="k-label">Profile views</div><div class="k-value">1,940</div><div class="k-delta up">▲ 62%</div></div>
-        <div class="pl-kpi"><div class="k-label">Reviews</div><div class="k-value">127</div><div class="k-delta up">▲ 9 new</div></div>
-        <div class="pl-kpi"><div class="k-label">Avg. rating</div><div class="k-value">5.0★</div><div class="k-delta up">▲ steady</div></div>
-      </div>
-      <div class="pl-grid-2">
-        <div class="pl-panel"><div class="pl-panel-head"><h3>Customer actions over time</h3></div><div class="pl-chart-wrap"><canvas id="chart-gbp-trend"></canvas></div></div>
-        <div class="pl-panel"><div class="pl-panel-head"><h3>How customers found you</h3></div><div class="pl-chart-wrap"><canvas id="chart-gbp-donut"></canvas></div></div>
-      </div>
-      <div class="pl-panel">
-        <div class="pl-panel-head"><h3>Top search queries</h3></div>
-        <div class="pl-table-scroll"><table class="pl-table">
-          <thead><tr><th>Search term</th><th class="num">Impressions</th><th class="num">Actions</th></tr></thead>
-          <tbody>
-            <tr><td>businesses near me</td><td class="num">4,120</td><td class="num hot">312</td></tr>
-            <tr><td>your business + city</td><td class="num">2,880</td><td class="num hot">421</td></tr>
-            <tr><td>service + "near me"</td><td class="num">1,640</td><td class="num hot">188</td></tr>
-            <tr><td>brand name</td><td class="num">1,210</td><td class="num hot">266</td></tr>
-          </tbody>
-        </table></div>
-      </div>
+      <div class="pl-report-meta" id="pl-meta-gbp"></div>
+      <div class="pl-kpis" data-kpis="gbp"></div>
+      <div data-charts="gbp"></div>
+      <div data-tables="gbp"></div>
+      <div class="pl-empty" data-empty="gbp" hidden></div>
+    </section>
+
+    <!-- SEO -->
+    <section class="pl-view" data-view="seo" aria-label="SEO reporting">
+      <div class="pl-report-meta" id="pl-meta-seo"></div>
+      <div class="pl-kpis" data-kpis="seo"></div>
+      <div data-charts="seo"></div>
+      <div data-tables="seo"></div>
+      <div class="pl-empty" data-empty="seo" hidden></div>
+    </section>
+
+    <!-- ORGANIC SOCIAL -->
+    <section class="pl-view" data-view="organic" aria-label="Organic social reporting">
+      <div class="pl-report-meta" id="pl-meta-organic"></div>
+      <div class="pl-kpis" data-kpis="organic"></div>
+      <div data-charts="organic"></div>
+      <div data-tables="organic"></div>
+      <div class="pl-empty" data-empty="organic" hidden></div>
     </section>
   </div>
 </div>

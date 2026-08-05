@@ -319,6 +319,24 @@ a:hover { color: var(--blue-hot); }
   border-radius: 999px; padding: 0.12rem 0.6rem; vertical-align: middle;
 }
 
+/* Reporting-period badge — same pill as the sample tag, brand blue */
+.pl-period-tag {
+  display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--blue-hot); background: var(--blue-dim); border: 1px solid rgba(33,150,243,0.4);
+  border-radius: 999px; padding: 0.12rem 0.6rem; vertical-align: middle;
+}
+/* Coloured delta cell inside report tables */
+.pl-delta { font-weight: 700; }
+.pl-delta.up { color: var(--green); }
+.pl-delta.down { color: #ff6b6b; }
+/* Overview: compact per-channel stat strip */
+.pl-minis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; }
+.pl-mini .m-label {
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--dim); font-weight: 600; margin-bottom: 0.15rem;
+}
+.pl-mini .m-value { font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 1.25rem; }
+
 /* Mobile sidebar */
 .pl-scrim { display: none; }
 @media (max-width: 860px) {
