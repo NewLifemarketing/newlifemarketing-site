@@ -1,8 +1,9 @@
 /* NewLife Portal config — LIVE file.
-   Blank = demo mode (any email opens the sample dashboard).
-   To go live: paste your Supabase Project URL + anon key below and redeploy.
-   Both values are browser-safe; Row-Level Security protects the data. */
+   Paste the Supabase Project URL + anon (publishable) key below and redeploy.
+   Both values are browser-safe by design; Row-Level Security protects the
+   data. NOTE: there is NO demo mode — until these are filled in, sign-in
+   fails with an error and the dashboard redirects to the login page. */
 window.PORTAL_CONFIG = {
-  SUPABASE_URL: "",
-  SUPABASE_ANON_KEY: ""
+  SUPABASE_URL: "https://nrmcvrwqnzngdizqkkgo.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_1uplOvPB1TeFX7stNBiRCA_ue9OfCbZ"
 };

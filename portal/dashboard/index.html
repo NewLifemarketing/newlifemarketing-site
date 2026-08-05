@@ -19,6 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,700;1,700;1,800;1,900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/portal/portal.css">
+<style id="pl-guard">html:not(.pl-authed) #pl-app{display:none}</style>
 </head>
 <body>
 <div class="pl-app" id="pl-app">
@@ -64,10 +65,10 @@
     </nav>
     <div class="pl-sidebar-foot">
       <div class="pl-user">
-        <div class="pl-avatar" id="pl-initials">CR</div>
+        <div class="pl-avatar" id="pl-initials">&nbsp;</div>
         <div>
-          <div class="nm" id="pl-clientname">Sample Client</div>
-          <div class="biz" id="pl-clientbiz">Demo Business Inc.</div>
+          <div class="nm" id="pl-clientname">Signing in…</div>
+          <div class="biz" id="pl-clientbiz"></div>
         </div>
       </div>
       <a class="pl-btn ghost sm full" href="/portal/" id="pl-logout">Log out</a>
@@ -262,7 +263,7 @@
   </div>
 </div>
 
-<script src="/portal/vendor/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/portal/config.js"></script>
 <script src="/portal/auth.js"></script>
 <script src="/portal/vendor/chart.umd.js"></script>
