@@ -391,7 +391,12 @@
       .eq("period_start", p.start)
       .eq("period_end", p.end)
       .then(function (r) {
-        (r.data || []).forEach(function (row) { reports[row.platform] = row; });
+        /* Only keep platforms this client is actually subscribed to, so a
+           stored-but-unsubscribed report can never surface in the sidebar,
+           a channel page or the Overview totals. */
+        (r.data || []).forEach(function (row) {
+          if (hasSection(row.platform)) reports[row.platform] = row;
+        });
         renderAll();
       });
   }
