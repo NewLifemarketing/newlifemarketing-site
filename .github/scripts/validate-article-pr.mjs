@@ -15,7 +15,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const REPO_ROOT = process.cwd();
-const SITE_ORIGIN = "https://www.newlifemarketing.ca";
+const SITE_ORIGIN = "https://newlifemarketing.ca";
 const failures = [];
 const warnings = [];
 
