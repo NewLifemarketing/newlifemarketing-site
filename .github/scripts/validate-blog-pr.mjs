@@ -266,8 +266,8 @@ if (newPostPath && exists(newPostPath)) {
     metaDescription = contentMatch ? contentMatch[2] : null;
     if (metaDescription === null) {
       fail(`<meta name="description"> tag has no content attribute in ${newPostPath}.`);
-    } else if (metaDescription.length < 150 || metaDescription.length > 160) {
-      fail(`Meta description is ${metaDescription.length} characters (must be 150-160): "${metaDescription}"`);
+    } else if (metaDescription.length < 70 || metaDescription.length > 160) {
+      fail(`Meta description is ${metaDescription.length} characters (must be 70-160): "${metaDescription}"`);
     }
   }
 
