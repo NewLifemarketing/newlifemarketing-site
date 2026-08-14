@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /partials/
 
 Sitemap: https://newlifemarketing.ca/sitemap.xml

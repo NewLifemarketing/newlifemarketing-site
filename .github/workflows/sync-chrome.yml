@@ -1,0 +1,48 @@
+name: Sync site chrome
+
+# Single source of truth for the header/footer. Edit partials/header.html or
+# partials/footer.html, push to main, and this propagates the change to every
+# participating page (including already-published posts) and commits the sweep.
+#
+# This runs as maintenance ON main — it is NOT a blog/article PR, so the
+# purely-additive publish gate (validate-*-pr.mjs) does not apply to it. That
+# separation is what lets it update published posts without tripping the gate.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "partials/header.html"
+      - "partials/footer.html"
+  workflow_dispatch: {}
+
+concurrency:
+  group: sync-chrome
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Propagate chrome to all participating pages
+        run: node scripts/sync-chrome.mjs --write
+      - name: Commit sweep if anything changed
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name  "newlife-bot"
+            git config user.email "bot@newlifemarketing.ca"
+            git add -A
+            git commit -m "Propagate site chrome (header/footer) to all pages"
+            git push
+          else
+            echo "No drift — nothing to propagate."
+          fi
+        # Loop-safe: the sweep commit only ever touches *.html, never partials/**,
+        # so it cannot re-trigger this paths-filtered workflow.
