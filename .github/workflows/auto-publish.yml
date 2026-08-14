@@ -88,8 +88,19 @@ jobs:
         run: |
           set +e
           node .github/scripts/validate-blog-pr.mjs
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          v=$?
+          # Chrome gate: the new post must carry the header/footer markers and match
+          # the canonical partials, so it is born in sync and stays syncable.
+          chrome=$(node scripts/sync-chrome.mjs --check --only "blog/**/index.html" --require-participation 2>&1)
+          c=$?
+          echo "$chrome"
           set -e
+          if [ "$c" -ne 0 ]; then
+            [ -f validation-result.json ] || echo '{"failures":[]}' > validation-result.json
+            msg='Site chrome check failed — the new post is missing the header/footer markers or is out of date with partials/. Regenerate from the current template, or run `node scripts/sync-chrome.mjs --write`. See partials/README.md.'
+            tmp=$(mktemp); jq --arg m "$msg" '.failures += [$m] | .pass=false' validation-result.json > "$tmp" && mv "$tmp" validation-result.json
+          fi
+          if [ "$v" -ne 0 ] || [ "$c" -ne 0 ]; then echo "exit_code=1" >> "$GITHUB_OUTPUT"; else echo "exit_code=0" >> "$GITHUB_OUTPUT"; fi
 
       - name: Read validation result
         id: result
@@ -259,8 +270,19 @@ jobs:
         run: |
           set +e
           node .github/scripts/validate-article-pr.mjs
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          v=$?
+          # Chrome gate: the new article must carry the header/footer markers and match
+          # the canonical partials, so it is born in sync and stays syncable.
+          chrome=$(node scripts/sync-chrome.mjs --check --only "articles/**/index.html" --require-participation 2>&1)
+          c=$?
+          echo "$chrome"
           set -e
+          if [ "$c" -ne 0 ]; then
+            [ -f validation-result.json ] || echo '{"failures":[]}' > validation-result.json
+            msg='Site chrome check failed — the new article is missing the header/footer markers or is out of date with partials/. Regenerate from the current template, or run `node scripts/sync-chrome.mjs --write`. See partials/README.md.'
+            tmp=$(mktemp); jq --arg m "$msg" '.failures += [$m] | .pass=false' validation-result.json > "$tmp" && mv "$tmp" validation-result.json
+          fi
+          if [ "$v" -ne 0 ] || [ "$c" -ne 0 ]; then echo "exit_code=1" >> "$GITHUB_OUTPUT"; else echo "exit_code=0" >> "$GITHUB_OUTPUT"; fi
 
       - name: Read validation result
         id: result
