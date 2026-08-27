@@ -1,9 +1,17 @@
-# Site chrome (shared header/footer)
+# Site chrome (shared header / footer / favicon)
 
-`header.html` and `footer.html` are the **single source of truth** for the site
-header (proof-bar + mega-menu nav) and footer. Every participating page embeds a
-copy of these between marker comments; `scripts/sync-chrome.mjs` keeps those copies
-identical to these files.
+`header.html`, `footer.html`, and `head-icons.html` are the **single source of
+truth** for the site header (proof-bar + mega-menu nav), the footer, and the
+favicon / icon `<link>` tags. Every participating page embeds a copy of these
+between marker comments; `scripts/sync-chrome.mjs` keeps those copies identical to
+these files.
+
+- `header.html` / `footer.html` live in `<body>` and are opt-in by anchor.
+- `head-icons.html` is inserted before `</head>` on every real page (skipping
+  `http-equiv="refresh"` redirect stubs), so the favicon reaches pages like
+  `portal/` that have no header/footer. The tags point at a **stable URL**
+  (`/assets/brand/favicon.png`), so changing the logo later is just replacing that
+  one file — no HTML edits needed.
 
 ## Editing the header or footer
 
