@@ -1637,3 +1637,17 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 .sf-hit:hover, .sf-hit:focus-visible { opacity: 1; }
 @media (max-width: 900px) { .sf-view iframe { width: 1280px; transform: scale(0.42); } }
 @media (prefers-reduced-motion: reduce) { .sf-hit { transition: none; } }
+
+/* Group heading inside a mega panel — spans every column so it reads as its own
+   labelled row (e.g. "Strategies" under the service links). */
+.mega .m-group {
+  grid-column: 1 / -1;
+  margin: 0.85rem 0 0.1rem;
+  padding: 0.7rem 0.75rem 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
