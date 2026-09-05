@@ -919,8 +919,12 @@ a.card.blog-card:hover .blog-thumb img { transform: scale(1.04); }
 
 /* ---------- NEEDS markers (trackable content gaps) ---------- */
 
+/* Authoring placeholders. NEVER rendered in production — a [NEEDS: ...] badge
+   reached the live site once and published internal production notes to visitors.
+   Keep the class defined (so authoring tools can still emit it) but render nothing.
+   To see them while authoring, temporarily flip this to inline-block locally. */
 .needs {
-  display: inline-block;
+  display: none;
   background: rgba(255, 193, 7, 0.12);
   border: 1px dashed rgba(255, 193, 7, 0.5);
   color: #FFD54F;
@@ -1254,6 +1258,7 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 /* --- two-column module (competitor-style: copy one side, visual the other) --- */
 .svc-mod { display: grid; gap: clamp(1.75rem, 4vw, 3.25rem); grid-template-columns: 1fr 1fr; align-items: center; }
 .svc-mod.rev .svc-mod-media { order: -1; }
+.svc-mod-1up { grid-template-columns: 1fr; }
 @media (max-width: 880px) {
   .svc-mod { grid-template-columns: 1fr; }
   .svc-mod.rev .svc-mod-media { order: 0; }

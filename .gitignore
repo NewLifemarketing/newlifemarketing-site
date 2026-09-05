@@ -2,3 +2,4 @@
 # (.github/scripts/validate-*.mjs) — regenerated every workflow run, never
 # meant to be committed or tracked.
 validation-result.json
+.claude/launch.json
