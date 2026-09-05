@@ -255,6 +255,25 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
   gap: 0.4rem 1rem;
 }
 .mega.narrow { min-width: 320px; grid-template-columns: 1fr; }
+/* Column counts per panel. Wide panels stay inside the viewport via the clamp
+   in main.js, which nudges any panel that would overflow an edge. */
+.mega.m2 { min-width: 540px; grid-template-columns: repeat(2, minmax(230px, 1fr)); }
+.mega.m3 { min-width: 760px; grid-template-columns: repeat(3, minmax(210px, 1fr)); }
+.mega.m4 { min-width: 880px; grid-template-columns: repeat(4, minmax(195px, 1fr)); }
+.mega { max-width: calc(100vw - 2rem); }
+
+/* Hover bridge: the panel floats 10px below the trigger, and without this the
+   pointer crosses dead space on the way down and the menu closes. The pseudo
+   element makes that gap part of the hoverable area. Paired with the close
+   delay in main.js so a brief slip off the menu doesn't dismiss it. */
+.mega::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -14px;
+  height: 14px;
+}
 .nav-item.open .mega { display: grid; }
 
 .mega a {

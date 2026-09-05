@@ -32,12 +32,43 @@
       if (!wasOpen) item.classList.add("open");
       btn.setAttribute("aria-expanded", String(!wasOpen));
     });
+    /* Hover intent. Closing on a bare mouseleave made the menu impossible to
+       use: moving the pointer diagonally toward a link clips outside the item
+       for a frame and the panel vanished mid-click. Opening is instant; closing
+       waits, and re-entering anywhere in the item cancels the close. */
+    var closeTimer = null;
+    function cancelClose() { if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; } }
     item.addEventListener("mouseenter", function () {
-      if (window.matchMedia("(min-width: 1281px)").matches) item.classList.add("open");
+      if (!window.matchMedia("(min-width: 1281px)").matches) return;
+      cancelClose();
+      items.forEach(function (i) { if (i !== item) i.classList.remove("open"); });
+      item.classList.add("open");
+      clampMega(item);
     });
     item.addEventListener("mouseleave", function () {
-      if (window.matchMedia("(min-width: 1281px)").matches) item.classList.remove("open");
+      if (!window.matchMedia("(min-width: 1281px)").matches) return;
+      cancelClose();
+      closeTimer = setTimeout(function () { item.classList.remove("open"); }, 320);
     });
+    item.addEventListener("focusin", function () { cancelClose(); item.classList.add("open"); clampMega(item); });
+  });
+
+  /* Keep a panel inside the viewport. Panels are centred under their trigger,
+     so a wide one under an edge item would otherwise run off-screen. */
+  function clampMega(item) {
+    var mega = item.querySelector(".mega");
+    if (!mega || !window.matchMedia("(min-width: 1281px)").matches) return;
+    mega.style.left = "";
+    mega.style.transform = "";
+    var r = mega.getBoundingClientRect();
+    var pad = 16;
+    var shift = 0;
+    if (r.right > window.innerWidth - pad) shift = window.innerWidth - pad - r.right;
+    else if (r.left < pad) shift = pad - r.left;
+    if (shift) mega.style.transform = "translateX(calc(-50% + " + Math.round(shift) + "px))";
+  }
+  window.addEventListener("resize", function () {
+    document.querySelectorAll(".nav-item.has-mega.open").forEach(clampMega);
   });
   document.addEventListener("click", function () {
     items.forEach(function (i) { i.classList.remove("open"); });
