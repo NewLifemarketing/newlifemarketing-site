@@ -1574,3 +1574,66 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 .svc-bio { display: grid; grid-template-columns: auto 1fr; gap: 1.5rem; align-items: center; }
 .svc-bio .svc-bio-photo { width: 120px; height: 120px; border-radius: 16px; object-fit: cover; background: var(--surface-2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; text-align: center; }
 @media (max-width: 620px) { .svc-bio { grid-template-columns: 1fr; } }
+
+/* --- Live website-build previews -------------------------------------------
+   The real site is iframed and scaled down inside browser chrome, so a tile is
+   always the current build rather than a screenshot that rots. Pointer events
+   are off inside the frame; the overlay link is what the visitor clicks. */
+.site-frame {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.sf-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.sf-dots { display: inline-flex; gap: 0.3rem; }
+.sf-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); display: block; }
+.sf-url {
+  font-size: 0.75rem;
+  color: var(--dim);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sf-view { position: relative; overflow: hidden; background: #fff; }
+.sf-view iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1440px;
+  height: 1800px;
+  border: 0;
+  transform: scale(0.34);
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+.sf-hit {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 1rem;
+  text-decoration: none;
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55));
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.sf-hit span {
+  background: var(--blue);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+}
+.sf-hit:hover, .sf-hit:focus-visible { opacity: 1; }
+@media (max-width: 900px) { .sf-view iframe { width: 1280px; transform: scale(0.42); } }
+@media (prefers-reduced-motion: reduce) { .sf-hit { transition: none; } }
