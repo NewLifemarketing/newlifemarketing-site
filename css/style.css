@@ -1681,3 +1681,12 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   .home-adwall > *:nth-child(n + 4) { display: none; }
   .client-grid:not(.expanded) > .client-sq:nth-of-type(n + 11) { display: none; }
 }
+
+/* Software stack heading: logo above the name on desktop (unchanged), but on a
+   phone they sit on one line — the stacked version wasted a whole row of height
+   in a section the visitor taps through four times. */
+@media (max-width: 720px) {
+  .hp-sw-head { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.6rem; }
+  .hp-sw-head .hp-sw-logo { margin-bottom: 0; flex: 0 0 auto; }
+  .hp-sw-head h3 { margin: 0; }
+}
