@@ -1398,18 +1398,36 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 }
 .pf-tile.big { grid-row: 1 / 3; }
 .pf-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
-.pf-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(13,13,20,0.05) 40%, rgba(13,13,20,0.85) 100%); }
-.pf-info { position: absolute; left: 0; right: 0; bottom: 0; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.35rem; }
+/* Tile text sits on photos that range from a dark job site to a near-white
+   dashboard screenshot, so the scrim has to be strong enough for the brightest
+   of them. Two layers: a tall bottom gradient that carries the text block, and
+   a light overall wash that stops pale images bleeding into the type. */
+.pf-scrim {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg,
+      rgba(13,13,20,0) 0%,
+      rgba(13,13,20,0.18) 30%,
+      rgba(13,13,20,0.62) 55%,
+      rgba(13,13,20,0.88) 75%,
+      rgba(13,13,20,0.96) 100%),
+    linear-gradient(180deg, rgba(13,13,20,0.28) 0%, rgba(13,13,20,0.28) 100%);
+}
+.pf-info {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 1.5rem;
+  display: flex; flex-direction: column; gap: 0.35rem;
+  text-shadow: 0 1px 4px rgba(13,13,20,0.55);
+}
 .pf-cat {
   font-family: var(--font-display); font-style: italic; font-weight: 800; text-transform: uppercase;
-  letter-spacing: 0.08em; font-size: 0.65rem; color: #5FB0FF;
+  letter-spacing: 0.08em; font-size: 0.65rem; color: #7CC0FF;
 }
 .pf-title {
   font-family: var(--font-display); font-style: italic; font-weight: 800; text-transform: uppercase;
   font-size: 1.5rem; line-height: 1; color: #fff;
 }
 .pf-tile:not(.big) .pf-title { font-size: 1.2rem; }
-.pf-desc { font-size: 0.85rem; color: rgba(255,255,255,0.82); max-width: 42ch; }
+.pf-desc { font-size: 0.85rem; color: rgba(255,255,255,0.92); max-width: 42ch; }
 .pf-tile:not(.big) .pf-desc { display: none; }
 .pf-tile.big .pf-desc { display: block; }
 .pf-tile .go { color: #5FB0FF; font-weight: 700; font-size: 0.8rem; margin-top: 0.25rem; }
@@ -1419,6 +1437,21 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   .pf-bento { grid-template-columns: 1fr; grid-template-rows: none; }
   .pf-tile.big { grid-row: auto; }
   .pf-tile:not(.big) .pf-desc { display: block; }
+  /* On one column every tile shows its description, so the text block is taller
+     than the scrim was built for — give it room and darken further, otherwise
+     the copy rides up over the un-scrimmed middle of the photo. */
+  .pf-tile { min-height: 300px; }
+  .pf-scrim {
+    background:
+      linear-gradient(180deg,
+        rgba(13,13,20,0) 0%,
+        rgba(13,13,20,0.30) 22%,
+        rgba(13,13,20,0.74) 46%,
+        rgba(13,13,20,0.92) 70%,
+        rgba(13,13,20,0.97) 100%),
+      linear-gradient(180deg, rgba(13,13,20,0.32) 0%, rgba(13,13,20,0.32) 100%);
+  }
+  .pf-info { padding: 1.25rem; }
 }
 
 /* Homepage travel projects — cinematic stage + thumbnail filmstrip selector */
