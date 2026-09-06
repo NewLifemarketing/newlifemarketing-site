@@ -1341,46 +1341,6 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 .camp-snap { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; padding: 1rem 0; }
 .camp-snap .s-item { font-size: 0.9rem; color: var(--muted); }
 .camp-snap .s-item strong { color: #0D0D14; }
-
-/* ---------- .tbc — DRAFT figures awaiting client confirmation ----------
-   Deliberately NOT the .needs class. .tbc is loud on purpose, so an
-   unconfirmed number cannot be mistaken for a real one during review.
-   Any page carrying .tbc stays noindex and out of sitemap.xml until every
-   marker has been replaced with a confirmed figure. */
-.tbc {
-  display: inline-block;
-  background: rgba(33, 150, 243, 0.10);
-  border: 1px dashed var(--blue);
-  border-radius: 6px;
-  padding: 0.1em 0.5em;
-  color: var(--blue-hot);
-  font-family: var(--font-body);
-  font-size: 0.82em;
-  font-weight: 600;
-  font-style: normal;
-  letter-spacing: 0;
-  text-transform: none;
-  line-height: 1.35;
-}
-.tbc::before {
-  content: "TO CONFIRM  b7 ";
-  font-size: 0.78em;
-  letter-spacing: 0.08em;
-  opacity: 0.75;
-}
-.stat .tbc { font-size: 0.30em; vertical-align: middle; }
-.camp-kpi .stat .tbc { font-size: 0.34em; }
-.camp-snap .s-item .tbc { font-size: 0.85em; }
-.draft-banner {
-  background: rgba(33, 150, 243, 0.12);
-  border: 1px dashed var(--blue);
-  border-radius: var(--radius);
-  padding: 1rem 1.25rem;
-  color: var(--blue-hot);
-  font-size: 0.92rem;
-  line-height: 1.6;
-}
-.draft-banner code { font-family: ui-monospace, monospace; font-size: 0.88em; }
 /* sticky creative showcase */
 .cs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; }
 .cs-sticky { position: sticky; top: 14vh; }
