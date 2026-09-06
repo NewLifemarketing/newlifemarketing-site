@@ -1690,3 +1690,15 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   .hp-sw-head .hp-sw-logo { margin-bottom: 0; flex: 0 0 auto; }
   .hp-sw-head h3 { margin: 0; }
 }
+
+/* Footer sub-headings — the Services and Company columns were single lists of
+   10 and 16 links with no structure. They now carry the same groupings as the
+   nav, so the eye can find a section instead of reading every line. */
+.site-footer .foot-sub {
+  font-family: var(--font-display); font-style: italic; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.09em; font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 1.35rem 0 0.55rem;
+}
+.site-footer .foot-sub:first-of-type { margin-top: 0.9rem; }
+.site-footer ul + .foot-sub { margin-top: 1.5rem; }
