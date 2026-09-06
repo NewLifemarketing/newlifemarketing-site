@@ -1713,3 +1713,71 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   .clients-ctas .btn { margin: 0 auto; }
   .clients-more-wrap { margin-bottom: 0.35rem; }
 }
+
+/* ============================ Mobile nav drawer ============================
+   The mega panels are desktop dropdowns: .mega.m2/.m3/.m4 carry min-width
+   540–880px and 2–4 column grids. Inside the drawer those beat the plain
+   `.mega` reset on specificity, so the panel was wider than the phone and the
+   whole page scrolled sideways. Force one column and kill the min-width, then
+   give the drawer some structure so it isn't a bare list of words. */
+@media (max-width: 1280px) {
+  .nav .mega,
+  .nav .mega.m2,
+  .nav .mega.m3,
+  .nav .mega.m4 {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  /* nothing inside the drawer may push it wider than the screen */
+  .nav, .nav * { max-width: 100%; }
+  .nav { overflow-x: hidden; }
+  .nav .mega a,
+  .nav .mega .m-group { min-width: 0; }
+  .nav .mega a { white-space: normal; overflow-wrap: anywhere; }
+
+  /* Group headers inside a drawer panel */
+  .nav .mega .m-group {
+    display: block;
+    margin: 1rem 0 0.35rem;
+    padding: 0 0.25rem;
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.42);
+  }
+  .nav .mega .m-group.first { margin-top: 0.4rem; }
+
+  /* Each link becomes a tappable row rather than a line of text */
+  .nav .mega a {
+    display: block;
+    padding: 0.8rem 0.75rem;
+    margin: 0 0 0.3rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .nav .mega a:active { background: rgba(33, 150, 243, 0.14); }
+  .nav .mega .m-title { font-size: 0.98rem; }
+  .nav .mega .m-desc { font-size: 0.8rem; line-height: 1.35; }
+
+  /* Open row reads as open */
+  .nav > .nav-item.open > .top { color: var(--blue); }
+  .nav > .nav-item.open { background: rgba(255, 255, 255, 0.02); }
+
+  /* Give the drawer a footer so it doesn't end on a bare list */
+  .nav-drawer-foot { display: block; padding: 1.5rem 0.25rem 0; }
+  .nav-drawer-foot .ndf-ctas { display: grid; gap: 0.6rem; }
+  .nav-drawer-foot .ndf-ctas .btn { width: 100%; justify-content: center; }
+  .nav-drawer-foot .ndf-meta {
+    margin-top: 1.1rem; font-size: 0.82rem; line-height: 1.6;
+    color: rgba(255, 255, 255, 0.55);
+  }
+  .nav-drawer-foot .ndf-meta a { color: rgba(255, 255, 255, 0.75); text-decoration: none; }
+  .nav-drawer-foot .ndf-social { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 0.9rem; }
+  .nav-drawer-foot .ndf-social a {
+    font-size: 0.8rem; font-weight: 600; color: rgba(255, 255, 255, 0.7); text-decoration: none;
+  }
+}
+@media (min-width: 1281px) { .nav-drawer-foot { display: none; } }
