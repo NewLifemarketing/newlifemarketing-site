@@ -1671,3 +1671,13 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 
 /* First group header in a mega panel — no divider above it, it opens the list. */
 .mega .m-group.first { margin-top: 0; padding-top: 0.15rem; border-top: 0; }
+
+/* ---- Mobile: shorten two long homepage sections -------------------------
+   On a phone the video wall (9 ads) and the client grid (15 tiles) made the
+   page a very long scroll. Cap both, and let the existing CTAs carry the rest:
+   the ad wall already has "See the full portfolio" directly beneath it, and the
+   client grid's "View more clients" button drops the cap. Desktop is untouched. */
+@media (max-width: 720px) {
+  .home-adwall > *:nth-child(n + 4) { display: none; }
+  .client-grid:not(.expanded) > .client-sq:nth-of-type(n + 11) { display: none; }
+}
