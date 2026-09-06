@@ -1651,3 +1651,6 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   text-transform: uppercase;
   color: var(--dim);
 }
+
+/* First group header in a mega panel — no divider above it, it opens the list. */
+.mega .m-group.first { margin-top: 0; padding-top: 0.15rem; border-top: 0; }
