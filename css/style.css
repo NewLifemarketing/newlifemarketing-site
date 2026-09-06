@@ -1702,3 +1702,14 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 }
 .site-footer .foot-sub:first-of-type { margin-top: 0.9rem; }
 .site-footer ul + .foot-sub { margin-top: 1.5rem; }
+
+/* Clients section CTAs on mobile: three stacked buttons read as a pile, and
+   "Book a Strategy Call" duplicates the sticky bar pinned to the bottom of
+   every phone screen. Drop it here and centre what's left so it lines up with
+   the "View more clients" button directly above. */
+@media (max-width: 720px) {
+  .hide-mobile { display: none; }
+  .clients-ctas { justify-content: center; }
+  .clients-ctas .btn { margin: 0 auto; }
+  .clients-more-wrap { margin-bottom: 0.35rem; }
+}
