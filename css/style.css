@@ -940,21 +940,6 @@ a.card.blog-card:hover .blog-thumb img { transform: scale(1.04); }
 
 /* ---------- NEEDS markers (trackable content gaps) ---------- */
 
-.needs {
-  display: inline-block;
-  background: rgba(255, 193, 7, 0.12);
-  border: 1px dashed rgba(255, 193, 7, 0.5);
-  color: #FFD54F;
-  border-radius: 6px;
-  padding: 0.05em 0.45em;
-  font-size: 0.82em;
-  font-style: normal;
-  font-family: var(--font-body);
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-}
-.stat .needs { font-size: 0.45em; vertical-align: middle; }
 
 /* ---------- Scroll reveal ---------- */
 
@@ -1059,7 +1044,6 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 .bf-view { position: relative; overflow: hidden; background: var(--surface-2); min-height: 120px; }
 /* Static screenshot — fits its own size, always fully visible, no movement */
 .bf-view img.bf-shot { width: 100%; height: auto; display: block; }
-.bf-view .needs { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 88%; }
 .phone-frame {
   position: absolute; right: 12px; bottom: 12px;
   width: 23%; aspect-ratio: 9 / 19;
