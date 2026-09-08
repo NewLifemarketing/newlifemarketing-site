@@ -171,53 +171,6 @@
     t.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
   });
 
-  /* ---------- Ballpark quiz ---------- */
-  var quiz = document.getElementById("quiz");
-  var quizState = { service: "", budget: "" };
-  document.querySelectorAll("[data-open-quiz]").forEach(function (b) {
-    b.addEventListener("click", function (e) {
-      e.preventDefault();
-      if (quiz) {
-        quiz.classList.add("open");
-        showQuizStep(1);
-      }
-    });
-  });
-  function showQuizStep(n) {
-    if (!quiz) return;
-    quiz.querySelectorAll(".quiz-step").forEach(function (s) {
-      s.classList.toggle("active", s.getAttribute("data-step") === String(n));
-    });
-  }
-  if (quiz) {
-    quiz.querySelectorAll("[data-quiz-service]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        quizState.service = b.getAttribute("data-quiz-service");
-        showQuizStep(2);
-      });
-    });
-    quiz.querySelectorAll("[data-quiz-budget]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        quizState.budget = b.getAttribute("data-quiz-budget");
-        showQuizStep(3);
-      });
-    });
-    var qform = quiz.querySelector("form");
-    if (qform) {
-      qform.addEventListener("submit", function (e) {
-        e.preventDefault();
-        /* [NEEDS: GoHighLevel form/webhook endpoint — quiz submissions are not stored yet] */
-        var params = new URLSearchParams({
-          service: quizState.service,
-          budget: quizState.budget,
-          name: qform.querySelector("[name=name]").value,
-          email: qform.querySelector("[name=email]").value
-        });
-        window.location.href = "/book/?" + params.toString();
-      });
-    }
-  }
-
   /* ---------- Booking form → calendar page ---------- */
   var bookForm = document.getElementById("book-form");
   if (bookForm) {
