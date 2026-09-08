@@ -1781,3 +1781,29 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   }
 }
 @media (min-width: 1281px) { .nav-drawer-foot { display: none; } }
+
+/* ---- Service areas: regional index -------------------------------------- */
+.sa-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  padding: 1.5rem 0;
+}
+.sa-stats > div { display: flex; flex-direction: column; gap: 0.2rem; padding-left: 1rem; border-left: 3px solid var(--blue); }
+.sa-stats strong { font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 1.9rem; line-height: 1; }
+.sa-stats span {
+  font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.11em;
+  color: var(--muted); font-weight: 600;
+}
+.sa-region + .sa-region { margin-top: 2.5rem; }
+.sa-region h3 { font-size: 1.35rem; margin: 0 0 0.35rem; }
+.sa-region > p { margin: 0 0 1rem; max-width: 60rem; }
+.sa-chips { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.sa-chip {
+  display: inline-flex; align-items: center; padding: 0.6rem 1.05rem;
+  border-radius: 999px; border: 1px solid var(--line);
+  background: var(--card); text-decoration: none; color: inherit;
+  font-size: 0.88rem; font-weight: 600; transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.sa-chip:hover { border-color: var(--blue); color: var(--blue); transform: translateY(-1px); }
+@media (max-width: 900px) { .sa-stats { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .sa-stats { grid-template-columns: 1fr; } .sa-chip { font-size: 0.84rem; } }
