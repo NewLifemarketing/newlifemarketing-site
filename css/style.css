@@ -1270,6 +1270,11 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   background: #fff; box-shadow: 0 1px 3px rgba(13, 13, 20, 0.05);
 }
 .svc-comp h3 { margin-bottom: 0.5rem; }
+/* Section sub-heading sitting directly inside a .wrap. Without this its top
+   margin collapses against a preceding .grid / .svc-mod block and it renders
+   flush against the element above it. */
+.svc-sub { margin-top: 2.75rem; margin-bottom: 0.9rem; }
+.svc-sub:first-child { margin-top: 0; }
 .svc-comp .svc-when { color: var(--blue); font-weight: 700; font-size: 0.9rem; display: block; margin-bottom: 0.5rem; }
 .svc-comp p { margin: 0.35rem 0 0; color: var(--muted); }
 

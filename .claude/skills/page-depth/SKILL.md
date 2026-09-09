@@ -138,6 +138,43 @@ Target format is `"{keyword} in {City}"` or `"{keyword} {City}"`.
 
 ---
 
+## PART 3B — Geographic framing (de-localization)
+
+**Rudy's call, 9 Sep 2026.** Google's AI overview was describing NewLife as a
+*localized specialist*. That framing shrinks the addressable market and reads as
+exclusive to anyone outside Simcoe County.
+
+| Page type | Geographic framing |
+|---|---|
+| Homepage | **Not localized.** Target the raw keyword. |
+| Service pages | **Not localized.** Target the raw keyword. |
+| Industry pages | **Not localized.** |
+| Location pages | **Fully localized** — this is where local intent lives. |
+
+Rules for every non-location page:
+
+1. **Never say we *serve* or are *for* a named region.** Not in the title, meta
+   description, H1, hero lead, trust band, comparison table or schema.
+2. **Saying we are *based in* Barrie / Simcoe County is fine** and stays. Being
+   from somewhere is not the same as only selling there.
+3. **`areaServed` on a page-scoped `Service` block is `"Worldwide"`.** Do not
+   narrow it to a city list.
+4. **Keep the real postal address** in `LocalBusiness`. That is factual and it
+   is what the Google Business Profile needs.
+5. **Example searches in body copy** ("roofer near me") should not read as a list
+   of the only places we work. Prefer `near me` and generic phrasing over a
+   named local town.
+
+Location pages are the exception and stay fully localized — that is the entire
+point of having them, and it is where the local keywords are supposed to live.
+
+**Still outstanding site-wide:** `partials/footer.html` says "Serving Barrie,
+Simcoe County & Ontario" on all 173 pages, and the shared `LocalBusiness`
+description says "agency in Barrie and Simcoe County". Both need the same
+treatment in a separate, site-wide pass.
+
+---
+
 ## PART 4 — Readability gates
 
 Depth is worthless if the page cannot be read. Check every page against these.
@@ -239,6 +276,7 @@ Reuse the existing house style. Introduce no new design language.
 | Inner width | `wrap` | every band's inner container |
 | Eyebrow | `kicker` | short label above an H2 |
 | Intro line | `lead` | first paragraph of a section |
+| Sub-heading | `svc-sub` | **required** on any `<h3>` that is a direct child of `.wrap` |
 | Cards | `grid cols-2` / `cols-3` + `card reveal` | parallel points |
 | Deep blocks | `svc-comps` > `svc-comp` + `svc-when` | pillars, offers |
 | Process | `steps` > `step reveal` | numbered steps |
@@ -248,6 +286,16 @@ Reuse the existing house style. Introduce no new design language.
 | Pull quote | `svc-banner` | mid-page emphasis |
 | FAQ | `faq` > `details` > `summary` + `faq-a` | questions |
 | Final CTA | `cta-band` / `band svc-final` | page close |
+
+**A bare `<h3>` inside a `.wrap` must carry `class="svc-sub"`.** Without it, its
+top margin collapses against a preceding `.grid` or `.svc-mod` block and the
+heading renders flush against the element above. This shipped as a visible
+defect on `/services/seo/` and was caught in review.
+
+**Every inline `<svg role="img">` needs an `aria-label`** describing what it
+shows, with the target keyword where it reads naturally. A mockup with no
+accessible name announces nothing to a screen reader and gives a crawler no
+context.
 
 **Diagrams are hand-authored inline `<svg>`** inside a `browser-frame` (`bf-bar`,
 `bf-dot`, `bf-url`, `bf-screen`) for UI mockups. There are 327 inline SVGs on the

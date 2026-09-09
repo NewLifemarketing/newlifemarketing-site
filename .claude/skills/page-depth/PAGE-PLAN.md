@@ -30,15 +30,37 @@ Full 20-section skeleton. 8–15 videos each.
   the 5 most expensive mistakes
 - **Current:** 2,564 words · h2 2/14 · h3 0/25 · 0 images
 
-### 2. `/services/seo/` — *declared: "seo services"* — **FIRST TO BUILD**
-- **Title:** SEO Services in Barrie & Simcoe County | NewLife Marketing *(keep)*
+### 2. `/services/seo/` — *declared: "seo services"* — ✅ **BUILT** (branch `seo-page-rewrite`)
+- **Title:** SEO Services That Get You Found | NewLife Marketing *(de-localized)*
 - **§10 deep dive:** Winning the map pack, then compounding it — Google Business
-  Profile, local pack ranking factors, review velocity
-- **Counts:** 5 pillars · 6 benefits · 5 process steps · 5 mistakes
-- **Videos (12):** what SEO actually is · technical vs content vs local · the 5
-  pillars · who it suits and who it does not · 6 benefits · each of the 5 process
-  steps · the map pack explained · how we report rankings honestly
-- **Current:** 2,505 words · h2 2/15 · h3 0/27 · 1 image, **0 alts with keyword**
+  Profile, local pack ranking factors, location-page support
+- **Counts:** **6 pillars** *(Rudy's correction — content SEO is its own pillar)* ·
+  6 benefits · 5 process stages · 5 mistakes
+- **Was:** 2,505 words · h2 2/15 · h3 0/27 · 1 image, 0 alts with keyword
+- **Now:** ~11,350 words · h2 8/20 · h3 4/76 · 1 image, 1 alt with keyword ·
+  exact-phrase body count 4 → 25 · BreadcrumbList added · FAQ 9 → 14
+
+**Video embed plan — 12 slots, all text-only until filming.** No placeholder
+frames on the live page; these are the production brief and the insertion points.
+
+| # | Section (anchor) | Video |
+|---|---|---|
+| 1 | `#problem` | What it costs to be invisible in search |
+| 2 | `#what-it-is` | What SEO actually is, in plain English |
+| 3 | `#pillars` | The 6 pillars overview |
+| 4 | `#pillars` | Technical vs content vs local — how they differ |
+| 5 | `#who-for` | Who it suits, and who it does not |
+| 6 | `#benefits` | Why your cost per customer falls (benefit 2) |
+| 7 | `#process` | The 90-day process, one video covering all stages |
+| 8 | `#map-pack` | The map pack explained |
+| 9 | `#measurement` | **Why your impressions went up and your clicks did not** ← highest value, no competitor has it |
+| 10 | `#measurement` | How we report rankings honestly / what a real report looks like |
+| 11 | `#mistakes` | The 5 most common mistakes |
+| 12 | `#tools` | The keyword research process, on screen |
+
+Per the questionnaire: six short pillar videos beat one long one, one process
+video beats five, and the benefits section works better as text. When each video
+lands it needs a `VideoObject` block alongside the embed.
 
 ### 3. `/services/meta-ads/` — *declared: "meta ads agency"*
 - **Title:** Meta Ads Agency in Barrie & Simcoe County | NewLife Marketing *(keep)*
@@ -132,6 +154,10 @@ Part 7.** 1–2 videos each initially (a shared explainer plus, ideally, one loc
 clip). A city photo is **required**.
 
 Keyword format: `digital marketing agency {City}` — all **TBD**, confirm per city.
+
+**These are the only pages that stay localized.** Per SKILL.md Part 3B, the
+homepage, service pages and industry pages no longer claim a service area. All
+local intent is concentrated here, where it belongs.
 
 | # | Page | Local substance available |
 |---|---|---|
