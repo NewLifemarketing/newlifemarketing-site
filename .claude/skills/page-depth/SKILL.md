@@ -168,10 +168,34 @@ Rules for every non-location page:
 Location pages are the exception and stay fully localized — that is the entire
 point of having them, and it is where the local keywords are supposed to live.
 
-**Still outstanding site-wide:** `partials/footer.html` says "Serving Barrie,
-Simcoe County & Ontario" on all 173 pages, and the shared `LocalBusiness`
-description says "agency in Barrie and Simcoe County". Both need the same
-treatment in a separate, site-wide pass.
+### Site-wide pass — done 9 Sep 2026
+
+Applied across 227 files plus both chrome partials:
+
+| Surface | Was | Now |
+|---|---|---|
+| Footer + nav contact | "Serving Barrie, Simcoe County & Ontario" | "Working with clients worldwide" |
+| Nav "Our Office" | "Barrie, ON — and the markets we cover across Ontario" | "Barrie, ON — working with clients worldwide" |
+| Nav careers | "real client work, Barrie & Simcoe County" | "real client work, in-house in Barrie" |
+| Trust band | "Serving **Simcoe County** since 2022" | "Delivering results **since 2022**" |
+| `LocalBusiness` description | "agency in Barrie and Simcoe County" | "based in Barrie, Ontario, working with clients worldwide" |
+| Shared `areaServed` | `["Barrie","Simcoe County","Ontario"]` | `"Worldwide"` |
+
+Untouched on purpose: the postal address, "Founded in Barrie, Ontario", the
+Barrie page's own "Serving Barrie, Ontario" kicker, and the 45 city-scoped
+`areaServed: {"@type":"City"}` blocks on location pages.
+
+### ⚠️ Do not run `sync-chrome.mjs --write` to propagate chrome right now
+
+`partials/header.html` is **stale relative to the pages**. Commit `b3972fcb`
+edited 226 pages directly without updating the partial, so the partial has no
+"Service Areas" nav link and an older Clients menu, while the pages have both.
+A sync would delete live nav from 226 pages.
+
+The de-localization pass therefore edited pages and partials in parallel with
+identical strings. Chrome drift stayed at exactly 173 pages — unchanged, neither
+fixed nor worsened. **Reconciling the partial against the current pages is a
+separate job and should be done deliberately, from a page as the source.**
 
 ---
 
