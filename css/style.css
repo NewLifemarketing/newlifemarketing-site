@@ -1917,3 +1917,41 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   .guide-page .wrap { padding-left: 20rem; }
 }
 @media (max-width: 1280px) { .abm-rail { display: none; } }
+
+/* ---- Spec rows: dense label/value blocks --------------------------------
+   Replaces stacked cards for reference-style content. Cards give every row a
+   border, padding and shadow, which on a page with six campaign types turns
+   into a very long, very bulky scroll. This keeps the same information in a
+   tight two-column rhythm with hairline rules. */
+.spec-rows { margin: 0; border-top: 1px solid var(--line); }
+.spec-row {
+  display: grid; grid-template-columns: 13.5rem 1fr; gap: 0 2rem;
+  padding: 1rem 0; border-bottom: 1px solid var(--line); align-items: start;
+}
+.spec-row dt {
+  font-family: var(--font-display); font-style: italic; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.055em; font-size: 0.68rem;
+  color: var(--blue); margin: 0.15rem 0 0;
+}
+.spec-row dd { margin: 0; font-size: 0.93rem; line-height: 1.6; color: var(--muted); }
+.spec-row dd strong { color: inherit; }
+.spec-rows.tight .spec-row { padding: 0.75rem 0; }
+
+/* Compact card grid for overview tiles — short, equal, scannable. */
+.mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.85rem; }
+.mini-card {
+  border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.1rem;
+  background: var(--card); display: flex; flex-direction: column; gap: 0.3rem;
+}
+.mini-card .mc-n {
+  font-family: var(--font-display); font-style: italic; font-weight: 800;
+  font-size: 0.68rem; color: var(--blue); letter-spacing: 0.08em;
+}
+.mini-card h3 { margin: 0; font-size: 1rem; line-height: 1.25; }
+.mini-card p { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.45; }
+
+@media (max-width: 860px) {
+  .spec-row { grid-template-columns: 1fr; gap: 0.3rem; padding: 0.9rem 0; }
+  .mini-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) { .mini-grid { grid-template-columns: 1fr; } }
