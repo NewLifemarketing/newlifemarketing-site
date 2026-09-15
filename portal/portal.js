@@ -73,6 +73,11 @@
   }
   function money(n) { return "$" + compact(n); }
   function arrow(dir) { return dir === "up" ? "▲ " : dir === "down" ? "▼ " : ""; }
+  /* Payloads are written by hand, so delta text often already carries its own
+     arrow. Strip a leading one rather than rendering "▲ ▲ 3.1". */
+  function deltaText(dir, text) {
+    return arrow(dir) + String(text || "").replace(/^\s*[▲▼↑↓▴▾]\s*/, "");
+  }
 
   /* ---------------- renderers ---------------- */
   function renderKpis(host, kpis) {
@@ -83,21 +88,38 @@
       var d = k.delta;
       var delta = d && (d.text || d.dir)
         ? '<div class="k-delta ' + (d.dir === "down" ? "down" : d.dir === "up" ? "up" : "") + '">' +
-          esc(arrow(d.dir) + (d.text || "")) + '</div>'
+          esc(deltaText(d.dir, d.text)) + '</div>'
         : "";
       return '<div class="pl-kpi"><div class="k-label">' + esc(k.label) + '</div>' +
              '<div class="k-value">' + esc(k.value) + '</div>' + delta + '</div>';
     }).join("");
   }
 
-  var PALETTE = { blue: "#2196F3", blue2: "#4DABF5", green: "#33C481", grey: "#5c5c70" };
-  var CYCLE = ["#2196F3", "#4DABF5", "#33C481", "#5c5c70"];
-  var GRID = "rgba(42,42,56,0.9)", TICK = "#7E7E8F";
+  /* Chart colours are read from the CSS custom properties so the charts always
+     follow the stylesheet's theme instead of carrying their own hard-coded
+     palette (which is how they stayed dark-theme after the page went light). */
+  function cssVar(name, fallback) {
+    try {
+      var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return v || fallback;
+    } catch (e) { return fallback; }
+  }
+  var PALETTE = {
+    blue:  cssVar("--blue", "#1573D6"),
+    blue2: cssVar("--blue-hot", "#0D57A8"),
+    green: cssVar("--green", "#147A4D"),
+    grey:  cssVar("--dim", "#78829A")
+  };
+  var CYCLE = [PALETTE.blue, PALETTE.blue2, PALETTE.green, PALETTE.grey];
+  var GRID = cssVar("--line", "#DFE4EC");
+  var TICK = cssVar("--dim", "#78829A");
+  var LEGEND = cssVar("--muted", "#4A5468");
+  var SURFACE = cssVar("--surface", "#FFFFFF");
 
   function baseOpts(extra) {
     return Object.assign({
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: "#B7B7C4", boxWidth: 12, font: { size: 11 } } } },
+      plugins: { legend: { labels: { color: LEGEND, boxWidth: 12, font: { size: 11 } } } },
       scales: {
         x: { grid: { color: GRID }, ticks: { color: TICK, font: { size: 11 } } },
         y: { grid: { color: GRID }, ticks: { color: TICK, font: { size: 11 } }, beginAtZero: true }
@@ -106,7 +128,7 @@
   }
   var DONUT_OPTS = {
     responsive: true, maintainAspectRatio: false, cutout: "62%",
-    plugins: { legend: { position: "bottom", labels: { color: "#B7B7C4", boxWidth: 12, font: { size: 11 } } } }
+    plugins: { legend: { position: "bottom", labels: { color: LEGEND, boxWidth: 12, font: { size: 11 } } } }
   };
 
   function renderCharts(host, specs, key) {
@@ -136,7 +158,7 @@
         if (type === "doughnut") {
           return { data: ds.data || [], label: ds.label || "",
                    backgroundColor: (ds.data || []).map(function (_, si) { return CYCLE[si % CYCLE.length]; }),
-                   borderColor: "#16161F", borderWidth: 2 };
+                   borderColor: SURFACE, borderWidth: 2 };
         }
         if (type === "bar") {
           return { data: ds.data || [], label: ds.label || "",
@@ -147,8 +169,37 @@
                  backgroundColor: ds.fill ? hexToRgba(col, 0.14) : undefined,
                  fill: !!ds.fill, tension: 0.35, borderWidth: 2 };
       });
-      var opts = type === "doughnut" ? DONUT_OPTS
-        : baseOpts(type === "bar" && datasets.length === 1 ? { plugins: { legend: { display: false } } } : {});
+      /* Reports routinely plot spend (thousands) against conversions (tens) on the
+         same chart. On one shared axis the small series is flattened onto the
+         baseline and tells the client nothing, so give it its own right-hand
+         axis whenever the magnitudes are an order apart. */
+      var dualAxis = false;
+      if (type !== "doughnut" && datasets.length === 2) {
+        var mx = datasets.map(function (d) {
+          return (d.data || []).reduce(function (a, b) {
+            var n = Number(b); return isFinite(n) && n > a ? n : a;
+          }, 0);
+        });
+        var hi = Math.max(mx[0], mx[1]), lo = Math.min(mx[0], mx[1]);
+        if (lo > 0 && hi / lo >= 8) {
+          dualAxis = true;
+          var smallIdx = mx[0] < mx[1] ? 0 : 1;
+          datasets[smallIdx].yAxisID = "y1";
+          datasets[1 - smallIdx].yAxisID = "y";
+        }
+      }
+      var extra = {};
+      if (type === "bar" && datasets.length === 1) extra.plugins = { legend: { display: false } };
+      var opts = type === "doughnut" ? DONUT_OPTS : baseOpts(extra);
+      if (dualAxis) {
+        opts.scales = Object.assign({}, opts.scales, {
+          y1: {
+            position: "right", beginAtZero: true,
+            grid: { drawOnChartArea: false },
+            ticks: { color: TICK, font: { size: 11 } }
+          }
+        });
+      }
       charts[id] = new Chart(el, { type: type, data: { labels: spec.labels || [], datasets: datasets }, options: opts });
     });
   }
@@ -158,10 +209,110 @@
     return "rgba(" + parseInt(m[1], 16) + "," + parseInt(m[2], 16) + "," + parseInt(m[3], 16) + "," + a + ")";
   }
 
+  /* ---------------- report screenshots ----------------
+     The two-weekly reports arrive as images in each client's Drive folder and are
+     mirrored into the private `client-files` storage bucket under
+       <client_id>/reports/<period_start>_<period_end>/<platform>/<file>
+     Storage is private, so every image is fetched through a short-lived signed
+     URL created for the logged-in client — never a public link. */
+  var SHOT_TTL = 3600; /* seconds */
+
+  function renderShots(host, shots, view) {
+    if (!host) return;
+    host.innerHTML = "";
+    if (!shots || !shots.length) return;
+
+    var panel = document.createElement("div");
+    panel.className = "pl-panel";
+    panel.innerHTML = '<div class="pl-panel-head"><h3>Report screenshots</h3>' +
+                      '<span class="pl-dim" style="font-size:0.78rem">' + shots.length +
+                      (shots.length === 1 ? ' image' : ' images') + '</span></div>' +
+                      '<div class="pl-shots"></div>';
+    var grid = panel.querySelector(".pl-shots");
+
+    shots.forEach(function (sh, i) {
+      var fig = document.createElement("figure");
+      fig.className = "pl-shot";
+      fig.innerHTML =
+        '<button class="pl-shot-btn" type="button" aria-label="Open full size">' +
+          '<span class="pl-shot-ph">Loading\u2026</span>' +
+        '</button>' +
+        '<figcaption>' + esc(sh.title || sh.caption || ("Screenshot " + (i + 1))) +
+        (sh.caption && sh.title ? '<span class="pl-shot-cap">' + esc(sh.caption) + '</span>' : '') +
+        '</figcaption>';
+      grid.appendChild(fig);
+
+      signedUrl(sh).then(function (url) {
+        var btn = fig.querySelector(".pl-shot-btn");
+        if (!url) { btn.innerHTML = '<span class="pl-shot-ph err">Image unavailable</span>'; return; }
+        /* The <img> must be IN the document before src is set: a detached image
+           with loading="lazy" has no viewport to be measured against, so Chrome
+           never starts the fetch and the tile sits on "Loading..." forever.
+           Append first, hide with a class, reveal on load. */
+        var img = document.createElement("img");
+        img.alt = sh.title || sh.caption || "Report screenshot";
+        img.loading = "lazy";
+        img.className = "is-loading";
+        img.addEventListener("load", function () {
+          img.classList.remove("is-loading");
+          var ph = btn.querySelector(".pl-shot-ph");
+          if (ph) ph.remove();
+        });
+        img.addEventListener("error", function () {
+          btn.innerHTML = '<span class="pl-shot-ph err">Image unavailable</span>';
+        });
+        btn.appendChild(img);
+        img.src = url;
+        btn.addEventListener("click", function () {
+          if (img.src && !img.classList.contains("is-loading")) openLightbox(img.src, img.alt);
+        });
+      });
+    });
+
+    host.appendChild(panel);
+  }
+
+  /* A screenshot is addressed either by a storage `path` (preferred) or by an
+     absolute `url` for anything already publicly hosted. */
+  function signedUrl(sh) {
+    if (sh.url) return Promise.resolve(sh.url);
+    if (!sh.path || !ctx || !ctx.sb || !ctx.sb.storage) return Promise.resolve(null);
+    try {
+      return ctx.sb.storage.from("client-files").createSignedUrl(sh.path, SHOT_TTL)
+        .then(function (r) { return (r && r.data && r.data.signedUrl) || null; })
+        .catch(function () { return null; });
+    } catch (e) { return Promise.resolve(null); }
+  }
+
+  var lightbox = null;
+  function openLightbox(src, alt) {
+    if (!lightbox) {
+      lightbox = document.createElement("div");
+      lightbox.className = "pl-lightbox";
+      lightbox.innerHTML = '<button class="pl-lb-close" type="button" aria-label="Close">\u00d7</button><img alt="">';
+      lightbox.addEventListener("click", function (ev) {
+        if (ev.target === lightbox || ev.target.classList.contains("pl-lb-close")) closeLightbox();
+      });
+      document.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape") closeLightbox();
+      });
+      document.body.appendChild(lightbox);
+    }
+    var img = lightbox.querySelector("img");
+    img.src = src; img.alt = alt || "";
+    lightbox.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeLightbox() {
+    if (!lightbox) return;
+    lightbox.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
   function cell(val, col) {
     if (val && typeof val === "object") {
       var cls = val.dir === "up" ? "up" : val.dir === "down" ? "down" : "";
-      return '<span class="pl-delta ' + cls + '">' + esc(arrow(val.dir) + (val.text || "")) + "</span>";
+      return '<span class="pl-delta ' + cls + '">' + esc(deltaText(val.dir, val.text)) + "</span>";
     }
     return esc(val);
   }
@@ -297,6 +448,7 @@
     var kpiHost = document.querySelector('[data-kpis="' + view + '"]');
     var chartHost = document.querySelector('[data-charts="' + view + '"]');
     var tableHost = document.querySelector('[data-tables="' + view + '"]');
+    var shotHost  = document.querySelector('[data-shots="' + view + '"]');
     var emptyHost = document.querySelector('[data-empty="' + view + '"]');
     if (emptyHost) { emptyHost.hidden = true; emptyHost.innerHTML = ""; }
     renderMeta(document.getElementById("pl-meta-" + view), row);
@@ -304,6 +456,7 @@
       renderKpis(kpiHost, null);
       if (chartHost) chartHost.innerHTML = "";
       if (tableHost) tableHost.innerHTML = "";
+      if (shotHost) shotHost.innerHTML = "";
       emptyState(view, cfg.title);
       return;
     }
@@ -311,6 +464,7 @@
     renderKpis(kpiHost, pl.kpis);
     renderCharts(chartHost, pl.charts, view);
     renderTables(tableHost, pl.tables);
+    renderShots(shotHost, pl.screenshots, view);
   }
 
   function renderAll() {
@@ -334,10 +488,29 @@
     });
   }
 
-  /* ---------------- navigation ---------------- */
-  function showView(view) {
+  /* ---------------- navigation ----------------
+     Views are addressable by URL hash (#meta, #seo, ...) so a refresh keeps the
+     client on the page they were reading, the browser Back button works, and a
+     link to one channel can be sent to them directly. */
+  var hashLock = false;
+  function viewFromHash() {
+    var h = (location.hash || "").replace(/^#/, "");
+    return VIEWS[h] ? h : "";
+  }
+  function showView(view, fromHash) {
     if (!VIEWS[view]) view = "overview";
+    /* A client whose plan does not include a channel must not be able to land on
+       that channel's view by typing or keeping its hash. */
+    if (VIEWS[view].section && !hasSection(VIEWS[view].section)) view = "overview";
     currentView = view;
+    if (!fromHash) {
+      hashLock = true;
+      try {
+        if (history && history.replaceState) history.replaceState(null, "", "#" + view);
+        else location.hash = view;
+      } catch (e) { location.hash = view; }
+      hashLock = false;
+    }
     qsa(".pl-nav-item[data-view]").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-view") === view);
     });
@@ -351,6 +524,11 @@
   }
   qsa(".pl-nav-item[data-view]").forEach(function (b) {
     b.addEventListener("click", function () { showView(b.getAttribute("data-view")); });
+  });
+  window.addEventListener("hashchange", function () {
+    if (hashLock) return;
+    var v = viewFromHash();
+    if (v && v !== currentView) showView(v, true);
   });
   qsa("[data-open-nav]").forEach(function (b) {
     b.addEventListener("click", function () { app.classList.add("nav-open"); });
@@ -409,9 +587,10 @@
   document.addEventListener("portal:ready", function (e) {
     ctx = e.detail;
     applySections();
-    if (!ctx.clientId) { showView("overview"); renderAll(); return; }
+    var start = viewFromHash() || "overview";
+    if (!ctx.clientId) { showView(start); renderAll(); return; }
     loadPeriods().then(function (list) {
-      showView("overview");
+      showView(start);
       return loadPeriod(list[0] || null);
     });
   });
