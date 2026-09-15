@@ -1985,6 +1985,9 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 .spec-row dd { margin: 0; font-size: 0.93rem; line-height: 1.6; color: var(--muted); }
 .spec-row dd strong { color: inherit; }
 .spec-rows.tight .spec-row { padding: 0.75rem 0; }
+/* A spec row is a two-column layout. Dropped inside a half-width module
+   column its value side collapses to a ~145px ribbon, so stack it there. */
+.svc-mod-copy .spec-row { grid-template-columns: 1fr; gap: 0.3rem; }
 
 /* Compact card grid for overview tiles — short, equal, scannable. */
 .mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.85rem; }
