@@ -1089,12 +1089,34 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   position: absolute; inset: 0;
   width: 100%; height: 100%; object-fit: cover;
 }
-.loop-thumb.has-media .play { position: relative; z-index: 2; opacity: 0.85; }
+/* A text-shadow alone does not hold up over a bright video frame, and labels
+   stacked in the middle of the tile sit on the subject's face. Labels go to the
+   bottom over a gradient scrim; the play button stays centred. */
+.loop-thumb.has-media { justify-content: flex-end; padding-bottom: 0.95rem; }
+.loop-thumb.has-media::after {
+  content: ""; position: absolute; inset: auto 0 0 0; height: 58%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.38) 45%, transparent);
+  z-index: 1; pointer-events: none;
+}
+.loop-thumb.has-media .play {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 3; opacity: 0.9;
+}
+.loop-thumb.has-media:hover .play { transform: translate(-50%, -50%) scale(1.12); }
 .loop-thumb.has-media .lt-label,
 .loop-thumb.has-media .lt-client {
-  position: relative; z-index: 2;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+  position: relative; z-index: 3;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.75);
 }
+.loop-thumb.has-media .lt-label { color: #FFFFFF; }
+.loop-thumb.has-media .lt-client { color: rgba(255, 255, 255, 0.82); }
+/* tiles that deliberately hide their labels keep a clean, unscrimmed frame */
+.home-adwall .loop-thumb.has-media::after,
+.pf-card .loop-thumb.has-media::after,
+#vidgrid .loop-thumb.has-media::after { display: none; }
+.home-adwall .loop-thumb.has-media,
+.pf-card .loop-thumb.has-media,
+#vidgrid .loop-thumb.has-media { padding-bottom: 1rem; }
 .hero-video {
   position: absolute; inset: 0;
   width: 100%; height: 100%; object-fit: cover;
