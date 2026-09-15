@@ -138,10 +138,13 @@
     if (!host) return;
     host.innerHTML = "";
     if (!specs || !specs.length) return;
-    var two = specs.length >= 2;
+    /* Channel pages carry real depth now (campaign mix, queries, rankings,
+       reviews), so the old hard cap of two charts was throwing data away.
+       A single chart runs full width; anything more pairs into rows of two. */
+    specs = specs.slice(0, MAX_CHARTS);
     var wrap = document.createElement("div");
-    wrap.className = two ? "pl-grid-2" : "";
-    specs.slice(0, 2).forEach(function (spec, i) {
+    wrap.className = specs.length > 1 ? "pl-chart-grid" : "";
+    specs.forEach(function (spec, i) {
       var id = "chart-" + key + "-" + i;
       var panel = document.createElement("div");
       panel.className = "pl-panel";
@@ -151,7 +154,7 @@
     });
     host.appendChild(wrap);
     if (typeof Chart === "undefined") return;
-    specs.slice(0, 2).forEach(function (spec, i) {
+    specs.forEach(function (spec, i) {
       var id = "chart-" + key + "-" + i;
       var el = document.getElementById(id);
       if (!el) return;
@@ -203,6 +206,11 @@
           }
         });
       }
+      /* Re-selecting campaigns re-renders this host, so an instance may already
+         be registered under this id. Chart.js keeps its own registry of live
+         charts; dropping our reference without destroying leaks the old one
+         (and its resize/animation listeners) for the life of the session. */
+      if (charts[id]) { try { charts[id].destroy(); } catch (e) {} }
       charts[id] = new Chart(el, { type: type, data: { labels: spec.labels || [], datasets: datasets }, options: opts });
     });
   }
@@ -210,6 +218,215 @@
     var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     if (!m) return hex;
     return "rgba(" + parseInt(m[1], 16) + "," + parseInt(m[2], 16) + "," + parseInt(m[3], 16) + "," + a + ")";
+  }
+
+  /* ---------------- breakdown: per-campaign / per-account reporting ----------
+     A channel total answers "how did Meta do". It does not answer "which of my
+     four campaigns did that". `payload.breakdown` carries the individual
+     campaigns (or social accounts, or locations) and the portal recombines them
+     for whatever the client selects — one, several, or all.
+
+     Aggregation is declared, not guessed, because the arithmetic differs per
+     metric. Summing spend is right; summing ROAS is nonsense. So each metric
+     says how it combines:
+       sum    — add the selected values
+       avg    — mean across the selected entities
+       ratio  — Σnumerator / Σdenominator, which is the ONLY correct way to
+                recompute a rate for a subset (averaging per-campaign ROAS
+                weights a $50 campaign the same as a $5,000 one)
+       first  — not combinable; shown only when exactly one entity is selected
+  */
+  var breakdownSel = {};   /* view -> array of selected entity ids, or null = all */
+
+  function fmtMetric(v, format) {
+    if (v === null || v === undefined || !isFinite(v)) return "—";
+    switch (format) {
+      case "money":   return money(v);
+      case "money2":  return "$" + v.toFixed(2);
+      case "int":     return compact(Math.round(v));
+      case "decimal": return (Math.round(v * 10) / 10).toLocaleString();
+      case "percent": return (Math.round(v * 10) / 10) + "%";
+      case "x":       return (Math.round(v * 10) / 10) + "x";
+      case "position":return (Math.round(v * 10) / 10);
+      default:        return compact(v);
+    }
+  }
+
+  function aggregate(def, items) {
+    if (!items.length) return null;
+    var vals = items.map(function (it) { return num((it.values || {})[def.key]); });
+    switch (def.agg) {
+      case "ratio": {
+        var n = 0, d = 0;
+        items.forEach(function (it) {
+          n += num((it.values || {})[def.num]);
+          d += num((it.values || {})[def.den]);
+        });
+        return d ? n / d : null;
+      }
+      case "avg":
+        /* Unweighted. Correct only when the entities are comparable in size. */
+        return vals.reduce(function (a, b) { return a + b; }, 0) / items.length;
+      case "wavg": {
+        /* Weighted mean — what an average position or average rate actually
+           needs. A 6-keyword group must not move the average as much as a
+           34-keyword one. */
+        var wn = 0, wd = 0;
+        items.forEach(function (it) {
+          var w = num((it.values || {})[def.weight]);
+          wn += num((it.values || {})[def.key]) * w;
+          wd += w;
+        });
+        return wd ? wn / wd : null;
+      }
+      case "first":
+        return items.length === 1 ? vals[0] : null;
+      case "max": return Math.max.apply(null, vals);
+      case "min": return Math.min.apply(null, vals);
+      default:
+        return vals.reduce(function (a, b) { return a + b; }, 0);
+    }
+  }
+
+  function selectedItems(bd, view) {
+    var sel = breakdownSel[view];
+    var items = bd.items || [];
+    if (!sel || !sel.length) return items.slice();
+    var hit = items.filter(function (it) { return sel.indexOf(it.id) !== -1; });
+    /* Campaigns start and stop between periods, so a selection carried over
+       from the last period can match nothing in this one. Falling back to all
+       beats showing a page of em-dashes. */
+    if (!hit.length) { breakdownSel[view] = null; return items.slice(); }
+    return hit;
+  }
+
+  function renderBreakdown(host, bd, view) {
+    if (!host) return;
+    host.innerHTML = "";
+    if (!bd || !(bd.items || []).length) return;
+
+    var defs = (bd.metrics || []).filter(Boolean);
+    var noun = bd.label || "Items";
+    var all = bd.items;
+    var sel = breakdownSel[view];
+    var isAll = !sel || !sel.length || sel.length === all.length;
+
+    var panel = document.createElement("div");
+    panel.className = "pl-panel pl-bd";
+    panel.innerHTML =
+      '<div class="pl-panel-head"><h3>' + esc(noun) + "</h3>" +
+      '<span class="pl-dim pl-bd-count"></span></div>' +
+      '<p class="pl-muted pl-bd-hint">Select one, several, or all to see how they combine.</p>' +
+      '<div class="pl-chips" role="group" aria-label="Select ' + esc(noun.toLowerCase()) + '"></div>' +
+      '<div class="pl-bd-out"></div>';
+    var chipHost = panel.querySelector(".pl-chips");
+    var out = panel.querySelector(".pl-bd-out");
+    var countEl = panel.querySelector(".pl-bd-count");
+
+    function chip(id, label, note, active) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "pl-chip" + (active ? " on" : "");
+      b.setAttribute("aria-pressed", active ? "true" : "false");
+      b.innerHTML = '<span class="c-nm">' + esc(label) + "</span>" +
+                    (note ? '<span class="c-note">' + esc(note) + "</span>" : "");
+      b.addEventListener("click", function () { toggle(id); });
+      return b;
+    }
+
+    function toggle(id) {
+      if (id === "__all") { breakdownSel[view] = null; return paint(); }
+      var cur = breakdownSel[view];
+      if (!cur || !cur.length || cur.length === all.length) {
+        /* Coming from "All", clicking one entity means "just this one" — that is
+           what people expect from a filter, rather than de-selecting one of N. */
+        breakdownSel[view] = [id];
+      } else {
+        var i = cur.indexOf(id);
+        if (i === -1) cur.push(id);
+        else cur.splice(i, 1);
+        if (!cur.length) breakdownSel[view] = null;   /* never leave it empty */
+      }
+      paint();
+    }
+
+    function paint() {
+      var s = breakdownSel[view];
+      var on = !s || !s.length || s.length === all.length;
+      var items = selectedItems(bd, view);
+
+      chipHost.innerHTML = "";
+      chipHost.appendChild(chip("__all", "All " + noun.toLowerCase(), all.length + "", on));
+      all.forEach(function (it) {
+        chipHost.appendChild(chip(it.id, it.name, it.note || "", !on && s.indexOf(it.id) !== -1));
+      });
+
+      countEl.textContent = on
+        ? "All " + all.length + " selected"
+        : items.length + " of " + all.length + " selected";
+
+      out.innerHTML = "";
+
+      /* combined figures for the selection */
+      if (defs.length) {
+        var kpiRow = document.createElement("div");
+        kpiRow.className = "pl-kpis pl-bd-kpis";
+        kpiRow.innerHTML = defs.map(function (d) {
+          var v = aggregate(d, items);
+          var note = (d.agg === "ratio" || d.agg === "avg") && items.length > 1
+            ? '<div class="k-delta">combined</div>' : "";
+          return '<div class="pl-kpi"><div class="k-label">' + esc(d.label) + "</div>" +
+                 '<div class="k-value">' + esc(fmtMetric(v, d.format)) + "</div>" + note + "</div>";
+        }).join("");
+        out.appendChild(kpiRow);
+      }
+
+      /* combined time series */
+      var chartDefs = defs.filter(function (d) {
+        return d.chart && all.some(function (it) { return it.series && it.series[d.key]; });
+      });
+      if (chartDefs.length && (bd.labels || []).length) {
+        var datasets = chartDefs.map(function (d, i) {
+          var sums = bd.labels.map(function (_, ix) {
+            var t = 0;
+            items.forEach(function (it) {
+              var arr = (it.series || {})[d.key];
+              if (arr && isFinite(Number(arr[ix]))) t += Number(arr[ix]);
+            });
+            return t;
+          });
+          return { label: d.label, data: sums, color: i === 0 ? "blue" : "green", fill: i === 0 };
+        });
+        var wrap = document.createElement("div");
+        out.appendChild(wrap);
+        renderCharts(wrap, [{
+          title: (on ? "All " + noun.toLowerCase() : items.length + " selected") + " over time",
+          type: "line", labels: bd.labels, datasets: datasets
+        }], view + "-bd");
+      }
+
+      /* side-by-side comparison — only meaningful with more than one */
+      if (items.length > 1 && defs.length) {
+        var cols = [{ key: "__name", label: noun.replace(/s$/, "") }].concat(
+          defs.map(function (d) { return { key: d.key, label: d.label, align: "num" }; }));
+        var rows = items.map(function (it) {
+          var r = { __name: it.name };
+          defs.forEach(function (d) { r[d.key] = fmtMetric(aggregate(d, [it]), d.format); });
+          return r;
+        });
+        var tw = document.createElement("div");
+        out.appendChild(tw);
+        renderTables(tw, [{ title: "Side by side", columns: cols, rows: rows }]);
+      }
+    }
+
+    /* Attach BEFORE painting. Chart.js sizes a responsive chart from its
+       container at construction time, and a container that is still in a
+       detached subtree measures zero — the chart then renders blank until some
+       later resize happens to rescue it. Same trap as an <img> that is given a
+       src before it is in the document. */
+    host.appendChild(panel);
+    paint();
   }
 
   /* A channel's Overview band used to be three numbers in a very wide white
@@ -264,7 +481,9 @@
        <client_id>/reports/<period_start>_<period_end>/<platform>/<file>
      Storage is private, so every image is fetched through a short-lived signed
      URL created for the logged-in client — never a public link. */
-  var SHOT_TTL = 3600; /* seconds */
+  var SHOT_TTL = 3600;   /* seconds */
+  var MAX_CHARTS = 6;    /* per view — enough for a deep channel report */
+  var MAX_TABLES = 6;
 
   function renderShots(host, shots, view) {
     if (!host) return;
@@ -369,7 +588,7 @@
     if (!host) return;
     host.innerHTML = "";
     if (!tables || !tables.length) return;
-    tables.slice(0, 3).forEach(function (t) {
+    tables.slice(0, MAX_TABLES).forEach(function (t) {
       var cols = t.columns || [];
       var head = cols.map(function (c) {
         return '<th' + (c.align === "num" ? ' class="num"' : "") + ">" + esc(c.label) + "</th>";
@@ -499,6 +718,7 @@
     var chartHost = document.querySelector('[data-charts="' + view + '"]');
     var tableHost = document.querySelector('[data-tables="' + view + '"]');
     var shotHost  = document.querySelector('[data-shots="' + view + '"]');
+    var bdHost    = document.querySelector('[data-breakdown="' + view + '"]');
     var emptyHost = document.querySelector('[data-empty="' + view + '"]');
     if (emptyHost) { emptyHost.hidden = true; emptyHost.innerHTML = ""; }
     renderMeta(document.getElementById("pl-meta-" + view), row);
@@ -507,12 +727,14 @@
       if (chartHost) chartHost.innerHTML = "";
       if (tableHost) tableHost.innerHTML = "";
       if (shotHost) shotHost.innerHTML = "";
+      if (bdHost) bdHost.innerHTML = "";
       emptyState(view, cfg.title);
       return;
     }
     var pl = row.payload || {};
     renderKpis(kpiHost, pl.kpis);
     renderCharts(chartHost, pl.charts, view);
+    renderBreakdown(bdHost, pl.breakdown, view);
     renderTables(tableHost, pl.tables);
     renderShots(shotHost, pl.screenshots, view);
   }

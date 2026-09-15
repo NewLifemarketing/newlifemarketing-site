@@ -267,6 +267,39 @@ a:hover { color: var(--blue-hot); }
 .pl-chart-wrap.short { height: 220px; }
 .pl-grid-2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 1.5rem; }
 @media (max-width: 900px) { .pl-grid-2 { grid-template-columns: 1fr; } }
+/* Two charts per row; a lone trailing chart spans the full width rather than
+   sitting in a half-width column with dead space beside it. */
+.pl-chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.pl-chart-grid > *:last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (max-width: 900px) { .pl-chart-grid { grid-template-columns: 1fr; } }
+
+/* ---------------- breakdown selector ---------------- */
+.pl-bd-hint { margin: -0.4rem 0 0.9rem; font-size: 0.85rem; }
+.pl-bd-count { font-size: 0.78rem; font-weight: 600; }
+.pl-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
+.pl-chip {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem;
+  font: inherit; font-size: 0.85rem; font-weight: 600; text-align: left;
+  padding: 0.5rem 0.9rem; cursor: pointer;
+  background: var(--surface); color: var(--muted);
+  border: 1px solid var(--line-strong); border-radius: 10px;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.pl-chip:hover { border-color: var(--blue); color: var(--white); }
+.pl-chip.on {
+  background: var(--blue); border-color: var(--blue); color: #fff;
+  box-shadow: 0 1px 3px rgba(21,115,214,0.30);
+}
+.pl-chip .c-note { font-size: 0.7rem; font-weight: 600; opacity: 0.72; letter-spacing: 0.02em; }
+.pl-bd .pl-bd-kpis { margin-bottom: 1.25rem; }
+/* Inside the breakdown panel the derived blocks are already framed by the panel
+   itself, so their own panel chrome would be a box in a box. */
+.pl-bd-out .pl-panel {
+  border: 0; box-shadow: none; padding: 0; margin: 0 0 1.9rem; background: none;
+}
+.pl-bd-out .pl-panel:last-child { margin-bottom: 0; }
+.pl-bd-out .pl-kpi { background: var(--ink); box-shadow: none; }
+.pl-bd-out .k-delta { background: none; padding: 0; color: var(--dim); font-weight: 600; }
 
 /* Tables */
 .pl-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
