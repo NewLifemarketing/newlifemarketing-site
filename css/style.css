@@ -708,7 +708,11 @@ a.card:hover { transform: translateY(-4px); border-color: var(--blue); }
   background: rgba(13, 13, 20, 0.96);
   border-top: 1px solid var(--line);
 }
-.mobile-cta .btn { flex: 1; justify-content: center; font-size: 0.85rem; padding: 0.75rem 0.5rem; }
+.mobile-cta .btn { flex: 1; justify-content: center; font-size: 0.85rem; padding: 0.75rem 0.5rem;
+  white-space: nowrap; }
+/* the phone number is the longest label — let it shrink rather than wrap
+   onto two lines inside a fixed-height bar. */
+@media (max-width: 400px) { .mobile-cta .btn { font-size: 0.76rem; padding: 0.75rem 0.4rem; } }
 @media (max-width: 860px) { .mobile-cta { display: flex; } }
 
 /* ---------- Forms ---------- */
@@ -1170,8 +1174,11 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 }
 
 /* "generated mockup" badge — signals swap-in without touching page copy */
+/* In normal flow between the frame and its caption. Absolutely positioned it
+   sat on top of the frame's URL bar (top-right) or the figcaption (bottom-left)
+   — there is no free corner inside a browser-frame mockup. */
 .mockup-badge {
-  position: absolute; top: 10px; right: 10px; z-index: 4;
+  display: inline-block; margin: 0.65rem 0 0;
   font-family: var(--font-display); font-style: italic; font-weight: 700;
   font-size: 0.6rem; letter-spacing: 0.14em;
   color: var(--blue); background: rgba(13, 13, 20, 0.82);
@@ -1276,6 +1283,10 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 /* --- deliverables checklist --- */
 .svc-deliv { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.7rem 1.75rem; grid-template-columns: 1fr 1fr; }
 @media (max-width: 720px) { .svc-deliv { grid-template-columns: 1fr; } }
+/* the two-column checklist is for a full-width block. Inside a card (the
+   fit / wrong-call pair) the card is already half the width, so two columns
+   there squeezes each item into a ~130px ribbon. */
+.card .svc-deliv, .mini-card .svc-deliv { grid-template-columns: 1fr; }
 .svc-deliv li { position: relative; padding-left: 1.9rem; }
 .svc-deliv li::before { content: "\2713"; position: absolute; left: 0; top: 0; color: var(--blue); font-weight: 800; }
 
@@ -1923,7 +1934,23 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
    border, padding and shadow, which on a page with six campaign types turns
    into a very long, very bulky scroll. This keeps the same information in a
    tight two-column rhythm with hairline rules. */
-.spec-rows { margin: 0; border-top: 1px solid var(--line); }
+.spec-rows { margin: 1.5rem 0 0; border-top: 1px solid var(--line); }
+/* a spec block ends on a hairline rule — whatever follows must not sit on it */
+.guide-ch .spec-rows + * { margin-top: 2.5rem; }
+/* only chapter-level subheadings get the gap — an h3 inside a card already
+   has the card padding above it. */
+.guide-ch .wrap > h3 { margin-top: 2.25rem; }
+/* a short card next to a long one should end where its copy ends, not
+   stretch to match and leave a block of dead white space. */
+.guide-ch .grid { align-items: start; }
+.guide-ch .card > h3:first-child, .guide-ch .mini-card > h3 { margin-top: 0; }
+.guide-ch .abm-fig + p, .guide-ch .abm-fig + h3 { margin-top: 2rem; }
+/* diagram captions align to the copy column, not to the centred figure */
+/* .abm-fig had no rule of its own, so it kept the browser default
+   figure{margin:1em 40px} — which indented every diagram and its caption
+   40px off the copy column. */
+.guide-ch .abm-fig { margin: 2rem 0 0; }
+.guide-ch .abm-fig > figcaption { text-align: left; margin-top: 0.85rem; }
 .spec-row {
   display: grid; grid-template-columns: 13.5rem 1fr; gap: 0 2rem;
   padding: 1rem 0; border-bottom: 1px solid var(--line); align-items: start;
