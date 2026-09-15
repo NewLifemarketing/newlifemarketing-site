@@ -86,9 +86,12 @@
     host.hidden = false;
     host.innerHTML = kpis.map(function (k) {
       var d = k.delta;
-      var delta = d && (d.text || d.dir)
+      /* Test the RENDERED text, not just the presence of the fields: a delta of
+         { dir: "flat", text: "" } passed the old check and drew an empty chip. */
+      var dtext = d ? deltaText(d.dir, d.text).trim() : "";
+      var delta = dtext
         ? '<div class="k-delta ' + (d.dir === "down" ? "down" : d.dir === "up" ? "up" : "") + '">' +
-          esc(deltaText(d.dir, d.text)) + '</div>'
+          esc(dtext) + '</div>'
         : "";
       return '<div class="pl-kpi"><div class="k-label">' + esc(k.label) + '</div>' +
              '<div class="k-value">' + esc(k.value) + '</div>' + delta + '</div>';
@@ -207,6 +210,52 @@
     var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     if (!m) return hex;
     return "rgba(" + parseInt(m[1], 16) + "," + parseInt(m[2], 16) + "," + parseInt(m[3], 16) + "," + a + ")";
+  }
+
+  /* A channel's Overview band used to be three numbers in a very wide white
+     box. The channel already carries a time series for its own page, so draw it
+     small here: the band then says "and this is the shape of it" at a glance. */
+  function sparkline(report) {
+    var ch = report && report.payload && report.payload.charts;
+    if (!ch || !ch.length) return "";
+    /* Only a time series may be drawn as a sparkline. A bar chart is usually
+       categorical ("reach by format"), and a line through categories invents a
+       trend that does not exist. */
+    var type = ch[0].type || "line";
+    if (type !== "line") return "";
+    var ds = (ch[0].datasets || [])[0];
+    var data = (ds && ds.data || []).map(Number).filter(function (n) { return isFinite(n); });
+    if (data.length < 2) return "";
+
+    var W = 148, H = 40, pad = 3;
+    var lo = Math.min.apply(null, data), hi = Math.max.apply(null, data);
+    var span = (hi - lo) || 1;
+    var pts = data.map(function (v, i) {
+      var x = pad + (i / (data.length - 1)) * (W - pad * 2);
+      var y = H - pad - ((v - lo) / span) * (H - pad * 2);
+      return [x, y];
+    });
+    var line = pts.map(function (p, i) {
+      return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1);
+    }).join(" ");
+    var area = line + " L" + pts[pts.length - 1][0].toFixed(1) + " " + H + " L" +
+               pts[0][0].toFixed(1) + " " + H + " Z";
+    var rising = data[data.length - 1] >= data[0];
+    var col = rising ? PALETTE.green : PALETTE.blue;
+    var uid = "sp" + (sparkline._n = (sparkline._n || 0) + 1);
+    var last = pts[pts.length - 1];
+
+    return '<svg class="pl-spark" viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H +
+      '" aria-hidden="true" focusable="false">' +
+      '<defs><linearGradient id="' + uid + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="' + col + '" stop-opacity="0.20"/>' +
+        '<stop offset="100%" stop-color="' + col + '" stop-opacity="0"/>' +
+      "</linearGradient></defs>" +
+      '<path d="' + area + '" fill="url(#' + uid + ')"/>' +
+      '<path d="' + line + '" fill="none" stroke="' + col +
+        '" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<circle cx="' + last[0].toFixed(1) + '" cy="' + last[1].toFixed(1) +
+        '" r="2.6" fill="' + col + '"/></svg>';
   }
 
   /* ---------------- report screenshots ----------------
@@ -422,7 +471,7 @@
       chanHost.innerHTML = visible.map(function (c) {
         var r = reports[c.platform];
         if (!r) {
-          return '<div class="pl-panel"><div class="pl-panel-head"><h3>' + esc(c.label) + "</h3></div>" +
+          return '<div class="pl-panel pl-chan"><div class="pl-panel-head"><h3>' + esc(c.label) + "</h3></div>" +
             '<p class="pl-muted" style="margin:0;font-size:0.9rem">Report being prepared for this period.</p></div>';
         }
         var s = (r.payload && r.payload.summary) || {};
@@ -430,9 +479,10 @@
           return '<div class="pl-mini"><div class="m-label">' + esc(k.label) + "</div>" +
                  '<div class="m-value">' + esc(k.value) + "</div></div>";
         }).join("");
-        return '<div class="pl-panel"><div class="pl-panel-head"><h3>' + esc(c.label) + "</h3>" +
+        return '<div class="pl-panel pl-chan"><div class="pl-panel-head"><h3>' + esc(c.label) + "</h3>" +
           '<button class="pl-btn ghost sm" data-goto="' + c.view + '">View full report →</button></div>' +
-          '<div class="pl-minis">' + mini + "</div></div>";
+          '<div class="pl-chan-body"><div class="pl-minis">' + mini + "</div>" +
+          sparkline(r) + "</div></div>";
       }).join("");
       qsa("[data-goto]").forEach(function (b) {
         b.addEventListener("click", function () { showView(b.getAttribute("data-goto")); });
