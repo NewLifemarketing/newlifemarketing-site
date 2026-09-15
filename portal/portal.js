@@ -98,6 +98,11 @@
     }).join("");
   }
 
+  /* Per-view render caps. A deep channel report legitimately carries several
+     charts and tables; without a ceiling one bad payload could render forever. */
+  var MAX_CHARTS = 6;
+  var MAX_TABLES = 6;
+
   /* Chart colours are read from the CSS custom properties so the charts always
      follow the stylesheet's theme instead of carrying their own hard-coded
      palette (which is how they stayed dark-theme after the page went light). */
@@ -475,108 +480,6 @@
         '" r="2.6" fill="' + col + '"/></svg>';
   }
 
-  /* ---------------- report screenshots ----------------
-     The two-weekly reports arrive as images in each client's Drive folder and are
-     mirrored into the private `client-files` storage bucket under
-       <client_id>/reports/<period_start>_<period_end>/<platform>/<file>
-     Storage is private, so every image is fetched through a short-lived signed
-     URL created for the logged-in client — never a public link. */
-  var SHOT_TTL = 3600;   /* seconds */
-  var MAX_CHARTS = 6;    /* per view — enough for a deep channel report */
-  var MAX_TABLES = 6;
-
-  function renderShots(host, shots, view) {
-    if (!host) return;
-    host.innerHTML = "";
-    if (!shots || !shots.length) return;
-
-    var panel = document.createElement("div");
-    panel.className = "pl-panel";
-    panel.innerHTML = '<div class="pl-panel-head"><h3>Report screenshots</h3>' +
-                      '<span class="pl-dim" style="font-size:0.78rem">' + shots.length +
-                      (shots.length === 1 ? ' image' : ' images') + '</span></div>' +
-                      '<div class="pl-shots"></div>';
-    var grid = panel.querySelector(".pl-shots");
-
-    shots.forEach(function (sh, i) {
-      var fig = document.createElement("figure");
-      fig.className = "pl-shot";
-      fig.innerHTML =
-        '<button class="pl-shot-btn" type="button" aria-label="Open full size">' +
-          '<span class="pl-shot-ph">Loading\u2026</span>' +
-        '</button>' +
-        '<figcaption>' + esc(sh.title || sh.caption || ("Screenshot " + (i + 1))) +
-        (sh.caption && sh.title ? '<span class="pl-shot-cap">' + esc(sh.caption) + '</span>' : '') +
-        '</figcaption>';
-      grid.appendChild(fig);
-
-      signedUrl(sh).then(function (url) {
-        var btn = fig.querySelector(".pl-shot-btn");
-        if (!url) { btn.innerHTML = '<span class="pl-shot-ph err">Image unavailable</span>'; return; }
-        /* The <img> must be IN the document before src is set: a detached image
-           with loading="lazy" has no viewport to be measured against, so Chrome
-           never starts the fetch and the tile sits on "Loading..." forever.
-           Append first, hide with a class, reveal on load. */
-        var img = document.createElement("img");
-        img.alt = sh.title || sh.caption || "Report screenshot";
-        img.loading = "lazy";
-        img.className = "is-loading";
-        img.addEventListener("load", function () {
-          img.classList.remove("is-loading");
-          var ph = btn.querySelector(".pl-shot-ph");
-          if (ph) ph.remove();
-        });
-        img.addEventListener("error", function () {
-          btn.innerHTML = '<span class="pl-shot-ph err">Image unavailable</span>';
-        });
-        btn.appendChild(img);
-        img.src = url;
-        btn.addEventListener("click", function () {
-          if (img.src && !img.classList.contains("is-loading")) openLightbox(img.src, img.alt);
-        });
-      });
-    });
-
-    host.appendChild(panel);
-  }
-
-  /* A screenshot is addressed either by a storage `path` (preferred) or by an
-     absolute `url` for anything already publicly hosted. */
-  function signedUrl(sh) {
-    if (sh.url) return Promise.resolve(sh.url);
-    if (!sh.path || !ctx || !ctx.sb || !ctx.sb.storage) return Promise.resolve(null);
-    try {
-      return ctx.sb.storage.from("client-files").createSignedUrl(sh.path, SHOT_TTL)
-        .then(function (r) { return (r && r.data && r.data.signedUrl) || null; })
-        .catch(function () { return null; });
-    } catch (e) { return Promise.resolve(null); }
-  }
-
-  var lightbox = null;
-  function openLightbox(src, alt) {
-    if (!lightbox) {
-      lightbox = document.createElement("div");
-      lightbox.className = "pl-lightbox";
-      lightbox.innerHTML = '<button class="pl-lb-close" type="button" aria-label="Close">\u00d7</button><img alt="">';
-      lightbox.addEventListener("click", function (ev) {
-        if (ev.target === lightbox || ev.target.classList.contains("pl-lb-close")) closeLightbox();
-      });
-      document.addEventListener("keydown", function (ev) {
-        if (ev.key === "Escape") closeLightbox();
-      });
-      document.body.appendChild(lightbox);
-    }
-    var img = lightbox.querySelector("img");
-    img.src = src; img.alt = alt || "";
-    lightbox.classList.add("open");
-    document.body.style.overflow = "hidden";
-  }
-  function closeLightbox() {
-    if (!lightbox) return;
-    lightbox.classList.remove("open");
-    document.body.style.overflow = "";
-  }
-
   function cell(val, col) {
     if (val && typeof val === "object") {
       var cls = val.dir === "up" ? "up" : val.dir === "down" ? "down" : "";
@@ -717,7 +620,6 @@
     var kpiHost = document.querySelector('[data-kpis="' + view + '"]');
     var chartHost = document.querySelector('[data-charts="' + view + '"]');
     var tableHost = document.querySelector('[data-tables="' + view + '"]');
-    var shotHost  = document.querySelector('[data-shots="' + view + '"]');
     var bdHost    = document.querySelector('[data-breakdown="' + view + '"]');
     var emptyHost = document.querySelector('[data-empty="' + view + '"]');
     if (emptyHost) { emptyHost.hidden = true; emptyHost.innerHTML = ""; }
@@ -726,7 +628,6 @@
       renderKpis(kpiHost, null);
       if (chartHost) chartHost.innerHTML = "";
       if (tableHost) tableHost.innerHTML = "";
-      if (shotHost) shotHost.innerHTML = "";
       if (bdHost) bdHost.innerHTML = "";
       emptyState(view, cfg.title);
       return;
@@ -736,7 +637,6 @@
     renderCharts(chartHost, pl.charts, view);
     renderBreakdown(bdHost, pl.breakdown, view);
     renderTables(tableHost, pl.tables);
-    renderShots(shotHost, pl.screenshots, view);
   }
 
   function renderAll() {
