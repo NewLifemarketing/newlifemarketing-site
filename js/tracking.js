@@ -95,7 +95,12 @@
       /* Only worth recording on the visit that actually carried the id —
          this is the click-through that created the link in the first place. */
       posthog.capture("identified_via_email_link", { landing_page: window.location.pathname });
-      scrubUrl();
     }
   }
+
+  /* Scrub whether or not the id turned out to be usable. An unresolved merge
+     field is precisely the case where a prospect would otherwise sit looking
+     at "?nl_cid={{contact.id}}" in their address bar. No-ops when there was
+     no id param to begin with. */
+  scrubUrl();
 })();
