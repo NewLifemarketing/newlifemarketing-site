@@ -74,9 +74,16 @@
   function money(n) { return "$" + compact(n); }
   function arrow(dir) { return dir === "up" ? "▲ " : dir === "down" ? "▼ " : ""; }
   /* Payloads are written by hand, so delta text often already carries its own
-     arrow. Strip a leading one rather than rendering "▲ ▲ 3.1". */
-  function deltaText(dir, text) {
-    return arrow(dir) + String(text || "").replace(/^\s*[▲▼↑↓▴▾]\s*/, "");
+     arrow. Strip a leading one rather than rendering "▲ ▲ 3.1".
+
+     `dir` means COLOUR, not arithmetic (see REPORT-DATA-FORMAT.md): a cost that
+     fell is good, so it is sent as dir:"up" to render green. Deriving the arrow
+     from `dir` therefore drew ▲ next to a number that had gone DOWN. Optional
+     `trend` carries the real direction of movement and wins when present;
+     without it the old behaviour is unchanged. */
+  function deltaText(dir, text, trend) {
+    var a = arrow(trend || dir);
+    return a + String(text || "").replace(/^\s*[▲▼↑↓▴▾]\s*/, "");
   }
 
   /* ---------------- renderers ---------------- */
@@ -88,7 +95,7 @@
       var d = k.delta;
       /* Test the RENDERED text, not just the presence of the fields: a delta of
          { dir: "flat", text: "" } passed the old check and drew an empty chip. */
-      var dtext = d ? deltaText(d.dir, d.text).trim() : "";
+      var dtext = d ? deltaText(d.dir, d.text, d.trend).trim() : "";
       var delta = dtext
         ? '<div class="k-delta ' + (d.dir === "down" ? "down" : d.dir === "up" ? "up" : "") + '">' +
           esc(dtext) + '</div>'
@@ -483,7 +490,7 @@
   function cell(val, col) {
     if (val && typeof val === "object") {
       var cls = val.dir === "up" ? "up" : val.dir === "down" ? "down" : "";
-      return '<span class="pl-delta ' + cls + '">' + esc(deltaText(val.dir, val.text)) + "</span>";
+      return '<span class="pl-delta ' + cls + '">' + esc(deltaText(val.dir, val.text, val.trend)) + "</span>";
     }
     return esc(val);
   }
@@ -536,6 +543,98 @@
       "period it will appear here automatically.</p></div>";
   }
 
+  /* ---------------- automatic period-over-period deltas ----------------
+     A payload may carry a hand-written delta ("12% vs prev"). Most do not —
+     none of the 48 months of loaded history does. Rather than ask whoever
+     builds each payload to work the change out by hand across five channels
+     and ten clients every fortnight (which will eventually be wrong, and wrong
+     silently), the portal derives it from the period before.
+
+     A hand-written delta always wins. This only fills in the gaps. */
+
+  var prevReports = {};      /* platform -> previous period's row */
+  var prevComparable = false; /* are the two periods the same rough length? */
+  var prevLabel = "";
+
+  function periodDays(p) {
+    if (!p) return 0;
+    var a = new Date(p.start + "T00:00:00Z"), b = new Date(p.end + "T00:00:00Z");
+    if (isNaN(a) || isNaN(b)) return 0;
+    return Math.round((b - a) / 86400000) + 1;
+  }
+
+  /* Values in `kpis` are pre-formatted for display ("$34.6K", "2.4%", "3.9x"),
+     so the number has to be read back out of the string. */
+  function parseValue(v) {
+    if (typeof v === "number") return isFinite(v) ? v : null;
+    if (v == null) return null;
+    var t = String(v).trim();
+    var m = t.match(/-?[\d,]*\.?\d+/);
+    if (!m) return null;
+    var n = parseFloat(m[0].replace(/,/g, ""));
+    if (!isFinite(n)) return null;
+    var after = t.slice(t.indexOf(m[0]) + m[0].length);
+    if (/^\s*k/i.test(after)) n *= 1e3;
+    else if (/^\s*m/i.test(after)) n *= 1e6;
+    if (/^\s*\(/.test(t) || /^-/.test(t)) n = -Math.abs(n);
+    return n;
+  }
+
+  /* A rate, multiple or rating moves in POINTS — 2.4% to 2.7% is +0.3, not
+     +12.5%. A count or a dollar amount moves in percent. Mirrors how the
+     hand-written examples in REPORT-DATA-FORMAT.md are written. */
+  function valueUnit(v) {
+    var t = String(v == null ? "" : v);
+    if (/%/.test(t)) return "%";
+    if (/\u2605/.test(t)) return "\u2605";
+    if (/\dx\b/i.test(t) || /x$/i.test(t.trim())) return "x";
+    return null;
+  }
+
+  /* For these, DOWN is the good direction, so the chip should be green when the
+     number falls. `dir` is colour only; `trend` carries the real movement. */
+  var LOWER_IS_BETTER = /(^|[^a-z])(cost|cpc|cpa|cpl|cpm|spend per|cost per|cost \/)/i;
+
+  function computeDelta(label, nowVal, prevVal) {
+    var a = parseValue(nowVal), b = parseValue(prevVal);
+    if (a === null || b === null) return null;
+    if (b === 0) return null;                 /* no honest percentage off zero */
+    var unit = valueUnit(nowVal);
+    var diff = a - b;
+    if (Math.abs(diff) < 1e-9) return { dir: "flat", trend: "flat", text: "no change" };
+
+    var text;
+    if (unit === "%" || unit === "x" || unit === "\u2605") {
+      var d = Math.abs(diff);
+      text = (Math.round(d * 100) / 100) + (unit === "%" ? "%" : "");
+    } else {
+      text = Math.round(Math.abs(diff / b) * 1000) / 10 + "%";
+    }
+
+    var trend = diff > 0 ? "up" : "down";
+    var good = LOWER_IS_BETTER.test(String(label)) ? diff < 0 : diff > 0;
+    return { dir: good ? "up" : "down", trend: trend, text: text + " vs prev" };
+  }
+
+  /* Fill in any KPI that has no delta of its own, matching on label. */
+  function withDeltas(kpis, prevKpis) {
+    if (!kpis || !kpis.length) return kpis;
+    if (!prevComparable || !prevKpis || !prevKpis.length) return kpis;
+    var prevBy = {};
+    prevKpis.forEach(function (k) { if (k && k.label) prevBy[String(k.label).toLowerCase()] = k.value; });
+    return kpis.map(function (k) {
+      if (!k || k.delta) return k;            /* hand-written wins */
+      var pv = prevBy[String(k.label || "").toLowerCase()];
+      if (pv === undefined) return k;
+      var d = computeDelta(k.label, k.value, pv);
+      if (!d) return k;
+      var out = {};
+      Object.keys(k).forEach(function (kk) { out[kk] = k[kk]; });
+      out.delta = d;
+      return out;
+    });
+  }
+
   /* ---------------- overview (derived, never stored) ---------------- */
   function renderOverview() {
     var visible = CHANNELS.filter(function (c) { return hasSection(c.section || c.platform); });
@@ -577,15 +676,40 @@
     var spend = m("meta", "spend") + m("google_ads", "spend");
     var leads = m("meta", "leads") + m("google_ads", "leads");
     var value = m("meta", "conversion_value") + m("google_ads", "conversion_value");
+    /* Overview totals come from summary.metrics, which are real numbers rather
+       than formatted strings — so the comparison here is exact arithmetic, not
+       a value parsed back out of "$34.6K". */
+    function pm(platform, key) {
+      var r = prevReports[platform];
+      var sm = r && r.payload && r.payload.summary;
+      return sm && sm.metrics ? num(sm.metrics[key]) : null;
+    }
+    function pair(label, nowNum, prevNum, fmt) {
+      var card = { label: label, value: fmt(nowNum) };
+      if (prevComparable && prevNum !== null && prevNum !== 0) {
+        var d = computeDelta(label, nowNum, prevNum);
+        if (d) card.delta = d;
+      }
+      return card;
+    }
+    function prevSum() {
+      var t = null;
+      for (var i = 0; i < arguments.length; i++) {
+        var v = arguments[i];
+        if (v !== null) t = (t === null ? 0 : t) + v;
+      }
+      return t;
+    }
     var cards = [];
     if (present("meta") || present("google_ads")) {
-      cards.push({ label: "Total ad spend", value: money(spend) });
-      cards.push({ label: "Leads / conversions", value: compact(leads) });
-      if (value > 0) cards.push({ label: "Conversion value", value: money(value) });
+      cards.push(pair("Total ad spend", spend, prevSum(pm("meta", "spend"), pm("google_ads", "spend")), money));
+      cards.push(pair("Leads / conversions", leads, prevSum(pm("meta", "leads"), pm("google_ads", "leads")), compact));
+      if (value > 0) cards.push(pair("Conversion value", value,
+        prevSum(pm("meta", "conversion_value"), pm("google_ads", "conversion_value")), money));
     }
-    if (present("gbp")) cards.push({ label: "GBP calls", value: compact(m("gbp", "calls")) });
-    if (present("organic")) cards.push({ label: "Organic engagements", value: compact(m("organic", "engagements")) });
-    if (present("seo")) cards.push({ label: "Keywords in top 10", value: compact(m("seo", "keywords_top10")) });
+    if (present("gbp")) cards.push(pair("GBP calls", m("gbp", "calls"), pm("gbp", "calls"), compact));
+    if (present("organic")) cards.push(pair("Organic engagements", m("organic", "engagements"), pm("organic", "engagements"), compact));
+    if (present("seo")) cards.push(pair("Keywords in top 10", m("seo", "keywords_top10"), pm("seo", "keywords_top10"), compact));
     renderKpis(kpiHost, cards);
 
     /* compact per-channel blocks */
@@ -633,7 +757,8 @@
       return;
     }
     var pl = row.payload || {};
-    renderKpis(kpiHost, pl.kpis);
+    var prevRow = prevReports[cfg.platform];
+    renderKpis(kpiHost, withDeltas(pl.kpis, prevRow && prevRow.payload ? prevRow.payload.kpis : null));
     renderCharts(chartHost, pl.charts, view);
     renderBreakdown(bdHost, pl.breakdown, view);
     renderTables(tableHost, pl.tables);
@@ -644,6 +769,9 @@
     charts = {};
     renderOverview();
     ["meta", "google", "gbp", "seo", "organic"].forEach(renderChannel);
+    /* Everything above renders all five channels, but only one view is
+       visible — the other four measured zero. Size whichever is on screen. */
+    resizeChartsIn(currentView);
   }
 
   /* ---------------- sections / sidebar ---------------- */
@@ -658,6 +786,51 @@
       b.hidden = !ok;
       if (!ok) b.setAttribute("aria-hidden", "true");
     });
+  }
+
+  /* Charts built while their view was display:none measured a zero-sized
+     container and drew nothing, staying blank until an unrelated window resize
+     happened to rescue them — which is how this reached production looking fine.
+
+     Resizing on reveal is the fix, but WHEN matters: `.pl-view.active` runs a
+     0.25s fade that animates `transform: translateY(6px)`. Chart.js measures
+     the container mid-animation, gets a bogus size and caches it, so a resize
+     fired in the first frames is silently thrown away. Wait for the animation
+     to finish — `animationend` normally, with timed attempts as a backstop for
+     when it never fires (reduced-motion, interrupted animation, no support).
+     Every attempt stops early once the canvases have real dimensions. */
+  function resizeChartsIn(view) {
+    if (typeof Chart === "undefined" || !Chart.getChart) return;
+    var sec = document.querySelector('.pl-view[data-view="' + view + '"]');
+    if (!sec) return;
+
+    function attempt() {
+      var canvases = qsa('.pl-view[data-view="' + view + '"] canvas');
+      if (!canvases.length) return true;          /* nothing to size: done */
+      var allSized = true;
+      canvases.forEach(function (c) {
+        var inst = Chart.getChart(c);
+        if (!inst) return;
+        try { inst.resize(); } catch (e) {}
+        if (!c.width || !c.height) allSized = false;
+      });
+      return allSized;
+    }
+
+    var done = false;
+    function tryOnce() {
+      if (done) return;
+      if (attempt()) done = true;
+    }
+
+    sec.addEventListener("animationend", function onEnd() {
+      sec.removeEventListener("animationend", onEnd);
+      tryOnce();
+    });
+    /* 250ms is the animation; 300 lands just after it, 650 covers a slow first
+       paint. Both no-op once the charts are correct. */
+    setTimeout(tryOnce, 300);
+    setTimeout(tryOnce, 650);
   }
 
   /* ---------------- navigation ----------------
@@ -690,6 +863,13 @@
       v.classList.toggle("active", v.getAttribute("data-view") === view);
     });
     if (titleEl) titleEl.textContent = VIEWS[view].title;
+    /* Charts constructed while their view was display:none measured a
+       zero-sized container and drew nothing. Chart.js re-measures only when the
+       element itself resizes, which never happens for a panel that was simply
+       revealed — so the chart stayed blank until an unrelated window resize
+       rescued it. That is exactly why this reached production looking fine.
+       Resize this view's charts once it is genuinely on screen. */
+    resizeChartsIn(view);
     if (periodSel) periodSel.hidden = (view === "onboarding") || !periods.length;
     if (app) app.classList.remove("nav-open");
     window.scrollTo(0, 0);
@@ -739,24 +919,58 @@
         return out;
       });
   }
-  function loadPeriod(p) {
-    current = p;
-    reports = {};
-    if (!p) { renderAll(); return Promise.resolve(); }
+  function fetchPeriod(p) {
     return ctx.sb.from("report_cache")
       .select("platform, period_start, period_end, payload, is_sample, refreshed_at")
       .eq("client_id", ctx.clientId)   /* see loadPeriods — admins can read every client */
       .eq("period_start", p.start)
       .eq("period_end", p.end)
       .then(function (r) {
+        var out = {};
         /* Only keep platforms this client is actually subscribed to, so a
            stored-but-unsubscribed report can never surface in the sidebar,
            a channel page or the Overview totals. */
         (r.data || []).forEach(function (row) {
-          if (hasSection(row.platform)) reports[row.platform] = row;
+          if (hasSection(row.platform)) out[row.platform] = row;
         });
+        return out;
+      });
+  }
+
+  function loadPeriod(p) {
+    current = p;
+    reports = {};
+    prevReports = {};
+    prevComparable = false;
+    prevLabel = "";
+    if (!p) { renderAll(); return Promise.resolve(); }
+
+    /* The period before this one, for automatic deltas. `periods` is newest
+       first, so the previous period is the next entry. */
+    var idx = -1;
+    for (var i = 0; i < periods.length; i++) {
+      if (periods[i].start === p.start && periods[i].end === p.end) { idx = i; break; }
+    }
+    var prev = (idx >= 0 && idx + 1 < periods.length) ? periods[idx + 1] : null;
+
+    /* History is monthly; going forward reporting is two-weekly. Comparing a
+       14-day period against a 30-day one would show a ~50% "drop" that is
+       nothing but the calendar. Only compare periods of a similar length, and
+       otherwise show no delta at all rather than a misleading one. */
+    if (prev) {
+      var dn = periodDays(p), dp = periodDays(prev);
+      prevComparable = !!(dn && dp && Math.abs(dn - dp) <= Math.max(dn, dp) * 0.25);
+      prevLabel = prev.label;
+    }
+
+    return fetchPeriod(p).then(function (cur) {
+      reports = cur;
+      if (!prev || !prevComparable) { renderAll(); return; }
+      return fetchPeriod(prev).then(function (pr) {
+        prevReports = pr;
         renderAll();
       });
+    });
   }
   if (periodSel) periodSel.addEventListener("change", function () {
     var p = periods[parseInt(periodSel.value, 10)];
