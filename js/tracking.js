@@ -26,32 +26,14 @@
   var ID_PARAMS = ["nl_cid", "contact_id"];
   var STORE_KEY = "nl_contact_id";
 
-  if (!POSTHOG_KEY) return;
+  /* ---------- Identity capture ----------
+     This runs BEFORE the key guard on purpose. Reading the contact id,
+     remembering it, and getting it back out of the address bar all have to
+     happen even when analytics is switched off — otherwise a trigger-link
+     click leaves "?nl_cid=..." sitting in the visitor's address bar, visible
+     in screenshots and in anything they paste to a colleague.
 
-  /* ---------- PostHog loader ---------- */
-  /* Vendor snippet, kept verbatim so it can be diffed against theirs on
-     upgrade. It defines window.posthog and queues calls made before load. */
-  !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-
-  posthog.init(POSTHOG_KEY, {
-    api_host: POSTHOG_HOST,
-    /* Time-on-page comes from pairing $pageview with $pageleave. Without
-       this, a visit shows pages read but no dwell time on the last one. */
-    capture_pageleave: true,
-    capture_pageview: true,
-    /* Don't create a stored profile for anonymous traffic until there is a
-       reason to. Identified visitors get one the moment they identify. */
-    person_profiles: "identified_only"
-  });
-
-  /* ---------- Identity bridge ---------- */
-
-  /* The whole point of the system. A visitor browses anonymously for weeks;
-     the moment they arrive carrying a contact id — from an email link — we
-     call identify(), and PostHog retroactively merges every anonymous
-     session that browser ever had into the named person.
-
-     History back-fills. That is why this ships before it is "needed". */
+     Only the PostHog calls depend on the key, and those stay below the guard. */
 
   function readIdFromUrl() {
     var params = new URLSearchParams(window.location.search);
@@ -74,7 +56,8 @@
   }
 
   /* Strip the id from the address bar once read. Keeps it out of shared
-     links, screenshots, and the referrer we send to third parties. */
+     links, screenshots, and the referrer we send to third parties. Leaves
+     utm_ and every other param untouched. */
   function scrubUrl() {
     if (!window.history || !window.history.replaceState) return;
     var url = new URL(window.location.href);
@@ -87,20 +70,48 @@
 
   var fromUrl = readIdFromUrl();
   var contactId = fromUrl || recall();
+  if (fromUrl) store(contactId);
+
+  /* Scrub whether or not the id turned out to be usable. An unresolved merge
+     field is precisely the case where a prospect would otherwise sit looking
+     at "?nl_cid={{contact.id}}". No-ops when there was no id param at all.
+     Reads window.location.pathname below are unaffected — replaceState only
+     rewrites the query string. */
+  scrubUrl();
+
+  if (!POSTHOG_KEY) return;
+
+  /* ---------- PostHog loader ---------- */
+  /* Vendor snippet, kept verbatim so it can be diffed against theirs on
+     upgrade. It defines window.posthog and queues calls made before load. */
+  !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+
+  posthog.init(POSTHOG_KEY, {
+    api_host: POSTHOG_HOST,
+    /* Time-on-page comes from pairing $pageview with $pageleave. Without
+       this, a visit shows pages read but no dwell time on the last one. */
+    capture_pageleave: true,
+    capture_pageview: true,
+    /* Don't create a stored profile for anonymous traffic until there is a
+       reason to. Identified visitors get one the moment they identify. */
+    person_profiles: "identified_only"
+  });
+
+  /* ---------- Identity bridge ----------
+
+     The whole point of the system. A visitor browses anonymously for weeks;
+     the moment they arrive carrying a contact id — from an email link — we
+     call identify(), and PostHog retroactively merges every anonymous
+     session that browser ever had into the named person.
+
+     History back-fills. That is why this ships before it is "needed". */
 
   if (contactId) {
     posthog.identify(contactId);
     if (fromUrl) {
-      store(contactId);
       /* Only worth recording on the visit that actually carried the id —
          this is the click-through that created the link in the first place. */
       posthog.capture("identified_via_email_link", { landing_page: window.location.pathname });
     }
   }
-
-  /* Scrub whether or not the id turned out to be usable. An unresolved merge
-     field is precisely the case where a prospect would otherwise sit looking
-     at "?nl_cid={{contact.id}}" in their address bar. No-ops when there was
-     no id param to begin with. */
-  scrubUrl();
 })();
