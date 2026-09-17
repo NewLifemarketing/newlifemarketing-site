@@ -711,8 +711,15 @@
 
   /* ---------------- data loading ---------------- */
   function loadPeriods() {
+    /* Scope every read to one client explicitly. A client is already confined to
+       their own rows by RLS, but an ADMIN is not — the policies deliberately let
+       an admin read every client, so an unscoped select during "view as" would
+       merge every client's periods into one list and load the wrong company's
+       numbers under this company's name. The filter must be in the query, not
+       left to RLS. */
     return ctx.sb.from("report_cache")
       .select("period_start, period_end")
+      .eq("client_id", ctx.clientId)
       .order("period_start", { ascending: false })
       .then(function (r) {
         var seen = {}, out = [];
@@ -738,6 +745,7 @@
     if (!p) { renderAll(); return Promise.resolve(); }
     return ctx.sb.from("report_cache")
       .select("platform, period_start, period_end, payload, is_sample, refreshed_at")
+      .eq("client_id", ctx.clientId)   /* see loadPeriods — admins can read every client */
       .eq("period_start", p.start)
       .eq("period_end", p.end)
       .then(function (r) {
