@@ -1122,6 +1122,29 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   width: 100%; height: 100%; object-fit: cover;
   opacity: 0.38;
 }
+/* Sits between the footage and the copy. Aerials vary wildly in brightness —
+   a sunlit waterfront dropped body text to ~2.4:1, under the 4.5:1 WCAG AA
+   floor, while a dusk skyline sat at 10:1. This makes legibility a property
+   of the design rather than of whichever photograph we found.
+
+   Derived from --ink so it follows the page's own palette: dark on the
+   standard hero, and white on .svc-page, which redefines --ink to #FFFFFF
+   and renders near-black text. A hardcoded dark scrim made the light pages
+   unreadable. Weighted left because the headline and lead are left-aligned,
+   so the right-hand side keeps more of the aerial visible. */
+.hero-scrim {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(100deg,
+    color-mix(in srgb, var(--ink) 93%, transparent) 0%,
+    color-mix(in srgb, var(--ink) 86%, transparent) 34%,
+    color-mix(in srgb, var(--ink) 58%, transparent) 64%,
+    color-mix(in srgb, var(--ink) 38%, transparent) 100%);
+}
+@media (max-width: 820px) {
+  /* Narrow screens put the copy across the full width, so flatten it. */
+  .hero-scrim { background: color-mix(in srgb, var(--ink) 88%, transparent); }
+}
+}
 .hero-photo {
   position: absolute; inset: 0;
   width: 100%; height: 100%; object-fit: cover;
