@@ -1,16 +1,11 @@
 <!DOCTYPE html>
 <html lang="en-CA">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-N3TBK96H9F"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-N3TBK96H9F');
-</script>
-
+<!-- No analytics on the portal, deliberately. This is an authenticated area:
+     /portal/reset/ carries a live Supabase recovery token in the URL fragment,
+     and GA4's page_location includes the fragment, so the token would be sent
+     to a third party. The dashboard also shows client revenue. PostHog is
+     excluded for the same reason — see newlife-marketing/TRACKING.md. -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
