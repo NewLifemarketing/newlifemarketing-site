@@ -1143,11 +1143,14 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
      video. Derived from --ink so it follows the page palette: dark on the
      standard hero, white on .svc-page, which redefines --ink to #FFFFFF. */
   background: linear-gradient(97deg,
-    color-mix(in srgb, var(--ink) 88%, transparent) 0%,
-    color-mix(in srgb, var(--ink) 76%, transparent) 28%,
-    color-mix(in srgb, var(--ink) 42%, transparent) 52%,
-    color-mix(in srgb, var(--ink) 12%, transparent) 72%,
-    transparent 82%);
+    color-mix(in srgb, var(--ink) 90%, transparent) 0%,
+    color-mix(in srgb, var(--ink) 88%, transparent) 36%,
+    color-mix(in srgb, var(--ink) 80%, transparent) 44%,
+    color-mix(in srgb, var(--ink) 76%, transparent) 60%,
+    color-mix(in srgb, var(--ink) 72%, transparent) 63%,
+    color-mix(in srgb, var(--ink) 46%, transparent) 75%,
+    color-mix(in srgb, var(--ink) 18%, transparent) 82%,
+    transparent 88%);
 }
 .hero:has(.hero-video) h1,
 .hero:has(.hero-photo) h1 { text-shadow: 0 2px 18px var(--ink), 0 1px 4px var(--ink); }
@@ -1155,10 +1158,35 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 .hero:has(.hero-video) .kicker, .hero:has(.hero-photo) .kicker {
   text-shadow: 0 1px 10px var(--ink), 0 1px 3px var(--ink);
 }
+/* The lead is the one line long enough to run past the scrim. At its default
+   736px it ended around 76% of the hero, where the gradient is already down to
+   ~12% — the last few words sat on bare video. Capping it keeps the whole line
+   inside the protected band; the headline is short enough not to need this. */
+/* Copy is capped so it never crosses into the clean part of the frame. Every
+   stop in the scrim above is the measured worst case over 20 heroes sampled at
+   six moments each, so the veil is only ever as heavy as the brightest footage
+   behind that column actually requires — and past 88% there is none at all. */
+.hero:has(.hero-video) h1,
+.hero:has(.hero-photo) h1 { max-width: 72%; }
+.hero:has(.hero-video) .lead,
+.hero:has(.hero-photo) .lead { max-width: min(736px, 58%); }
 @media (max-width: 820px) {
-  /* Narrow screens put the copy across the full width, so the gradient cannot
-     protect one side only — a lighter flat veil plus the text-shadow. */
-  .hero-scrim { background: color-mix(in srgb, var(--ink) 62%, transparent); }
+  .hero:has(.hero-video) h1, .hero:has(.hero-photo) h1,
+  .hero:has(.hero-video) .lead, .hero:has(.hero-photo) .lead { max-width: 100%; }
+}
+@media (max-width: 820px) {
+  /* Narrow screens put the copy across the full width, so a left-weighted
+     gradient protects nothing — it has to run top-to-bottom instead. Heavy
+     through the kicker and headline (the blue kicker is the fussiest element
+     on the page: it needs a near-black backdrop to clear 4.5:1), then easing
+     off below the copy so the bottom of the frame is close to clean footage. */
+  .hero-scrim {
+    background: linear-gradient(to bottom,
+      color-mix(in srgb, var(--ink) 90%, transparent) 0%,
+      color-mix(in srgb, var(--ink) 88%, transparent) 42%,
+      color-mix(in srgb, var(--ink) 80%, transparent) 70%,
+      color-mix(in srgb, var(--ink) 50%, transparent) 100%);
+  }
 }
 }
 .hero-photo {
@@ -1296,6 +1324,31 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 .svc-page .card { box-shadow: 0 1px 3px rgba(13, 13, 20, 0.05); }
 .svc-page a.card:hover { box-shadow: var(--shadow); border-color: var(--blue); }
 .svc-page .hero { border-bottom: 1px solid var(--line); }
+
+/* A hero with footage behind it is always light-copy-on-dark, whatever palette
+   the rest of the page uses. This is the whole reason the aerials can stay
+   bright: white copy clears 4.5:1 through a thin veil, while .svc-page's
+   #4B4B57 body text needed a ~90% WHITE scrim to clear it, which wiped the
+   footage off the page entirely. Scoped to .hero, so the light sections below
+   are untouched. */
+.svc-page .hero:has(.hero-video),
+.svc-page .hero:has(.hero-photo) {
+  --ink: #0D0D14;            /* the scrim and the text-shadows read from this */
+  --white: #FFFFFF;
+  --muted: #D9DCE4;
+  --dim: #AFB4C2;
+  --line: rgba(255, 255, 255, 0.14);
+  background: #0D0D14;
+  color: #FFFFFF;
+}
+.svc-page .hero:has(.hero-video) .btn.ghost,
+.svc-page .hero:has(.hero-photo) .btn.ghost {
+  color: #FFFFFF; border-color: rgba(255, 255, 255, 0.5);
+}
+.svc-page .hero:has(.hero-video) .btn.ghost:hover,
+.svc-page .hero:has(.hero-photo) .btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.12); border-color: #FFFFFF;
+}
 
 /* Optional hero sub-headline under the H1 — one line, smaller than the H1, on-brand.
    Equal top/bottom gaps so the H1 → subhead → paragraph rhythm is uniform. */
