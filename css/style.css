@@ -1143,13 +1143,12 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
      video. Derived from --ink so it follows the page palette: dark on the
      standard hero, white on .svc-page, which redefines --ink to #FFFFFF. */
   background: linear-gradient(97deg,
-    color-mix(in srgb, var(--ink) 90%, transparent) 0%,
-    color-mix(in srgb, var(--ink) 88%, transparent) 36%,
-    color-mix(in srgb, var(--ink) 80%, transparent) 44%,
-    color-mix(in srgb, var(--ink) 76%, transparent) 60%,
-    color-mix(in srgb, var(--ink) 72%, transparent) 63%,
-    color-mix(in srgb, var(--ink) 46%, transparent) 75%,
-    color-mix(in srgb, var(--ink) 18%, transparent) 82%,
+    color-mix(in srgb, var(--ink) 66%, transparent) 0%,
+    color-mix(in srgb, var(--ink) 64%, transparent) 50%,
+    color-mix(in srgb, var(--ink) 62%, transparent) 57%,
+    color-mix(in srgb, var(--ink) 52%, transparent) 66%,
+    color-mix(in srgb, var(--ink) 48%, transparent) 74%,
+    color-mix(in srgb, var(--ink) 16%, transparent) 82%,
     transparent 88%);
 }
 .hero:has(.hero-video) h1,
@@ -1158,6 +1157,14 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 .hero:has(.hero-video) .kicker, .hero:has(.hero-photo) .kicker {
   text-shadow: 0 1px 10px var(--ink), 0 1px 3px var(--ink);
 }
+/* The kicker sets the brightness of the whole hero. Brand blue (#2196F3) is a
+   mid-luminance colour, so on video it needs a background roughly 7x darker
+   than white text does to clear 4.5:1 — measured across all 46 clips it forced
+   the scrim to 0.89, which is what was burying the footage. A pale blue keeps
+   the accent and lets the same scrim sit at 0.64, so ~3x more of the picture
+   comes through everywhere. */
+.hero:has(.hero-video) .kicker,
+.hero:has(.hero-photo) .kicker { color: #CFE8FF; }
 /* The lead is the one line long enough to run past the scrim. At its default
    736px it ended around 76% of the hero, where the gradient is already down to
    ~12% — the last few words sat on bare video. Capping it keeps the whole line
@@ -1182,10 +1189,10 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
      off below the copy so the bottom of the frame is close to clean footage. */
   .hero-scrim {
     background: linear-gradient(to bottom,
-      color-mix(in srgb, var(--ink) 90%, transparent) 0%,
-      color-mix(in srgb, var(--ink) 88%, transparent) 42%,
-      color-mix(in srgb, var(--ink) 80%, transparent) 70%,
-      color-mix(in srgb, var(--ink) 50%, transparent) 100%);
+      color-mix(in srgb, var(--ink) 64%, transparent) 0%,
+      color-mix(in srgb, var(--ink) 62%, transparent) 60%,
+      color-mix(in srgb, var(--ink) 58%, transparent) 76%,
+      color-mix(in srgb, var(--ink) 28%, transparent) 100%);
   }
 }
 }
