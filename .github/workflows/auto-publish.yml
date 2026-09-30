@@ -22,17 +22,99 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [main]
+  # The pipeline pushes the branch from the SYSTEM repo, then calls `gh pr
+  # create` there -- and that failed silently from 2026-09-28: "Resource not
+  # accessible by integration (createPullRequest)". The push worked because the
+  # remote URL carried a token; gh never got that credential, so it fell back to
+  # the app token, which can write to this repo but cannot open a PR in it.
+  # SITE_REPO_TOKEN, the secret the pipeline asks for first, has never existed --
+  # it silently degrades to `|| NEWLIFE_CLOUD_BLOG_PIPELINE`, so two days of
+  # posts became branches with no PR and the workflow still reported success.
+  #
+  # Opening the PR from HERE needs no new credential: this workflow already runs
+  # in this repo with pull-requests: write on its own GITHUB_TOKEN.
+  push:
+    branches:
+      - 'blog/**'
+      - 'articles/**'
 
 permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: write        # open-pr dispatches this workflow back at itself
 
 concurrency:
   group: auto-publish-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
+  # Runs ONLY on a branch push. Opens the PR the pipeline could not, then hands
+  # the number to the validate job below.
+  #
+  # Why the dispatch instead of letting `pull_request` fire: GitHub deliberately
+  # does not raise workflow events for things done with GITHUB_TOKEN, so a PR
+  # opened here would never trigger the `pull_request` run that validates it.
+  # workflow_dispatch is exempt, and this file already accepts a pr_number that
+  # way, so it is the existing supported path, not a new one.
+  open-pr:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Open a PR for this branch if one is not already open
+        id: open
+        run: |
+          set -euo pipefail
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          echo "branch: $BRANCH"
+
+          # Idempotent: every later push to the same branch re-runs this job, and
+          # a second PR for one post would be worse than none.
+          EXISTING=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" \
+                       --state open --json number -q '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "PR #$EXISTING already open for $BRANCH — nothing to do."
+            echo "number=$EXISTING" >> "$GITHUB_OUTPUT"
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Title from the post's own <title>, minus the site suffix. Falls back
+          # to the slug so a malformed post still gets a reviewable PR rather
+          # than being silently dropped.
+          FILE=$(git diff --name-only origin/main...HEAD | grep -E '^(blog|articles)/.+/index\.html$' | head -1 || true)
+          TITLE=""
+          if [ -n "$FILE" ] && [ -f "$FILE" ]; then
+            TITLE=$(sed -n 's:.*<title>\(.*\)</title>.*:\1:p' "$FILE" | head -1 | sed 's/ *| *NewLife Marketing *$//')
+          fi
+          [ -n "$TITLE" ] || TITLE="${BRANCH#*/}"
+          case "$BRANCH" in
+            articles/*) PREFIX="Article" ;;
+            *)          PREFIX="Blog" ;;
+          esac
+
+          NUM=$(gh pr create --repo "$GITHUB_REPOSITORY" \
+                  --base main --head "$BRANCH" \
+                  --title "$PREFIX: $TITLE" \
+                  --body "Opened automatically by auto-publish.yml on branch push. The content pipeline pushes the branch from the system repo but cannot open a PR here, so this repo opens its own. Validation runs next via workflow_dispatch." \
+                | grep -oE '[0-9]+$' | tail -1)
+
+          echo "opened PR #$NUM"
+          echo "number=$NUM" >> "$GITHUB_OUTPUT"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+      - name: Hand the PR to validation
+        if: steps.open.outputs.created == 'true'
+        run: |
+          set -euo pipefail
+          gh workflow run auto-publish.yml --repo "$GITHUB_REPOSITORY" \
+            -f pr_number="${{ steps.open.outputs.number }}"
+          echo "dispatched validation for PR #${{ steps.open.outputs.number }}"
+
   validate-and-merge:
     if: >
       github.event_name == 'workflow_dispatch' ||
