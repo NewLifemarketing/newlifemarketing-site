@@ -2,16 +2,11 @@
 <html lang="en-CA">
 <head>
 <meta name="robots" content="noindex, follow">
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-N3TBK96H9F"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-N3TBK96H9F');
-</script>
-
+<!-- No analytics on the portal, deliberately. This is an authenticated area:
+     /portal/reset/ carries a live Supabase recovery token in the URL fragment,
+     and GA4's page_location includes the fragment, so the token would be sent
+     to a third party. The dashboard also shows client revenue. PostHog is
+     excluded for the same reason — see newlife-marketing/TRACKING.md. -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="canonical" href="https://newlifemarketing.ca/portal/">
@@ -41,7 +36,7 @@
       <a href="#" id="pl-forgot">Forgot password?</a>
     </div>
 
-    <div id="pl-login-error" role="alert" style="display:none;font-size:0.82rem;color:#ff8080;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.4);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:1rem"></div>
+    <div id="pl-login-error" role="alert" style="display:none;font-size:0.82rem;color:#B3261E;background:rgba(201,58,58,0.08);border:1px solid rgba(201,58,58,0.30);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:1rem"></div>
 
     <button class="pl-btn full" type="submit">Sign In</button>
 
