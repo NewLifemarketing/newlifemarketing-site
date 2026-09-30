@@ -32,12 +32,43 @@
       if (!wasOpen) item.classList.add("open");
       btn.setAttribute("aria-expanded", String(!wasOpen));
     });
+    /* Hover intent. Closing on a bare mouseleave made the menu impossible to
+       use: moving the pointer diagonally toward a link clips outside the item
+       for a frame and the panel vanished mid-click. Opening is instant; closing
+       waits, and re-entering anywhere in the item cancels the close. */
+    var closeTimer = null;
+    function cancelClose() { if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; } }
     item.addEventListener("mouseenter", function () {
-      if (window.matchMedia("(min-width: 1281px)").matches) item.classList.add("open");
+      if (!window.matchMedia("(min-width: 1281px)").matches) return;
+      cancelClose();
+      items.forEach(function (i) { if (i !== item) i.classList.remove("open"); });
+      item.classList.add("open");
+      clampMega(item);
     });
     item.addEventListener("mouseleave", function () {
-      if (window.matchMedia("(min-width: 1281px)").matches) item.classList.remove("open");
+      if (!window.matchMedia("(min-width: 1281px)").matches) return;
+      cancelClose();
+      closeTimer = setTimeout(function () { item.classList.remove("open"); }, 320);
     });
+    item.addEventListener("focusin", function () { cancelClose(); item.classList.add("open"); clampMega(item); });
+  });
+
+  /* Keep a panel inside the viewport. Panels are centred under their trigger,
+     so a wide one under an edge item would otherwise run off-screen. */
+  function clampMega(item) {
+    var mega = item.querySelector(".mega");
+    if (!mega || !window.matchMedia("(min-width: 1281px)").matches) return;
+    mega.style.left = "";
+    mega.style.transform = "";
+    var r = mega.getBoundingClientRect();
+    var pad = 16;
+    var shift = 0;
+    if (r.right > window.innerWidth - pad) shift = window.innerWidth - pad - r.right;
+    else if (r.left < pad) shift = pad - r.left;
+    if (shift) mega.style.transform = "translateX(calc(-50% + " + Math.round(shift) + "px))";
+  }
+  window.addEventListener("resize", function () {
+    document.querySelectorAll(".nav-item.has-mega.open").forEach(clampMega);
   });
   document.addEventListener("click", function () {
     items.forEach(function (i) { i.classList.remove("open"); });
@@ -140,53 +171,6 @@
     t.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
   });
 
-  /* ---------- Ballpark quiz ---------- */
-  var quiz = document.getElementById("quiz");
-  var quizState = { service: "", budget: "" };
-  document.querySelectorAll("[data-open-quiz]").forEach(function (b) {
-    b.addEventListener("click", function (e) {
-      e.preventDefault();
-      if (quiz) {
-        quiz.classList.add("open");
-        showQuizStep(1);
-      }
-    });
-  });
-  function showQuizStep(n) {
-    if (!quiz) return;
-    quiz.querySelectorAll(".quiz-step").forEach(function (s) {
-      s.classList.toggle("active", s.getAttribute("data-step") === String(n));
-    });
-  }
-  if (quiz) {
-    quiz.querySelectorAll("[data-quiz-service]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        quizState.service = b.getAttribute("data-quiz-service");
-        showQuizStep(2);
-      });
-    });
-    quiz.querySelectorAll("[data-quiz-budget]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        quizState.budget = b.getAttribute("data-quiz-budget");
-        showQuizStep(3);
-      });
-    });
-    var qform = quiz.querySelector("form");
-    if (qform) {
-      qform.addEventListener("submit", function (e) {
-        e.preventDefault();
-        /* [NEEDS: GoHighLevel form/webhook endpoint — quiz submissions are not stored yet] */
-        var params = new URLSearchParams({
-          service: quizState.service,
-          budget: quizState.budget,
-          name: qform.querySelector("[name=name]").value,
-          email: qform.querySelector("[name=email]").value
-        });
-        window.location.href = "/book/?" + params.toString();
-      });
-    }
-  }
-
   /* ---------- Booking form → calendar page ---------- */
   var bookForm = document.getElementById("book-form");
   if (bookForm) {
@@ -235,6 +219,21 @@
         body: JSON.stringify(payload)
       }).then(function (r) {
         if (!r.ok) throw new Error("HTTP " + r.status);
+        /* Analytics only. Wrapped so a listener throwing can never reach the
+           .catch() below and tell someone their lead failed when it landed —
+           they would resubmit (duplicate) or give up (lost lead). Tracking
+           must never be able to break lead capture. */
+        try {
+          document.dispatchEvent(new CustomEvent("nl:form-success", { detail: { form: "book" } }));
+          /* GA4 conversion. Fires off the SAME confirmed-webhook signal as the
+             PostHog event, so the two can never disagree about what counts as
+             a lead. Until this existed GA4 recorded zero key events, which
+             meant it could not attribute a single booking to a page, campaign
+             or channel. */
+          if (typeof gtag === "function") {
+            gtag("event", "generate_lead", { form: "book", value: 0, currency: "CAD" });
+          }
+        } catch (err) {}
         showBookMsg("✓ Got it — taking you to pick your call time…", true);
         bookForm.reset();
         setTimeout(function () { window.location.href = "/book/call/"; }, 1200);
@@ -282,6 +281,12 @@
         body: JSON.stringify(payload)
       }).then(function (r) {
         if (!r.ok) throw new Error("HTTP " + r.status);
+        try {
+          document.dispatchEvent(new CustomEvent("nl:form-success", { detail: { form: "contact" } }));
+          if (typeof gtag === "function") {
+            gtag("event", "generate_lead", { form: "contact", value: 0, currency: "CAD" });
+          }
+        } catch (err) {}
         showContactMsg("✓ Message sent — we'll get back to you within one business day.", true);
         contactForm.reset();
         if (btn) btn.disabled = false;

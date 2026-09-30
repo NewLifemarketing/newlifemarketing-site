@@ -1,0 +1,133 @@
+/* ==========================================================================
+   case-study-v1.css — post affordances for /case-studies/*
+   Added 2026-09-06.
+
+   WHY THIS FILE EXISTS AT ALL, rather than a few rules appended to style.css:
+   style.css is 66 KB and every one of the site's ~179 pages loads it. The weekly
+   case-study pipeline is allowed to add THIS file once and is forbidden from ever
+   touching style.css, because a pipeline that can edit the sitewide stylesheet can
+   break every page on the site in a single pull request. Same reasoning, and the
+   same precedent, as css/article-v1.css.
+
+   WHY EVERY CLASS IS PREFIXED cs- AND NOT post-:
+   The rules below are lifted from css/blog-v2.css (.post-backlink, .post-date-line,
+   .post-tags, .post-byline) so a case-study dateline reads identically to an
+   article's. Reusing those exact class NAMES would work today only by luck —
+   case-study pages happen not to load blog-v2.css. The day one does, two
+   stylesheets would fight over .post-date-line and whichever loaded last would
+   win silently. A prefix costs nothing and removes the collision entirely.
+
+   WHAT THIS FILE DOES NOT DO: it does not restyle a single camp- block. The hero,
+   the KPI tiles, the snapshot strip, the chart, the table, the screenshots and the
+   CTA are untouched. Everything here is additive chrome around them.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   The post-meta bar.
+
+   Sits BETWEEN the hero section and the trust band, not inside the hero. Inside
+   the hero it would have to live within .camp-hero .wrap, which sits on top of
+   the full-bleed hero art and its veil — the dateline would compete with the h1
+   for the same visual space and the art would have to be shortened to fit it.
+   Below the hero it reads as a second thin bar directly above the trust band,
+   which is a rhythm the page already has.
+   -------------------------------------------------------------------------- */
+.cs-postmeta {
+  border-top: 1px solid var(--line);
+  background: var(--ink);
+  font-size: 0.85rem;
+}
+.cs-postmeta .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 1.5rem;
+  padding-block: 0.9rem;
+}
+
+.cs-backlink {
+  font-weight: 700;
+  color: var(--blue);
+  text-decoration: none;
+}
+.cs-backlink:hover { color: var(--blue-hot); }
+
+.cs-dateline {
+  color: var(--dim);
+  margin: 0;
+}
+.cs-dateline time { color: var(--muted); }
+.cs-byline { color: var(--white); font-weight: 700; }
+
+.cs-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  margin: 0;
+}
+.cs-tags .tag-sep { color: var(--line); }
+
+/* --------------------------------------------------------------------------
+   The as-of disclosure, under the results grid.
+
+   This is the sentence that makes a dated post honest: it names the date the
+   figures were frozen, the window they cover, and where to find what is true
+   NOW. Before this existed, the page handled the gap between "what we published"
+   and "what is true today" by editing itself — one screenshot caption on this
+   very page read "$647K conversion value (the account has since grown to
+   $751.7K)", which is a page arguing with its own evidence.
+   -------------------------------------------------------------------------- */
+.cs-asof {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--dim);
+}
+.cs-asof a { color: var(--blue); }
+.cs-asof time { color: var(--muted); }
+
+/* --------------------------------------------------------------------------
+   Age banners.
+
+   .cs-freshness is shipped hidden and revealed by a few lines of inline script
+   once the post passes 180 days. Client-side because a static site cannot know
+   today's date, and because the alternative — a scheduled job that rewrites a
+   banner into old pages — means recurring commits against published posts
+   forever, which is the mutation this whole change exists to stop.
+
+   .cs-superseded is NOT automatic. It is written once, by hand or by the
+   pipeline, when a newer dated breakdown for the same client is published.
+   -------------------------------------------------------------------------- */
+.cs-freshness,
+.cs-superseded {
+  width: 100%;
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.cs-freshness a,
+.cs-superseded a { color: var(--blue); font-weight: 700; }
+.cs-freshness[hidden] { display: none; }
+
+/* --------------------------------------------------------------------------
+   Index cards: the date on the meta line.
+
+   The meta line already carries "{Industry} · {City}". Adding the publish date
+   in front of it matches the convention /articles/index.html already uses
+   ("{Date} · {Byline}"), so the two indexes read the same way.
+   -------------------------------------------------------------------------- */
+.camp-card .meta .cs-card-date { color: var(--muted); font-weight: 700; }
+
+@media (max-width: 640px) {
+  .cs-postmeta .wrap { gap: 0.35rem 1rem; }
+  .cs-tags { width: 100%; }
+}
