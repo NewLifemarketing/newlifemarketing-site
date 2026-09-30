@@ -126,6 +126,9 @@ let prevNewestPath = null;
 for (const p of modified) {
   if (p === "blog/index.html") continue;
   if (p === "sitemap.xml") continue;
+  // The human-facing sitemap page, added 2026-09-30. A new post has to reach
+  // BOTH sitemaps; allowing only the XML one is how the two would drift apart.
+  if (p === "sitemap/index.html") continue;
   const m = p.match(/^blog\/([^/]+)\/index\.html$/);
   if (m && slug && m[1] !== slug) {
     if (prevNewestPath) {
@@ -333,6 +336,38 @@ const result = {
   failures,
   warnings,
 };
+
+
+// ---------------------------------------------------------------------------
+// sitemap.xml must stay in ALPHABETICAL order by <loc> (owner, 2026-09-30).
+//
+// Every site-publisher used to say "append one <url>", which is how all four
+// sitemaps drifted out of order -- 134 of NewLife's 234 entries were misplaced
+// -- and why two open blog PRs always collided on the final line of this file.
+// Alphabetical insertion spreads the edits out, and is still a single pure
+// insertion, so it satisfies the additive check as well.
+//
+// Fix with: node scripts/sitemap-sort.mjs --write
+try {
+  if (fs.existsSync("sitemap.xml")) {
+    const locs = [...fs.readFileSync("sitemap.xml", "utf8")
+      .matchAll(/<loc>([\s\S]*?)<\/loc>/gi)].map((m) => m[1].trim());
+    const sorted = locs.slice().sort();
+    const bad = locs.findIndex((l, i) => l !== sorted[i]);
+    if (bad !== -1) {
+      fail("sitemap.xml is not in alphabetical order (first out of place: "
+        + locs[bad] + "). New pages are inserted alphabetically, never appended. "
+        + "Fix with: node scripts/sitemap-sort.mjs --write");
+    }
+    const dupes = [...new Set(locs.filter((l, i) => locs.indexOf(l) !== i))];
+    if (dupes.length) {
+      fail("sitemap.xml has " + dupes.length
+        + " duplicate <loc> entr(ies): " + dupes.join(", "));
+    }
+  }
+} catch (e) {
+  fail("could not check sitemap.xml ordering: " + e.message);
+}
 
 fs.writeFileSync(
   path.join(REPO_ROOT, "validation-result.json"),
