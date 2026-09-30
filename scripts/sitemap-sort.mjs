@@ -152,12 +152,16 @@ let working = blocks.slice();
 if (mode === 'add') {
   if (!addUrl) { console.error('--add needs a URL'); process.exit(2); }
   const url = addUrl.trim();
+  // Present in the XML is NOT "nothing to do" -- the page may still be missing
+  // from /sitemap/. This exited early and left local-seo-for-dentists-in-newmarket
+  // in sitemap.xml but absent from the human sitemap, which is exactly the drift
+  // between the two files that --add exists to prevent. Fall through instead.
   if (working.some((b) => locOf(b) === url)) {
-    console.log(`Already present, nothing to do: ${url}`);
-    process.exit(0);
+    console.log(`Already in sitemap.xml: ${url}`);
+  } else {
+    const indent = (blocks[0].match(/^[ \t]*/) || [''])[0];
+    working.push(`${indent}<url><loc>${url}</loc></url>${nl}`);
   }
-  const indent = (blocks[0].match(/^[ \t]*/) || [''])[0];
-  working.push(`${indent}<url><loc>${url}</loc></url>${nl}`);
 }
 
 const locs = working.map(locOf);
