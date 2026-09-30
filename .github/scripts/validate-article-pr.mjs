@@ -129,6 +129,9 @@ let prevNewestPath = null;
 for (const p of modified) {
   if (p === "articles/index.html") continue;
   if (p === "sitemap.xml") continue;
+  // The human-facing sitemap page, added 2026-09-30. An article has to reach
+  // BOTH sitemaps; allowing only the XML one is how the two would drift apart.
+  if (p === "sitemap/index.html") continue;
   const m = p.match(/^articles\/([^/]+)\/index\.html$/);
   if (m && slug && m[1] !== slug) {
     if (prevNewestPath) {
