@@ -1398,6 +1398,17 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   background: #fff; box-shadow: 0 1px 3px rgba(13, 13, 20, 0.05);
 }
 .svc-comp h3 { margin-bottom: 0.5rem; }
+
+/* ---------- /sitemap/ : the full page index ---------- */
+/* Single column, bulleted, child pages nested one level in. */
+/* Degrades safely: without these it is still a plain nested list. */
+.sitemap-list, .sitemap-list ul { list-style: disc; }
+.sitemap-list { padding-left: 1.35rem; margin: 1.5rem 0 0; }
+.sitemap-list ul { padding-left: 1.6rem; margin: 0.45rem 0 0.6rem; }
+.sitemap-list li { margin: 0 0 0.45rem; font-size: 0.95rem; line-height: 1.5; }
+.sitemap-list li::marker { color: var(--blue); }
+.sitemap-list a { color: var(--blue); text-decoration: none; }
+.sitemap-list a:hover { text-decoration: underline; }
 .svc-comp .svc-when { color: var(--blue); font-weight: 700; font-size: 0.9rem; display: block; margin-bottom: 0.5rem; }
 .svc-comp p { margin: 0.35rem 0 0; color: var(--muted); }
 
