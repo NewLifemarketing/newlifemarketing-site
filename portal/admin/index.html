@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin Console | NewLife Marketing Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,700;1,700;1,800;1,900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/portal/portal.css">
+<style id="pl-guard">html:not(.pl-authed) #pl-app{display:none}</style>
+</head>
+<body>
+
+<div class="pl-app" id="pl-app">
+  <aside class="pl-sidebar">
+    <div class="pl-sidebar-head">
+      <span class="pl-logo">NEWLIFE <span class="blue">ADMIN</span></span>
+    </div>
+    <nav class="pl-nav">
+      <span class="pl-nav-label">Console</span>
+      <button class="pl-nav-item active" data-av="clients">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+        Clients
+      </button>
+      <button class="pl-nav-item" data-av="rollup">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+        Roll-up
+      </button>
+      <button class="pl-nav-item" data-av="health">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+        Data health
+      </button>
+      <span class="pl-nav-label">Client portal</span>
+      <a class="pl-nav-item" href="/portal/dashboard/">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        My own dashboard
+      </a>
+    </nav>
+    <div class="pl-sidebar-foot">
+      <div class="pl-user">
+        <div class="pl-avatar" id="pl-initials">&nbsp;</div>
+        <div>
+          <div class="nm" id="pl-clientname">Signing in…</div>
+          <div class="biz" id="pl-clientbiz"></div>
+        </div>
+      </div>
+      <a class="pl-btn ghost sm full" href="/portal/" id="pl-logout">Log out</a>
+    </div>
+  </aside>
+
+  <div class="pl-main">
+    <div class="pl-topbar">
+      <button class="pl-menu-btn" data-open-nav aria-label="Open menu">☰</button>
+      <h1 id="pl-admin-title">Clients</h1>
+      <span class="pl-dim" id="pl-admin-sub" style="margin-left:auto;font-size:0.82rem"></span>
+    </div>
+
+    <!-- CLIENTS -->
+    <section class="pl-view active" data-av="clients">
+      <div class="pl-panel">
+        <div class="pl-panel-head">
+          <h2>All clients</h2>
+          <span class="pl-dim" id="pl-client-count" style="font-size:0.78rem"></span>
+        </div>
+        <p class="pl-muted" style="margin:-0.4rem 0 1rem;font-size:0.87rem">
+          Open any client to see the portal exactly as they see it, or edit what their login shows.
+        </p>
+        <div id="pl-client-list"></div>
+      </div>
+    </section>
+
+    <!-- ROLL-UP -->
+    <section class="pl-view" data-av="rollup">
+      <div class="pl-kpis" id="pl-rollup-kpis"></div>
+      <div class="pl-panel">
+        <div class="pl-panel-head"><h2>Latest period by client</h2></div>
+        <div id="pl-rollup-table"></div>
+      </div>
+    </section>
+
+    <!-- HEALTH -->
+    <section class="pl-view" data-av="health">
+      <div class="pl-panel">
+        <div class="pl-panel-head"><h2>Data health</h2></div>
+        <p class="pl-muted" style="margin:-0.4rem 0 1rem;font-size:0.87rem">
+          What would look wrong to a client if they logged in right now.
+        </p>
+        <div id="pl-health"></div>
+      </div>
+    </section>
+  </div>
+  <div class="pl-scrim" data-close-nav></div>
+</div>
+
+<!-- EDIT CLIENT -->
+<div class="pl-modal" id="pl-edit" hidden>
+  <div class="pl-modal-card">
+    <div class="pl-panel-head">
+      <h3 id="pl-edit-title">Edit client</h3>
+      <button class="pl-modal-x" type="button" data-edit-close aria-label="Close">×</button>
+    </div>
+    <form id="pl-edit-form" class="pl-form-grid" onsubmit="return false">
+      <div><label>Client name</label><input type="text" name="name" required></div>
+      <div><label>Business name</label><input type="text" name="business_name"></div>
+      <div class="full">
+        <label>Channels this client can see</label>
+        <div class="pl-checks" id="pl-edit-sections"></div>
+        <p class="pl-dim" style="font-size:0.76rem;margin:0.5rem 0 0">
+          Unticking a channel hides it from their sidebar. Any report rows already
+          loaded for it stay in the database, just out of sight.
+        </p>
+      </div>
+      <div class="full" id="pl-edit-msg" style="display:none"></div>
+      <div class="full" style="display:flex;gap:0.6rem;justify-content:flex-end">
+        <button class="pl-btn ghost" type="button" data-edit-close>Cancel</button>
+        <button class="pl-btn" type="submit" id="pl-edit-save">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/portal/config.js"></script>
+<script src="/portal/auth.js"></script>
+<script src="/portal/admin.js"></script>
+</body>
+</html>

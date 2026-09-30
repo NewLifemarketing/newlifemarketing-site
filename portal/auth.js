@@ -117,6 +117,22 @@
      valid session. Content stays hidden (see the pl-guard style in the
      page <head>) until the session is confirmed; no session — or no
      Supabase config at all — bounces straight to the login page. */
+  /* Persistent bar so an admin can never mistake a client's dashboard for
+     their own — and always has one click back to the console. */
+  function adminBanner(clientName) {
+    if (document.getElementById("pl-admin-bar")) return;
+    var bar = document.createElement("div");
+    bar.id = "pl-admin-bar";
+    bar.className = "pl-admin-bar";
+    bar.innerHTML =
+      '<span class="pl-admin-dot" aria-hidden="true"></span>' +
+      '<span>Viewing as <strong></strong> \u2014 read-only admin view</span>' +
+      '<a class="pl-admin-exit" href="/portal/admin/">Back to console</a>';
+    bar.querySelector("strong").textContent = clientName || "client";
+    document.body.appendChild(bar);
+    document.body.classList.add("has-admin-bar");
+  }
+
   var app = qs("pl-app");
   if (app) {
     if (!sb) {
@@ -146,23 +162,56 @@
           .single()
           .then(function (r) {
             var p = r.data;
-            /* Publish context for the reporting layer (portal.js) and signal
-               that it can start loading. Fires even when the profile is
-               missing so the UI can show a clean state instead of hanging. */
-            window.PORTAL_CTX = {
-              sb: sb,
-              session: session,
-              profile: p || null,
-              clientId: p ? p.client_id : null,
-              client: p && p.clients ? p.clients : null,
-              sections: (p && p.clients && p.clients.sections) ? p.clients.sections : []
-            };
-            document.dispatchEvent(new CustomEvent("portal:ready", { detail: window.PORTAL_CTX }));
-            if (!p) return;
-            var biz = p.clients ? (p.clients.business_name || p.clients.name) : "";
-            if (nameEl && p.full_name) nameEl.textContent = p.full_name;
-            if (bizEl && biz) bizEl.textContent = biz;
-            setInitials(p.full_name || biz || session.user.email || "");
+            var isAdmin = !!(p && p.role === "admin");
+
+            /* Admin "view as": ?client=<uuid> renders that client's dashboard.
+               This is NOT auth impersonation — no session is swapped and no
+               elevated key is used. The admin stays themselves; RLS already
+               lets an admin read every client's rows, so the ordinary
+               dashboard simply reads a different client_id. A non-admin who
+               types the same URL is ignored below, and would be stopped by RLS
+               even if it weren't. */
+            var asClient = null;
+            try {
+              var qp = new URLSearchParams(window.location.search).get("client");
+              if (isAdmin && qp && /^[0-9a-f-]{36}$/i.test(qp)) asClient = qp;
+            } catch (e) {}
+
+            function publish(clientRow) {
+              window.PORTAL_CTX = {
+                sb: sb,
+                session: session,
+                profile: p || null,
+                isAdmin: isAdmin,
+                viewingAs: asClient ? (clientRow || { id: asClient }) : null,
+                clientId: asClient ? asClient : (p ? p.client_id : null),
+                client: asClient ? (clientRow || null) : (p && p.clients ? p.clients : null),
+                sections: asClient
+                  ? ((clientRow && clientRow.sections) || [])
+                  : ((p && p.clients && p.clients.sections) ? p.clients.sections : [])
+              };
+              document.dispatchEvent(new CustomEvent("portal:ready", { detail: window.PORTAL_CTX }));
+
+              var shown = asClient
+                ? (clientRow ? (clientRow.business_name || clientRow.name) : "Unknown client")
+                : (p && p.clients ? (p.clients.business_name || p.clients.name) : "");
+              if (nameEl) nameEl.textContent = asClient
+                ? shown
+                : ((p && p.full_name) || session.user.email || "Signed in");
+              if (bizEl) bizEl.textContent = asClient ? "Viewed by " + (p && p.full_name ? p.full_name : "admin") : shown;
+              setInitials(shown || (p && p.full_name) || session.user.email || "");
+              if (asClient) adminBanner(shown);
+            }
+
+            if (asClient) {
+              /* Pull the impersonated client's own row so sections and name are
+                 theirs, not the admin's. */
+              sb.from("clients").select("id, name, business_name, sections")
+                .eq("id", asClient).single()
+                .then(function (cr) { publish(cr.data || null); });
+            } else {
+              publish(null);
+            }
           });
       });
 

@@ -2,3 +2,6 @@
 # (.github/scripts/validate-*.mjs) — regenerated every workflow run, never
 # meant to be committed or tracked.
 validation-result.json
+
+# keyword-audit baseline (local, per-edit)
+.keyword-baseline.json
