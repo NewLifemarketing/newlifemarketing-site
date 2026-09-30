@@ -225,6 +225,14 @@
            must never be able to break lead capture. */
         try {
           document.dispatchEvent(new CustomEvent("nl:form-success", { detail: { form: "book" } }));
+          /* GA4 conversion. Fires off the SAME confirmed-webhook signal as the
+             PostHog event, so the two can never disagree about what counts as
+             a lead. Until this existed GA4 recorded zero key events, which
+             meant it could not attribute a single booking to a page, campaign
+             or channel. */
+          if (typeof gtag === "function") {
+            gtag("event", "generate_lead", { form: "book", value: 0, currency: "CAD" });
+          }
         } catch (err) {}
         showBookMsg("✓ Got it — taking you to pick your call time…", true);
         bookForm.reset();
@@ -275,6 +283,9 @@
         if (!r.ok) throw new Error("HTTP " + r.status);
         try {
           document.dispatchEvent(new CustomEvent("nl:form-success", { detail: { form: "contact" } }));
+          if (typeof gtag === "function") {
+            gtag("event", "generate_lead", { form: "contact", value: 0, currency: "CAD" });
+          }
         } catch (err) {}
         showContactMsg("✓ Message sent — we'll get back to you within one business day.", true);
         contactForm.reset();
