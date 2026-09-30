@@ -15,10 +15,10 @@
 
   /* ---------- Config ---------- */
 
-  /* TODO(keegan): create a free PostHog project and paste its key here.
-     Until this is filled in, nothing below runs — no requests, no cookies,
-     no console noise. The site behaves exactly as it does today. */
-  var POSTHOG_KEY = "";
+  /* PostHog project 616277, US Cloud. This is the public project token —
+     PostHog labels it "write-only key for use in client libraries, safe to use
+     in public apps". Same class as the GA4 ID already in this repo. */
+  var POSTHOG_KEY = "phc_z3eC3QvX6FpqDzrX26DVAw6b5NNQy2iUgBSsAnVmGcv2";
   var POSTHOG_HOST = "https://us.i.posthog.com";
 
   /* Query params that carry a GHL contact id into the site. `nl_cid` is ours;
@@ -114,4 +114,61 @@
       posthog.capture("identified_via_email_link", { landing_page: window.location.pathname });
     }
   }
+
+  /* ---------- Form engagement ----------
+
+     Answers where people stop. Someone who starts the booking form and never
+     submits is a different problem from someone who never opened it, and we
+     could not previously tell those apart.
+
+     Three rules, all deliberate:
+
+       1. NEVER capture field values. Field NAMES and COUNTS only. No name,
+          email, phone or budget is ever sent to PostHog.
+
+       2. website_confirm is a honeypot — class="hp-field", tabindex="-1",
+          aria-hidden="true". A human cannot focus or fill it, so it is
+          excluded everywhere: counting it would both pollute the funnel and
+          send bot noise.
+
+       3. form_submitted fires only on a CONFIRMED successful webhook, never
+          on a submit click. Someone whose submission failed must not be
+          counted as converted — they tried to reach us and got dropped, and
+          they are the most important person in this dataset to catch. */
+
+  var FORMS = { "book-form": "book", "contact-form": "contact" };
+  var formStarted = {};
+
+  Object.keys(FORMS).forEach(function (id) {
+    var form = document.getElementById(id);
+    if (!form) return;
+    var label = FORMS[id];
+
+    form.addEventListener("focusin", function (e) {
+      var el = e.target;
+      if (!el.name || el.name === "website_confirm") return;
+      if (formStarted[label]) return;
+      formStarted[label] = true;
+      posthog.capture("form_started", { form: label });
+    });
+
+    form.addEventListener("submit", function () {
+      var filled = [];
+      var fields = form.querySelectorAll("[name]");
+      for (var i = 0; i < fields.length; i++) {
+        var f = fields[i];
+        if (f.name === "website_confirm") continue;
+        if (f.value && f.value.trim()) filled.push(f.name);
+      }
+      posthog.capture("form_attempted", {
+        form: label, fields_filled: filled.length, fields: filled
+      });
+    });
+  });
+
+  /* Fired by main.js only after the GoHighLevel webhook returns ok. */
+  document.addEventListener("nl:form-success", function (e) {
+    posthog.capture("form_submitted", { form: e.detail && e.detail.form });
+  });
+
 })();
