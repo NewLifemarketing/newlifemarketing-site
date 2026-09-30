@@ -23,6 +23,9 @@
 
   var ctx = null, clients = [], editing = null;
 
+  /* One full reporting cycle. Reports are dropped every two weeks. */
+  var STALE_DAYS = 14;
+
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -87,8 +90,11 @@
                esc(PLATFORM_LABEL[s] || s) + "</span>";
       }).join("");
       var stale = daysSince(c.last_refresh);
+      /* Reporting is two-weekly, so 14 days is one full cycle. Anything past
+         that means a cycle was missed. (Was 21 — correct when reports were
+         monthly.) */
       var freshness = c.last_refresh
-        ? (stale > 21
+        ? (stale > STALE_DAYS
             ? '<span class="pl-stale">' + stale + " days since last load</span>"
             : '<span class="pl-fresh">Updated ' + fmtDate(c.last_refresh) + '</span>')
         : '<span class="pl-stale">No data loaded</span>';
@@ -164,7 +170,7 @@
           issues.push([nm, (PLATFORM_LABEL[p] || p) + " has data loaded but is hidden from the client."]);
       });
       var d = daysSince(c.last_refresh);
-      if (d !== null && d > 21) issues.push([nm, "Last load was " + d + " days ago — reports are due every two weeks."]);
+      if (d !== null && d > STALE_DAYS) issues.push([nm, "Last load was " + d + " days ago — reports are due every two weeks."]);
     });
     var el = document.getElementById("pl-health");
     if (!issues.length) {
