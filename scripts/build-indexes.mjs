@@ -3,10 +3,12 @@
  * build-indexes.mjs — keep the things that must list every page in sync with
  * the pages that actually exist on disk.
  *
- * Owns three outputs:
- *   1. sitemap.xml          — every indexable URL, stale ones removed
- *   2. sitemap/index.html   — the human site map, A-Z, children nested
- *   3. Open Graph + Twitter Card tags on every page that lacks them
+ * Owns ONE thing by default: Open Graph + Twitter Card tags, which nothing
+ * else on the site adds. Without them a shared link renders as bare text.
+ *
+ * Both sitemaps belong to scripts/sitemap-sort.mjs, which the publishing agent
+ * calls and validate-blog-pr.mjs enforces. This script only touches them under
+ * an explicit --sitemaps, for reconciliation on main -- see the note there.
  *
  * Why a generator rather than an agent instruction: an instruction is one-shot,
  * so a page it misses stays missed. This reads the filesystem, so a page that
@@ -14,8 +16,9 @@
  * service/industry/location pages, which no publishing agent touches, and it
  * removes deleted pages, which the "never alter existing entries" rule cannot.
  *
- *   node scripts/build-indexes.mjs                       write
- *   node scripts/build-indexes.mjs --check               report only, exit 1 if stale
+ *   node scripts/build-indexes.mjs                       tag any page missing OG tags
+ *   node scripts/build-indexes.mjs --check               report only, exit 1 if any lack tags
+ *   node scripts/build-indexes.mjs --sitemaps            ALSO rebuild both sitemaps (main only)
  *   node scripts/build-indexes.mjs --og-only             tags only, leave sitemaps alone
  *   node scripts/build-indexes.mjs --page blog/x/index.html   restrict to one page
  *
@@ -188,9 +191,22 @@ const xmlWanted = ['<?xml version="1.0" encoding="UTF-8"?>',
   '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
   ...pages.map(p => p.url).sort().map(u => `  <url><loc>${SITE}${u}</loc></url>`),
   '</urlset>', ''].join('\n');
-// Skipped entirely under --og-only / --page. Regenerating the full page list
-// from a feature branch would drop everything added to main since it was cut.
-const SITEMAPS = !OG_ONLY && !ONLY_PAGE;
+/**
+ * Sitemaps are OFF by default -- scripts/sitemap-sort.mjs already owns them.
+ *
+ * That tool is wired into the publishing agent AND into validate-blog-pr.mjs,
+ * which fails a PR whose sitemap.xml entries were reordered. Two tools writing
+ * the same file disagree: sitemap-sort uses the title passed on the command
+ * line (the full post title), this script derives it from the <title> tag, so
+ * each would rewrite the other's link text on every post.
+ *
+ * --sitemaps is kept for occasional reconciliation ON MAIN ONLY: it is the only
+ * thing that removes deleted pages, and it covers service/industry/location
+ * pages, which nothing calls sitemap-sort for. Never run it on a feature
+ * branch -- a blog/<slug> branch is cut from an older main, so rebuilding the
+ * page list there would drop everything added to main since.
+ */
+const SITEMAPS = process.argv.includes('--sitemaps') && !OG_ONLY && !ONLY_PAGE;
 const xmlPath = path.join(ROOT, 'sitemap.xml');
 const xmlCur = fs.existsSync(xmlPath) ? fs.readFileSync(xmlPath, 'utf8') : '';
 const xmlStale = SITEMAPS && xmlCur.replace(/\r\n/g, '\n') !== xmlWanted;
