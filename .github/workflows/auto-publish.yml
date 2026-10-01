@@ -179,6 +179,37 @@ jobs:
         with:
           node-version: 20
 
+      - name: Give the new page its link preview
+        # A shared link with no og:image renders as bare text. Nothing in the
+        # content pipeline adds these tags, so the page is tagged here, before
+        # the gate, and the fix is committed to the PR branch.
+        #
+        # Scoped to this one page on purpose. The sitemaps are NOT regenerated:
+        # a blog/<slug> branch is cut from an older main, so rebuilding the
+        # full page list here would drop every page added to main since. Those
+        # are regenerated on main instead.
+        #
+        # Pushing with GITHUB_TOKEN does not re-trigger this workflow, so the
+        # push: / synchronize: triggers above cannot loop on this commit.
+        run: |
+          set -e
+          BRANCH="${{ steps.meta.outputs.head_ref }}"
+          PAGE="$BRANCH/index.html"
+          if [ ! -f "$PAGE" ]; then
+            echo "no $PAGE — leaving link-preview tags to the gate to report"
+            exit 0
+          fi
+          node scripts/build-indexes.mjs --og-only --page "$PAGE"
+          if git diff --quiet -- "$PAGE"; then
+            echo "already had link-preview tags"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$PAGE"
+          git commit -m "Add Open Graph and Twitter Card tags to the new page"
+          # HEAD is detached (checkout used refs/pull/N/head), so push explicitly.
+          git push origin "HEAD:refs/heads/$BRANCH"
       - name: Run validation gate
         id: validate
         run: |
@@ -190,13 +221,24 @@ jobs:
           chrome=$(node scripts/sync-chrome.mjs --check --only "blog/**/index.html" --require-participation 2>&1)
           c=$?
           echo "$chrome"
+          # Link-preview gate: the new page must carry og:image, or it shares as
+          # bare text. The fix step above normally handles this; this catches the
+          # case where it could not.
+          idx=$(node scripts/build-indexes.mjs --check --og-only --page "${{ steps.meta.outputs.head_ref }}/index.html" 2>&1)
+          x=$?
+          echo "$idx"
           set -e
           if [ "$c" -ne 0 ]; then
             [ -f validation-result.json ] || echo '{"failures":[]}' > validation-result.json
             msg='Site chrome check failed — the new post is missing the header/footer markers or is out of date with partials/. Regenerate from the current template, or run `node scripts/sync-chrome.mjs --write`. See partials/README.md.'
             tmp=$(mktemp); jq --arg m "$msg" '.failures += [$m] | .pass=false' validation-result.json > "$tmp" && mv "$tmp" validation-result.json
           fi
-          if [ "$v" -ne 0 ] || [ "$c" -ne 0 ]; then echo "exit_code=1" >> "$GITHUB_OUTPUT"; else echo "exit_code=0" >> "$GITHUB_OUTPUT"; fi
+          if [ "$x" -ne 0 ]; then
+            [ -f validation-result.json ] || echo '{"failures":[]}' > validation-result.json
+            msg='Link-preview check failed — the new page has no og:image, so a shared link renders as bare text. Run: node scripts/build-indexes.mjs --og-only --page <page>'
+            tmp=$(mktemp); jq --arg m "$msg" '.failures += [$m] | .pass=false' validation-result.json > "$tmp" && mv "$tmp" validation-result.json
+          fi
+          if [ "$v" -ne 0 ] || [ "$c" -ne 0 ] || [ "$x" -ne 0 ]; then echo "exit_code=1" >> "$GITHUB_OUTPUT"; else echo "exit_code=0" >> "$GITHUB_OUTPUT"; fi
 
       - name: Read validation result
         id: result
@@ -361,6 +403,37 @@ jobs:
         with:
           node-version: 20
 
+      - name: Give the new page its link preview
+        # A shared link with no og:image renders as bare text. Nothing in the
+        # content pipeline adds these tags, so the page is tagged here, before
+        # the gate, and the fix is committed to the PR branch.
+        #
+        # Scoped to this one page on purpose. The sitemaps are NOT regenerated:
+        # a articles/<slug> branch is cut from an older main, so rebuilding the
+        # full page list here would drop every page added to main since. Those
+        # are regenerated on main instead.
+        #
+        # Pushing with GITHUB_TOKEN does not re-trigger this workflow, so the
+        # push: / synchronize: triggers above cannot loop on this commit.
+        run: |
+          set -e
+          BRANCH="${{ steps.meta.outputs.head_ref }}"
+          PAGE="$BRANCH/index.html"
+          if [ ! -f "$PAGE" ]; then
+            echo "no $PAGE — leaving link-preview tags to the gate to report"
+            exit 0
+          fi
+          node scripts/build-indexes.mjs --og-only --page "$PAGE"
+          if git diff --quiet -- "$PAGE"; then
+            echo "already had link-preview tags"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$PAGE"
+          git commit -m "Add Open Graph and Twitter Card tags to the new page"
+          # HEAD is detached (checkout used refs/pull/N/head), so push explicitly.
+          git push origin "HEAD:refs/heads/$BRANCH"
       - name: Run validation gate
         id: validate
         run: |
@@ -372,13 +445,24 @@ jobs:
           chrome=$(node scripts/sync-chrome.mjs --check --only "articles/**/index.html" --require-participation 2>&1)
           c=$?
           echo "$chrome"
+          # Link-preview gate: the new page must carry og:image, or it shares as
+          # bare text. The fix step above normally handles this; this catches the
+          # case where it could not.
+          idx=$(node scripts/build-indexes.mjs --check --og-only --page "${{ steps.meta.outputs.head_ref }}/index.html" 2>&1)
+          x=$?
+          echo "$idx"
           set -e
           if [ "$c" -ne 0 ]; then
             [ -f validation-result.json ] || echo '{"failures":[]}' > validation-result.json
             msg='Site chrome check failed — the new article is missing the header/footer markers or is out of date with partials/. Regenerate from the current template, or run `node scripts/sync-chrome.mjs --write`. See partials/README.md.'
             tmp=$(mktemp); jq --arg m "$msg" '.failures += [$m] | .pass=false' validation-result.json > "$tmp" && mv "$tmp" validation-result.json
           fi
-          if [ "$v" -ne 0 ] || [ "$c" -ne 0 ]; then echo "exit_code=1" >> "$GITHUB_OUTPUT"; else echo "exit_code=0" >> "$GITHUB_OUTPUT"; fi
+          if [ "$x" -ne 0 ]; then
+            [ -f validation-result.json ] || echo '{"failures":[]}' > validation-result.json
+            msg='Link-preview check failed — the new page has no og:image, so a shared link renders as bare text. Run: node scripts/build-indexes.mjs --og-only --page <page>'
+            tmp=$(mktemp); jq --arg m "$msg" '.failures += [$m] | .pass=false' validation-result.json > "$tmp" && mv "$tmp" validation-result.json
+          fi
+          if [ "$v" -ne 0 ] || [ "$c" -ne 0 ] || [ "$x" -ne 0 ]; then echo "exit_code=1" >> "$GITHUB_OUTPUT"; else echo "exit_code=0" >> "$GITHUB_OUTPUT"; fi
 
       - name: Read validation result
         id: result

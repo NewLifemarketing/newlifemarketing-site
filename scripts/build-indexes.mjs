@@ -14,8 +14,15 @@
  * service/industry/location pages, which no publishing agent touches, and it
  * removes deleted pages, which the "never alter existing entries" rule cannot.
  *
- *   node scripts/build-indexes.mjs            write
- *   node scripts/build-indexes.mjs --check    report only, exit 1 if stale
+ *   node scripts/build-indexes.mjs                       write
+ *   node scripts/build-indexes.mjs --check               report only, exit 1 if stale
+ *   node scripts/build-indexes.mjs --og-only             tags only, leave sitemaps alone
+ *   node scripts/build-indexes.mjs --page blog/x/index.html   restrict to one page
+ *
+ * --og-only --page is what CI uses on a blog PR. The sitemaps are deliberately
+ * NOT regenerated there: a blog/{slug} branch is cut from an older main, so
+ * rebuilding the full page list on it would drop every page added to main since
+ * the branch was created. Sitemaps are regenerated on main, never on a branch.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,6 +31,11 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = 'https://newlifemarketing.ca';
 const CHECK = process.argv.includes('--check');
+const OG_ONLY = process.argv.includes('--og-only');
+const ONLY_PAGE = (() => {
+  const i = process.argv.indexOf('--page');
+  return i > -1 ? process.argv[i + 1].replace(/^\.?\//, '').split('\\').join('/') : null;
+})();
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'partials', '.github', '.claude', 'scripts', 'css', 'js', 'assets']);
 // authenticated app screens: behind a login, never shared, no canonical
 const SKIP_URLS = new Set(['/404.html', '/portal/admin/', '/portal/dashboard/', '/portal/reset/']);
@@ -130,7 +142,11 @@ const esc = (s) => String(s ?? '')
 
 // ------------------------------------------------------------ 1. OG tags ----
 let ogAdded = 0; const ogMissing = [];
+if (ONLY_PAGE && !pages.some(p => p.rel === ONLY_PAGE)) {
+  console.error(`  ! --page ${ONLY_PAGE} is not an indexable page (missing, a redirect stub, or noindex)`);
+}
 for (const p of pages) {
+  if (ONLY_PAGE && p.rel !== ONLY_PAGE) continue;
   if (p.src.includes('og:image')) continue;
   const canonM = p.src.match(/<link rel="canonical" href="([^"]+)"\s*\/?>/);
   const descM = p.src.match(/<meta name="description" content="([^"]*)"/);
@@ -172,9 +188,12 @@ const xmlWanted = ['<?xml version="1.0" encoding="UTF-8"?>',
   '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
   ...pages.map(p => p.url).sort().map(u => `  <url><loc>${SITE}${u}</loc></url>`),
   '</urlset>', ''].join('\n');
+// Skipped entirely under --og-only / --page. Regenerating the full page list
+// from a feature branch would drop everything added to main since it was cut.
+const SITEMAPS = !OG_ONLY && !ONLY_PAGE;
 const xmlPath = path.join(ROOT, 'sitemap.xml');
 const xmlCur = fs.existsSync(xmlPath) ? fs.readFileSync(xmlPath, 'utf8') : '';
-const xmlStale = xmlCur.replace(/\r\n/g, '\n') !== xmlWanted;
+const xmlStale = SITEMAPS && xmlCur.replace(/\r\n/g, '\n') !== xmlWanted;
 if (xmlStale && !CHECK) fs.writeFileSync(xmlPath, xmlWanted, 'utf8');
 
 // ---------------------------------------------------- 3. sitemap/index.html -
@@ -216,7 +235,7 @@ function findList(html) {
 
 const smPath = path.join(ROOT, 'sitemap', 'index.html');
 let smStale = false;
-if (fs.existsSync(smPath)) {
+if (SITEMAPS && fs.existsSync(smPath)) {
   const cur = fs.readFileSync(smPath, 'utf8');
   const loc = findList(cur);
   if (!loc) {
@@ -236,9 +255,11 @@ if (fs.existsSync(smPath)) {
 }
 
 // ------------------------------------------------------------------ report --
-console.log(`indexable pages: ${pages.length}`);
-console.log(`sitemap.xml        : ${xmlStale ? (CHECK ? 'STALE' : 'rewritten') : 'up to date'}`);
-console.log(`sitemap/index.html : ${smStale ? (CHECK ? 'STALE' : 'rewritten') : 'up to date'}`);
+const smState = (stale) => !SITEMAPS ? 'skipped (branch-safe mode)'
+                         : stale ? (CHECK ? 'STALE' : 'rewritten') : 'up to date';
+console.log(`indexable pages: ${pages.length}${ONLY_PAGE ? `   (scoped to ${ONLY_PAGE})` : ''}`);
+console.log(`sitemap.xml        : ${smState(xmlStale)}`);
+console.log(`sitemap/index.html : ${smState(smStale)}`);
 console.log(`og tags            : ${CHECK ? `${ogMissing.length} page(s) missing` : `${ogAdded} page(s) tagged`}`);
 for (const u of ogMissing.slice(0, 12)) console.log(`   - ${u}`);
 if (ogMissing.length > 12) console.log(`   ... and ${ogMissing.length - 12} more`);
