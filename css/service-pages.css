@@ -1,0 +1,78 @@
+/* ============================================================================
+   service-pages.css
+
+   Rules the long-form service/industry pages depend on.
+
+   WHY THIS FILE EXISTS, AND IS NOT IN style.css:
+   .svc-sub lived in style.css and was deleted three separate times by page
+   rebuilds that edited style.css from a stale base (67a835dd, then dd502d41).
+   Each deletion silently broke 36 headings on /services/seo/, because the
+   markup kept the class while the rule vanished. Keeping these rules in their
+   own file puts them outside that blast radius.
+
+   Loaded by the pages that need it, after style.css.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Section sub-heading sitting directly inside a .wrap.
+
+   A bare <h3> there has no top margin of its own, so it collapses against a
+   preceding .grid / .svc-mod / figure block and renders flush against the
+   card above it. Every "what it costs to be invisible in search" style
+   heading on a long-form page depends on this.
+   ------------------------------------------------------------------------ */
+.svc-sub {
+  margin-top: 2.75rem;
+  margin-bottom: 0.9rem;
+}
+.svc-sub:first-child { margin-top: 0; }
+
+/* A heading straight after a card grid or a figure needs the most room --
+   those blocks end flush with no trailing space of their own. */
+.grid + .svc-sub,
+.steps + .svc-sub,
+figure + .svc-sub,
+.svc-mod + .svc-sub,
+.svc-comps + .svc-sub {
+  margin-top: 3.25rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Ghost button inside the blue pull-quote banner.
+
+   .svc-banner paints a blue background. .svc-page .btn.ghost (3 classes)
+   sets blue text on a blue border, and outweighs .svc-banner .btn (2 classes)
+   which whitens the solid button. Net result: the secondary button renders
+   blue-on-blue and is invisible. This needs 4 classes to win.
+   ------------------------------------------------------------------------ */
+.svc-page .svc-banner .btn.ghost,
+.svc-banner .btn.ghost {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.75);
+}
+.svc-page .svc-banner .btn.ghost:hover,
+.svc-banner .btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #fff;
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------------------
+   /sitemap/ : the full page index.
+   Degrades safely -- without this it is still a plain nested list.
+   ------------------------------------------------------------------------ */
+.sitemap-list, .sitemap-list ul { list-style: disc; }
+.sitemap-list { padding-left: 1.35rem; margin: 1.5rem 0 0; }
+.sitemap-list ul { padding-left: 1.6rem; margin: 0.45rem 0 0.6rem; }
+.sitemap-list li { margin: 0 0 0.45rem; font-size: 0.95rem; line-height: 1.5; }
+.sitemap-list li::marker { color: var(--blue); }
+.sitemap-list a { color: var(--blue); text-decoration: none; }
+.sitemap-list a:hover { text-decoration: underline; }
+
+/* ---------------------------------------------------------------------------
+   Video placeholder figures on service pages (same treatment as .abm-vid).
+   ------------------------------------------------------------------------ */
+.svc-vid { margin: 2rem 0 0; }
+.svc-vid img { width: 100%; height: auto; border-radius: 14px; display: block; }
+.svc-vid figcaption { margin-top: 0.6rem; }
