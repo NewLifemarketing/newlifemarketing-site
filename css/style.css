@@ -323,10 +323,13 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
     z-index: 1;
     width: 0; height: 0;
     margin-top: 10px;
-    background: var(--surface);
-    border: 1px solid var(--line);
+    /* White, not the dark page surface. Against a dark sticky header the menu
+       reads as a separate sheet of paper rather than a slightly lighter hole
+       in the header, and the link lists are far easier to scan. */
+    background: #FFFFFF;
+    border: 1px solid #E4E7EC;
+    box-shadow: 0 24px 60px rgba(13, 13, 20, 0.45);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
     /* the morph. Same curve and duration as the tail and the panel fade, so
        the whole assembly moves as one piece. */
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
@@ -345,7 +348,7 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
   }
   .nav-travel .nav-tail svg { display: block; width: 100%; height: 100%; }
   .nav-travel .nav-tail path {
-    fill: var(--surface); stroke: var(--line); stroke-width: 1.2px;
+    fill: #FFFFFF; stroke: #E4E7EC; stroke-width: 1.2px;
     vector-effect: non-scaling-stroke;
   }
 
@@ -384,12 +387,84 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
                 opacity 0.18s ease,
                 visibility 0s linear 0.18s;
   }
-  .nav-travel .mega.narrow { width: 320px; }
-  .nav-travel .mega.m2 { width: 540px; }
-  .nav-travel .mega.m3 { width: 760px; }
-  .nav-travel .mega.m4 { width: 880px; }
-  .nav-travel .mega.m3.clients-mega { width: 1020px; }
+  /* The panel runs on the light palette. Every rule inside a mega panel reads
+     these tokens rather than hard-coding colours, so redefining them here is
+     the whole of the dark-to-white switch — the group headings, teasers,
+     dividers and hover states all follow. */
+  .nav-travel .mega {
+    --surface: #FFFFFF;
+    --surface-2: #F1F3F6;   /* link hover */
+    --line: #E4E7EC;        /* dividers between groups */
+    --muted: #4B4B57;
+    --dim: #6C6C7A;         /* teasers and group labels */
+    --white: #0D0D14;
+    /* Brand blue is 3.1:1 on white — fine on the old dark panel, under the
+       4.5:1 floor here. The stat highlights in the teasers are small text, so
+       the panel uses a darker blue; the accent role is unchanged. */
+    --blue: #1565C0;
+    color: #0D0D14;
+    /* keep the link grid clear of the rail pinned to the right edge */
+    padding-right: calc(var(--promo-w) + 1.25rem);
+  }
+  .nav-travel .mega { --promo-w: 260px; }
+
+  /* Widths include the rail. Clients is the widest at 1240px, which still
+     clears the 1249px available at the 1281px breakpoint. */
+  .nav-travel .mega.narrow { width: 620px; }
+  .nav-travel .mega.m2 { width: 840px; }
+  .nav-travel .mega.m3 { width: 1060px; }
+  .nav-travel .mega.m4 { width: 1180px; }
+  .nav-travel .mega.m3.clients-mega { width: 1240px; }
+  /* The clients grid asks for three 300px columns plus 2rem gaps — 964px —
+     but only 940px is left beside the rail, so five names overflowed under
+     it. minmax(0, 1fr) lets the columns share what is actually there; the
+     names are short enough that nothing wraps badly at 292px. */
+  .nav-travel .mega.m3.clients-mega { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .nav-travel .mega { max-width: calc(100vw - 2rem); }
+
+  /* The rail. Pinned to the card's right edge rather than placed in the grid,
+     so none of the column rules above had to change to make room for it. The
+     1px inset keeps it inside the card's border, and the right corners match
+     the card's radius. */
+  .nav-travel .mega-promo {
+    position: absolute;
+    top: 1px; right: 1px; bottom: 1px;
+    width: var(--promo-w);
+    display: flex;
+    flex-direction: column;
+    /* Centred. The panels run from 345px to 667px tall: pinning the button to
+       the bottom (as the reference does, where every menu is one height) left
+       a huge gap under the copy on the tall ones, and top-aligning left the
+       same gap hanging underneath. Centred, the leftover space splits evenly
+       and reads as deliberate at any height. */
+    justify-content: center;
+    align-items: stretch;
+    gap: 1.25rem;
+    padding: 1.5rem 1.3rem;
+    background: var(--ink);
+    border-radius: 0 13px 13px 0;
+    /* The rail is dark again, so it takes the page palette back. Without this
+       the panel's --white override painted the button label near-black, when
+       every other button on the site is white on blue. */
+    --white: #FFFFFF;
+    --blue: #2196F3;
+    color: #FFFFFF;
+  }
+  .nav-travel .mega-promo .mp-title {
+    font-family: var(--font-display);
+    font-size: 1.05rem; font-weight: 800; line-height: 1.2;
+    color: #FFFFFF; margin: 0 0 0.5rem;
+  }
+  .nav-travel .mega-promo .mp-body {
+    font-size: 0.82rem; line-height: 1.45; color: #B7B7C4; margin: 0;
+  }
+  .nav-travel .mega-promo .btn {
+    align-self: start;
+    text-align: center;
+    white-space: normal;      /* "Book a Strategy Call" over two lines beats
+                                 overflowing a 260px rail */
+    line-height: 1.25;
+  }
 
   .nav-travel .mega.panel-on {
     opacity: 1;
@@ -406,6 +481,9 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
    sits in flow under its own trigger. */
 @media (max-width: 1280px) {
   .nav-card, .nav-tail { display: none; }
+  /* The drawer already ends in Book a Strategy Call and the phone number, so
+     repeating the rail under all six menus would just pad the scroll. */
+  .mega-promo { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
