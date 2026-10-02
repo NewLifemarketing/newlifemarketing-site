@@ -412,6 +412,54 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
 
   /* Widths include the rail. Clients is the widest at 1240px, which still
      clears the 1249px available at the 1281px breakpoint. */
+  /* Item density, measured off the references. Ours were 90px tall against
+     triplewhale.com's 51px and linear.app's 40px, and the panel ran to 707px.
+     Two causes: line-height 1.65 where both of them sit at ~1.2, and a padded
+     rounded box on every link that neither of them has. Nothing is removed —
+     every page and its full name stays — the rows just stop being boxes.
+
+     What separates one item from the next is now the same thing it is on both
+     references: weight and size contrast between the name and its line, an
+     even gap, and an arrow that appears on hover. No rules, no shadows, no
+     tinted blocks. */
+  .nav-travel .mega { gap: 0.95rem 1.7rem; }
+  .nav-travel .mega a:not(.btn):not(.mf-link) {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .nav-travel .mega a:not(.btn):not(.mf-link):hover { background: none; }
+  .nav-travel .mega .m-title {
+    font-size: 0.875rem;
+    line-height: 1.25;
+    transition: color 0.15s ease;
+  }
+  .nav-travel .mega a:hover .m-title { color: var(--blue); }
+  .nav-travel .mega .m-teaser {
+    font-size: 0.75rem;
+    line-height: 1.32;
+    margin-top: 0.15rem;
+  }
+  /* The hover arrow, straight off the reference: the affordance that tells you
+     a row is a link, without giving every row a box. */
+  .nav-travel .mega a:not(.m-all) .m-title::after {
+    content: "\2192";
+    display: inline-block;
+    margin-left: 0.3em;
+    opacity: 0;
+    transform: translateX(-0.25em);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .nav-travel .mega a:not(.m-all):hover .m-title::after {
+    opacity: 1;
+    transform: none;
+  }
+  /* Group and column headings tighten with everything else. */
+  .nav-travel .mega .m-group { margin: 0.5rem 0 0; padding: 0.6rem 0 0; }
+  .nav-travel .mega .m-group.first { margin-top: 0; padding-top: 0; }
+  .nav-travel .mega .m-colhead { padding: 0 0 0.55rem; }
+  .nav-travel .mega .m-all { margin-top: 0.5rem; padding: 0.6rem 0 0; }
+
   .nav-travel .mega.narrow { width: 620px; }
   .nav-travel .mega.m2 { width: 840px; }
   .nav-travel .mega.m3 { width: 1060px; }
@@ -2047,7 +2095,10 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
    right for a group that is a row of the grid; .m-col is the other case — two
    lists side by side, each owning its own heading and its own stack. Used by
    the Company menu for About Us and Portfolio. */
-.m-col { display: flex; flex-direction: column; min-width: 0; }
+/* The grid's row gap separates grid items — the two columns — not the links
+   stacked inside them, so without its own gap the Company menu's rows ran
+   together while every other menu breathed. */
+.m-col { display: flex; flex-direction: column; min-width: 0; gap: 0.95rem; }
 .m-colhead {
   font-size: 0.72rem;
   font-weight: 800;
