@@ -697,6 +697,72 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
 .trust-band .t-item { color: var(--muted); }
 .trust-band .t-item strong { color: var(--white); font-weight: 700; }
 .trust-band .stars { color: var(--blue); letter-spacing: 0.1em; }
+/* Review stars read as gold everywhere people see them, so blue made the
+   rating look like one more brand accent instead of a Google score. */
+.star-glyphs { color: #FFC107; letter-spacing: 0.08em; }
+
+/* ---------- Centred hero (homepage) ----------
+   The copy was ranged left against a full-bleed video, which left the right
+   half of the frame empty and the eye travelling a long way from the headline
+   to the buttons. Centred, the whole first section reads as one column. */
+.hero-centred .wrap { text-align: center; }
+/* Pulled in vertically too. At the old 8.5rem top and bottom the section ran
+   138px past the fold on a 1440x900 laptop, so the proof row — the whole
+   reason it moved up here — landed below it. */
+.hero-centred { padding-block: clamp(2.75rem, 6vw, 5rem); }
+.hero-centred .lead {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 46rem;
+}
+.hero-centred .hero-ctas { justify-content: center; }
+/* The lighter scrim above buys back the picture, but it left these two — the
+   only hero copy not already white — short of 4.5:1. Brand blue is 3.07 and
+   --muted 3.61 against this reel; both clear it comfortably one step lighter,
+   and the kicker keeps its blue. */
+/* The kicker sits at the very top of the frame, over blown sky, where the
+   ellipse is at its thinnest — pale blue measured 3.07 there even though it
+   clears 4.5 everywhere else on the site. White on this hero only. */
+.hero-centred .kicker { color: #FFFFFF; }
+.hero-centred .lead { color: #E8EAF0; }
+/* The scrim is left-weighted for ranged-left copy; centred copy needs it
+   centred too, or the right half of the headline sits on bare video. */
+.hero-centred .hero-scrim {
+  /* Measured, not guessed. Against this reel the headline needs 0.44, the
+     lead 0.40, the guarantee 0.37 and the proof row 0 — so an even floor just
+     above the highest of those carries everything. The first attempt ran 0.82
+     at the centre and collapsed to 0.16 at the edges, which was both darker
+     where the video shows and too thin where the copy actually sits. This is
+     lighter in the middle AND passes. */
+  background: radial-gradient(ellipse 95% 92% at 50% 44%,
+    color-mix(in srgb, var(--ink) 67%, transparent) 0%,
+    color-mix(in srgb, var(--ink) 65%, transparent) 55%,
+    color-mix(in srgb, var(--ink) 60%, transparent) 100%);
+}
+.hero-centred h1, .hero-centred .lead { max-width: 44rem; }
+.hero-centred h1 { margin-left: auto; margin-right: auto; }
+
+/* Proof row sitting inside the hero rather than in the white band below. */
+.trust-in-hero {
+  border: 0;
+  background: none;
+  margin-top: 1.6rem;
+}
+.trust-in-hero .wrap {
+  justify-content: center;
+  gap: 0.45rem 1.6rem;
+  padding-block: 0;
+  padding-inline: 0;
+  /* the four items plus their gaps measure 870px; 52rem (832px) dropped
+     "Fully in-house team" onto a second line by 38px */
+  max-width: 58rem;
+}
+.trust-in-hero .t-item { color: #FFFFFF; }
+.trust-in-hero .t-item strong { color: #FFFFFF; }
+.trust-in-hero .risk-reversal { color: #E8EAF0; margin-top: 0.15rem; }
+@media (max-width: 700px) {
+  .trust-in-hero .wrap { gap: 0.35rem 1.1rem; font-size: 0.82rem; }
+}
 .risk-reversal {
   width: 100%;
   font-size: 0.85rem;
