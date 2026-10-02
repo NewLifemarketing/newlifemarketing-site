@@ -403,7 +403,9 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
        the panel uses a darker blue; the accent role is unchanged. */
     --blue: #1565C0;
     color: #0D0D14;
-    /* keep the link grid clear of the rail pinned to the right edge */
+    /* keep the link grid clear of the rail pinned to the right edge. The hook
+       strip sits in flow and bleeds out to the edges itself, so it needs no
+       reserved space here. */
     padding-right: calc(var(--promo-w) + 1.25rem);
   }
   .nav-travel .mega { --promo-w: 260px; }
@@ -441,13 +443,13 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
     align-items: stretch;
     gap: 1.25rem;
     padding: 1.5rem 1.3rem;
-    background: var(--ink);
+    /* Blue, not black. Deeper than the brand #2196F3 on purpose: white copy
+       on brand blue is only 3.1:1, and the rail's heading sits at 16.8px,
+       under the size that would let 3:1 apply. This gradient is 5.7:1 at its
+       lightest point and still unmistakably the brand blue. */
+    background: linear-gradient(160deg, #1565C0 0%, #0B3C7D 100%);
     border-radius: 0 13px 13px 0;
-    /* The rail is dark again, so it takes the page palette back. Without this
-       the panel's --white override painted the button label near-black, when
-       every other button on the site is white on blue. */
     --white: #FFFFFF;
-    --blue: #2196F3;
     color: #FFFFFF;
   }
   .nav-travel .mega-promo .mp-title {
@@ -456,15 +458,61 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
     color: #FFFFFF; margin: 0 0 0.5rem;
   }
   .nav-travel .mega-promo .mp-body {
-    font-size: 0.82rem; line-height: 1.45; color: #B7B7C4; margin: 0;
+    font-size: 0.82rem; line-height: 1.45; color: #E8F1FC; margin: 0;
   }
+  /* On a blue rail the brand-blue button would vanish into it, so it inverts:
+     white block, deep-blue label. Same shape as every other button. */
   .nav-travel .mega-promo .btn {
     align-self: start;
     text-align: center;
     white-space: normal;      /* "Book a Strategy Call" over two lines beats
                                  overflowing a 260px rail */
     line-height: 1.25;
+    background: #FFFFFF;
+    color: #0D47A1;
+    border-color: #FFFFFF;
   }
+  .nav-travel .mega-promo .btn:hover {
+    background: #E8F1FC; color: #0B3C7D; border-color: #E8F1FC;
+  }
+
+  /* Hook strip across the bottom of the white side — the menu's last word
+     before the visitor closes it. Pinned to the card's bottom-left corner the
+     same way the rail is pinned to the right, so it meets both edges cleanly
+     and stops where the rail begins. */
+  .nav-travel .mega-foot {
+    /* In flow as the last full-width row, bled out to the card's edges with
+       negative margins, rather than absolutely positioned at a fixed height.
+       Pinned at 52px it could not grow, so on the 620px-wide menus the hook
+       wrapped to three lines and spilled straight out of the bottom of the
+       card. In flow it sizes to its own text, the panel's height grows with
+       it, and the card — which is measured from the panel — follows. */
+    grid-column: 1 / -1;
+    margin: 0.85rem -1.25rem -1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 52px;
+    padding: 0.7rem 1.25rem;
+    background: #EAF3FD;
+    border-top: 2px solid #2196F3;
+    border-radius: 0 0 0 13px;
+  }
+  .nav-travel .mega-foot .mf-hook {
+    font-size: 0.82rem; line-height: 1.35; color: #27272F;
+  }
+  .nav-travel .mega-foot .mf-link {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    flex: 0 0 auto;
+    font-family: var(--font-display); font-style: italic; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.03em;
+    font-size: 0.78rem; color: #1565C0; text-decoration: none;
+    padding: 0.5rem 0.2rem; border-radius: 8px;
+  }
+  .nav-travel .mega-foot .mf-link:hover { color: #0B3C7D; }
+  .nav-travel .mega-foot .mf-arrow { transition: transform 0.15s ease; }
+  .nav-travel .mega-foot .mf-link:hover .mf-arrow { transform: translateX(3px); }
 
   .nav-travel .mega.panel-on {
     opacity: 1;
@@ -482,8 +530,9 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
 @media (max-width: 1280px) {
   .nav-card, .nav-tail { display: none; }
   /* The drawer already ends in Book a Strategy Call and the phone number, so
-     repeating the rail under all six menus would just pad the scroll. */
-  .mega-promo { display: none; }
+     repeating the rail and the hook under all six menus would just pad the
+     scroll. */
+  .mega-promo, .mega-foot { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
