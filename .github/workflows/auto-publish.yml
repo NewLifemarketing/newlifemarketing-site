@@ -19,6 +19,23 @@ on:
         description: "PR number to validate and (if it passes) merge"
         required: true
         type: number
+      # Which pipeline this PR belongs to, so only that pipeline's validate job
+      # starts. `open-pr` fires ONE dispatch and every validate job used to wake
+      # up for it; the ones whose branch it wasn't refused and exited non-zero,
+      # so a run that published perfectly still reported "failure" -- e.g. run
+      # 36892329514 on 2026-10-01, where validate-and-merge succeeded, the post
+      # went live, and validate-and-merge-article painted the run red. A red run
+      # that means nothing is worse than no signal, because it trains you to
+      # ignore the real ones.
+      #
+      # Left empty (a hand-run dispatch) every job still starts, exactly as
+      # before, and the per-job guards decide. This only narrows the automatic
+      # case, where we already know the answer.
+      kind:
+        description: "Pipeline: blog | articles | landing (blank = let every job's own guard decide)"
+        required: false
+        default: ""
+        type: string
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [main]
@@ -37,6 +54,8 @@ on:
     branches:
       - 'blog/**'
       - 'articles/**'
+      - 'landing/**'          # landing-pages system: validated, auto-merged
+      - 'landing-review/**'   # landing-pages system: validated, NEVER auto-merged (owner merges)
 
 permissions:
   contents: write
@@ -94,7 +113,12 @@ jobs:
           # The branch name already encodes the path -- blog/<slug> holds
           # blog/<slug>/index.html -- so deriving it is both exact and free, and
           # needs no extra fetch.
-          FILE="$BRANCH/index.html"
+          # landing/<slug> and landing-review/<slug> hold a ROOT-level page,
+          # <slug>/index.html, not <branch>/index.html like blog/ and articles/.
+          case "$BRANCH" in
+            landing/*|landing-review/*) FILE="${BRANCH#*/}/index.html" ;;
+            *)                          FILE="$BRANCH/index.html" ;;
+          esac
           TITLE=""
           if [ -n "$FILE" ] && [ -f "$FILE" ]; then
             # Strip the trailing brand segment, whatever it is. Hardcoding
@@ -106,10 +130,16 @@ jobs:
             TITLE=$(sed -n 's:.*<title>\(.*\)</title>.*:\1:p' "$FILE" | head -1 | sed 's/ *| *[^|]*$//')
           fi
           [ -n "$TITLE" ] || TITLE="${BRANCH#*/}"
+          # KIND rides along to the dispatch so only the matching validate job
+          # wakes up. landing-review shares landing's validator -- the branch
+          # name is what decides merge-vs-report, inside that job.
           case "$BRANCH" in
-            articles/*) PREFIX="Article" ;;
-            *)          PREFIX="Blog" ;;
+            articles/*) PREFIX="Article" ; KIND="articles" ;;
+            landing-review/*) PREFIX="Landing page (review)" ; KIND="landing" ;;
+            landing/*) PREFIX="Landing page" ; KIND="landing" ;;
+            *)          PREFIX="Blog" ; KIND="blog" ;;
           esac
+          echo "kind=$KIND" >> "$GITHUB_OUTPUT"
 
           NUM=$(gh pr create --repo "$GITHUB_REPOSITORY" \
                   --base main --head "$BRANCH" \
@@ -126,12 +156,14 @@ jobs:
         run: |
           set -euo pipefail
           gh workflow run auto-publish.yml --repo "$GITHUB_REPOSITORY" \
-            -f pr_number="${{ steps.open.outputs.number }}"
-          echo "dispatched validation for PR #${{ steps.open.outputs.number }}"
+            -f pr_number="${{ steps.open.outputs.number }}" \
+            -f kind="${{ steps.open.outputs.kind }}"
+          echo "dispatched validation for PR #${{ steps.open.outputs.number }} (kind: ${{ steps.open.outputs.kind }})"
 
   validate-and-merge:
     if: >
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' &&
+        (inputs.kind == '' || inputs.kind == 'blog')) ||
       startsWith(github.event.pull_request.head.ref, 'blog/')
     runs-on: ubuntu-latest
     env:
@@ -352,7 +384,8 @@ jobs:
 
   validate-and-merge-article:
     if: >
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' &&
+        (inputs.kind == '' || inputs.kind == 'articles')) ||
       startsWith(github.event.pull_request.head.ref, 'articles/')
     runs-on: ubuntu-latest
     env:
@@ -557,6 +590,200 @@ jobs:
             --arg from "onboarding@resend.dev" \
             --arg to "contact@newlifemarketing.ca" \
             --arg subject "Article needs review: $POST_TITLE" \
+            --arg text "$BODY_TEXT" \
+            '{from: $from, to: [$to], subject: $subject, text: $text}')
+          HTTP_STATUS=$(curl -sS -o response.txt -w '%{http_code}' https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+          if [ "$HTTP_STATUS" -ge 200 ] 2>/dev/null && [ "$HTTP_STATUS" -lt 300 ] 2>/dev/null; then
+            echo "Notification email sent (HTTP $HTTP_STATUS)."
+          else
+            echo "::warning::'Needs review' notification email failed (HTTP ${HTTP_STATUS:-unknown}) — continuing. Response: $(cat response.txt 2>/dev/null)"
+          fi
+          exit 0
+
+      - name: Fail the job if validation failed
+        if: steps.validate.outputs.exit_code != '0'
+        run: exit 1
+
+  validate-and-merge-landing:
+    if: >
+      (github.event_name == 'workflow_dispatch' &&
+        (inputs.kind == '' || inputs.kind == 'landing')) ||
+      startsWith(github.event.pull_request.head.ref, 'landing/') ||
+      startsWith(github.event.pull_request.head.ref, 'landing-review/')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    concurrency:
+      group: auto-publish-landing-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+      cancel-in-progress: true
+    steps:
+      - name: Resolve PR number
+        id: pr
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "number=${{ github.event.inputs.pr_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Look up PR metadata
+        id: meta
+        run: |
+          gh pr view ${{ steps.pr.outputs.number }} --repo ${{ github.repository }} \
+            --json headRefName,baseRefName,title,url,state \
+            > pr_meta.json
+          echo "head_ref=$(jq -r .headRefName pr_meta.json)" >> "$GITHUB_OUTPUT"
+          echo "pr_title=$(jq -r .title pr_meta.json)" >> "$GITHUB_OUTPUT"
+          echo "pr_url=$(jq -r .url pr_meta.json)" >> "$GITHUB_OUTPUT"
+          echo "pr_state=$(jq -r .state pr_meta.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Guard — only ever act on landing/* or landing-review/* branches, only while open
+        run: |
+          if [[ "${{ steps.meta.outputs.head_ref }}" != landing/* && "${{ steps.meta.outputs.head_ref }}" != landing-review/* ]]; then
+            echo "PR #${{ steps.pr.outputs.number }} head branch '${{ steps.meta.outputs.head_ref }}' is not landing/* or landing-review/* — refusing to touch it."
+            exit 1
+          fi
+          if [ "${{ steps.meta.outputs.pr_state }}" != "OPEN" ]; then
+            echo "PR #${{ steps.pr.outputs.number }} is not open (state: ${{ steps.meta.outputs.pr_state }}) — nothing to do."
+            exit 1
+          fi
+
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ steps.pr.outputs.number }}/head
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run validation gate
+        id: validate
+        run: |
+          set +e
+          HEAD_REF="${{ steps.meta.outputs.head_ref }}" node .github/scripts/validate-landing-pr.mjs
+          v=$?
+          # Chrome gate: the new landing page must carry the header/footer markers and match
+          # the canonical partials, so it is born in sync and stays syncable.
+          SLUG="${{ steps.meta.outputs.head_ref }}"; SLUG="${SLUG#*/}"
+          chrome=$(node scripts/sync-chrome.mjs --check --only "$SLUG/index.html" --require-participation 2>&1)
+          c=$?
+          echo "$chrome"
+          set -e
+          if [ "$c" -ne 0 ]; then
+            [ -f validation-result.json ] || echo '{"failures":[]}' > validation-result.json
+            msg='Site chrome check failed — the new landing page is missing the header/footer markers or is out of date with partials/. Regenerate from the current template, or run `node scripts/sync-chrome.mjs --write`. See partials/README.md.'
+            tmp=$(mktemp); jq --arg m "$msg" '.failures += [$m] | .pass=false' validation-result.json > "$tmp" && mv "$tmp" validation-result.json
+          fi
+          if [ "$v" -ne 0 ] || [ "$c" -ne 0 ]; then echo "exit_code=1" >> "$GITHUB_OUTPUT"; else echo "exit_code=0" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Read validation result
+        id: result
+        if: always()
+        run: |
+          if [ ! -f validation-result.json ]; then
+            echo '{"failures":["validate-landing-pr.mjs crashed before producing a result — check the workflow run logs for the actual error."]}' > validation-result.json
+          fi
+          echo "post_title=$(jq -r '.title // empty' validation-result.json)" >> "$GITHUB_OUTPUT"
+          echo "post_url=$(jq -r '.url // empty' validation-result.json)" >> "$GITHUB_OUTPUT"
+          # Build a plain bullet list of failures for the PR comment/email
+          jq -r '.failures[]? | "- " + .' validation-result.json > failures.txt || true
+
+      # ---------------------------------------------------------------
+      # PASS path
+      # ---------------------------------------------------------------
+      # landing-review/* = the owner's first test pages. Validate, report, and
+      # STOP: the owner merges these by hand (decision 2026-09-30). Only
+      # landing/* is ever merged here.
+      - name: Review branch — report the pass, do not merge
+        if: steps.validate.outputs.exit_code == '0' && startsWith(steps.meta.outputs.head_ref, 'landing-review/')
+        run: |
+          gh pr comment ${{ steps.pr.outputs.number }} --repo ${{ github.repository }} \
+            --body "**Validation passed.** This is a landing-review branch, so it is not merged automatically. Review the page and merge it yourself. Once 3 landing pages are live the system switches to landing/ branches, which merge here on a pass."
+
+      - name: Squash-merge the PR
+        if: steps.validate.outputs.exit_code == '0' && startsWith(steps.meta.outputs.head_ref, 'landing/')
+        run: |
+          gh pr merge ${{ steps.pr.outputs.number }} --repo ${{ github.repository }} \
+            --squash --delete-branch \
+            --subject "Add landing page: ${{ steps.result.outputs.post_title || steps.meta.outputs.pr_title }}"
+
+      - name: Send "published" email
+        if: steps.validate.outputs.exit_code == '0' && startsWith(steps.meta.outputs.head_ref, 'landing/')
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          POST_TITLE: ${{ steps.result.outputs.post_title || steps.meta.outputs.pr_title }}
+          POST_URL: ${{ steps.result.outputs.post_url }}
+        run: |
+          # Non-fatal by design: the post is already merged by this point in
+          # the job, so a notification email failing (bad key, rate limit,
+          # unverified recipient, network blip — anything) must never fail
+          # this step or the job. Log a warning and move on, always exit 0.
+          set +e
+          BODY_TEXT=$(printf '%s just went live.\n\n%s' "$POST_TITLE" "$POST_URL")
+          PAYLOAD=$(jq -n \
+            --arg from "onboarding@resend.dev" \
+            --arg to "contact@newlifemarketing.ca" \
+            --arg subject "New landing page published: $POST_TITLE" \
+            --arg text "$BODY_TEXT" \
+            '{from: $from, to: [$to], subject: $subject, text: $text}')
+          HTTP_STATUS=$(curl -sS -o response.txt -w '%{http_code}' https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+          if [ "$HTTP_STATUS" -ge 200 ] 2>/dev/null && [ "$HTTP_STATUS" -lt 300 ] 2>/dev/null; then
+            echo "Notification email sent (HTTP $HTTP_STATUS)."
+          else
+            echo "::warning::'Published' notification email failed (HTTP ${HTTP_STATUS:-unknown}) — continuing, this does not affect the merge. Response: $(cat response.txt 2>/dev/null)"
+          fi
+          exit 0
+
+      # ---------------------------------------------------------------
+      # FAIL path
+      # ---------------------------------------------------------------
+      - name: Ensure the validation-failed label exists
+        if: steps.validate.outputs.exit_code != '0'
+        run: |
+          gh label create "validation-failed" --repo ${{ github.repository }} \
+            --color "d73a4a" --description "Auto-publish validation gate failed" || true
+
+      - name: Comment failures and label the PR
+        if: steps.validate.outputs.exit_code != '0'
+        run: |
+          {
+            echo "**Auto-publish validation failed — not merged.**"
+            echo
+            echo "The following checks failed:"
+            echo
+            cat failures.txt
+          } > comment_body.txt
+          gh pr comment ${{ steps.pr.outputs.number }} --repo ${{ github.repository }} --body-file comment_body.txt
+          gh pr edit ${{ steps.pr.outputs.number }} --repo ${{ github.repository }} --add-label "validation-failed"
+
+      - name: Send "needs review" email
+        if: steps.validate.outputs.exit_code != '0'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          POST_TITLE: ${{ steps.result.outputs.post_title || steps.meta.outputs.pr_title }}
+          PR_URL: ${{ steps.meta.outputs.pr_url }}
+        run: |
+          # Non-fatal by design (see the "published" email step above for
+          # why): a notification failure must never stop the "Fail the job
+          # if validation failed" step from running afterward, and must
+          # never be the reason this job reports failure — the validation
+          # failure itself is already the correct reason.
+          set +e
+          FAILURES=$(cat failures.txt)
+          BODY_TEXT=$(printf 'Auto-publish validation failed for: %s\n\nFailed checks:\n%s\n\nPR: %s' "$POST_TITLE" "$FAILURES" "$PR_URL")
+          PAYLOAD=$(jq -n \
+            --arg from "onboarding@resend.dev" \
+            --arg to "contact@newlifemarketing.ca" \
+            --arg subject "Landing page needs review: $POST_TITLE" \
             --arg text "$BODY_TEXT" \
             '{from: $from, to: [$to], subject: $subject, text: $text}')
           HTTP_STATUS=$(curl -sS -o response.txt -w '%{http_code}' https://api.resend.com/emails \
