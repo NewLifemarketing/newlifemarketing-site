@@ -20,62 +20,176 @@
     });
   }
 
-  /* ---------- Mega menu (click on mobile/keyboard, hover on desktop) ---------- */
+  /* ---------- Mega menu ----------
+     Desktop: one card that travels. All six panels share a single piece of
+     chrome, so moving along the menu bar morphs that card's position and size
+     and slides the tail to the new trigger, rather than closing one dropdown
+     and opening another. Mobile keeps the accordion. */
   var items = document.querySelectorAll(".nav-item.has-mega");
+  var navEl = document.querySelector(".nav");
+  var card = document.querySelector(".nav-card");
+  var tail = document.querySelector(".nav-tail");
+  var header = document.querySelector(".site-header");
+  var panels = [].slice.call(document.querySelectorAll(".nav-item.has-mega .mega"));
+  var desktop = function () { return window.matchMedia("(min-width: 1281px)").matches; };
+  var EDGE = 16;          /* keep the card this far off either viewport edge */
+
+  /* Opt in to the travelling layout only once the script is live. Without
+     this class the CSS leaves the original per-item dropdowns in place, so a
+     blocked or broken script degrades to the old menu instead of no menu. */
+  if (navEl && card && tail) navEl.classList.add("nav-travel");
+
+  var current = null;     /* the open .nav-item, or null */
+
+  function place(item, animate) {
+    if (!desktop() || !card || !tail || !header) return;
+    var mega = item.querySelector(".mega");
+    var btn = item.querySelector(".top");
+    if (!mega || !btn) return;
+
+    /* Measure the panel at its natural size. It is absolutely positioned and
+       only hidden by opacity/visibility, so it already has layout — no
+       offscreen clone needed. */
+    var hb = header.getBoundingClientRect();
+    var pw = mega.offsetWidth;
+    var ph = mega.offsetHeight;
+
+    /* Centre under the trigger, then pull back inside the viewport. */
+    var br = btn.getBoundingClientRect();
+    var centre = br.left + br.width / 2;
+    var x = centre - pw / 2;
+    if (x + pw > window.innerWidth - EDGE) x = window.innerWidth - EDGE - pw;
+    if (x < EDGE) x = EDGE;
+    x = Math.round(x - hb.left);               /* header-relative */
+
+    var tx = Math.round(centre - hb.left);     /* tail tracks the trigger, not the card */
+
+    /* Every panel is moved, not just the active one. They all share the
+       card's coordinate space, so keeping them in lockstep means the
+       incoming panel is already under the card when it fades up — otherwise
+       it would appear at the destination while the card was still in
+       transit, and the content would detach from its own background. */
+    function apply() {
+      card.style.transform = "translateX(" + x + "px)";
+      card.style.width = pw + "px";
+      card.style.height = ph + "px";
+      tail.style.transform = "translateX(" + tx + "px)";
+      panels.forEach(function (m) { m.style.transform = "translateX(" + x + "px)"; });
+    }
+
+    if (animate) { apply(); return; }
+    /* First open: jump into place with no transition, so the card does not
+       fly across the header from wherever it was last left. */
+    var moving = [card, tail].concat(panels);
+    var saved = moving.map(function (el) { return el.style.transition; });
+    moving.forEach(function (el) { el.style.transition = "none"; });
+    apply();
+    void card.offsetWidth;                     /* flush, then restore */
+    moving.forEach(function (el, i) { el.style.transition = saved[i]; });
+  }
+
+  function openItem(item) {
+    if (!desktop()) return;
+    var animate = current !== null;            /* already open = travel, else appear */
+    items.forEach(function (i) {
+      if (i === item) return;
+      i.classList.remove("open");
+      var m = i.querySelector(".mega");
+      if (m) m.classList.remove("panel-on");
+      var b = i.querySelector("button.top");
+      if (b) b.setAttribute("aria-expanded", "false");
+    });
+    item.classList.add("open");
+    var btn = item.querySelector("button.top");
+    if (btn) btn.setAttribute("aria-expanded", "true");
+    if (navEl) navEl.classList.add("menu-open");
+    place(item, animate);
+    var mega = item.querySelector(".mega");
+    if (mega) mega.classList.add("panel-on");
+    current = item;
+  }
+
+  function closeAll() {
+    items.forEach(function (i) {
+      i.classList.remove("open");
+      var m = i.querySelector(".mega");
+      if (m) m.classList.remove("panel-on");
+      var b = i.querySelector("button.top");
+      if (b) b.setAttribute("aria-expanded", "false");
+    });
+    if (navEl) navEl.classList.remove("menu-open");
+    current = null;
+  }
+
+  var closeTimer = null;
+  function cancelClose() { if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; } }
+  function scheduleClose() {
+    cancelClose();
+    /* Closing on a bare mouseleave made the menu impossible to use: moving
+       diagonally toward a link clips outside the item for a frame and the
+       panel vanished mid-click. Opening is instant; closing waits. */
+    closeTimer = setTimeout(closeAll, 260);
+  }
+
   items.forEach(function (item) {
     var btn = item.querySelector("button.top");
     if (!btn) return;
     btn.addEventListener("click", function (e) {
       e.stopPropagation();
       var wasOpen = item.classList.contains("open");
-      items.forEach(function (i) { i.classList.remove("open"); });
-      if (!wasOpen) item.classList.add("open");
-      btn.setAttribute("aria-expanded", String(!wasOpen));
+      if (wasOpen) { closeAll(); return; }
+      if (!desktop()) {
+        /* mobile accordion: no travelling card, just toggle in place */
+        items.forEach(function (i) {
+          i.classList.remove("open");
+          var b = i.querySelector("button.top");
+          if (b) b.setAttribute("aria-expanded", "false");
+        });
+        item.classList.add("open");
+        btn.setAttribute("aria-expanded", "true");
+        return;
+      }
+      openItem(item);
     });
-    /* Hover intent. Closing on a bare mouseleave made the menu impossible to
-       use: moving the pointer diagonally toward a link clips outside the item
-       for a frame and the panel vanished mid-click. Opening is instant; closing
-       waits, and re-entering anywhere in the item cancels the close. */
-    var closeTimer = null;
-    function cancelClose() { if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; } }
     item.addEventListener("mouseenter", function () {
-      if (!window.matchMedia("(min-width: 1281px)").matches) return;
+      if (!desktop()) return;
       cancelClose();
-      items.forEach(function (i) { if (i !== item) i.classList.remove("open"); });
-      item.classList.add("open");
-      clampMega(item);
+      openItem(item);
     });
     item.addEventListener("mouseleave", function () {
-      if (!window.matchMedia("(min-width: 1281px)").matches) return;
-      cancelClose();
-      closeTimer = setTimeout(function () { item.classList.remove("open"); }, 320);
+      if (!desktop()) return;
+      scheduleClose();
     });
-    item.addEventListener("focusin", function () { cancelClose(); item.classList.add("open"); clampMega(item); });
+    item.addEventListener("focusin", function (e) {
+      /* Only keyboard focus should open the menu. A mouse click on the
+         trigger fires focusin BEFORE click, so this handler would open the
+         panel and the click handler would then see it as already open and
+         close it again — the menu did nothing at all on tap. :focus-visible
+         is false for pointer focus, which is exactly the distinction. */
+      if (e.target === btn && !btn.matches(":focus-visible")) return;
+      cancelClose();
+      if (desktop()) openItem(item);
+      else item.classList.add("open");
+    });
   });
 
-  /* Keep a panel inside the viewport. Panels are centred under their trigger,
-     so a wide one under an edge item would otherwise run off-screen. */
-  function clampMega(item) {
-    var mega = item.querySelector(".mega");
-    if (!mega || !window.matchMedia("(min-width: 1281px)").matches) return;
-    mega.style.left = "";
-    mega.style.transform = "";
-    var r = mega.getBoundingClientRect();
-    var pad = 16;
-    var shift = 0;
-    if (r.right > window.innerWidth - pad) shift = window.innerWidth - pad - r.right;
-    else if (r.left < pad) shift = pad - r.left;
-    if (shift) mega.style.transform = "translateX(calc(-50% + " + Math.round(shift) + "px))";
-  }
+  /* The card sits below the triggers, so the pointer leaves the .nav-item on
+     the way down to it. Keeping the menu alive while the pointer is over the
+     card itself is what makes the panel reachable. */
+  [card, tail].forEach(function (el) {
+    if (!el) return;
+    el.addEventListener("mouseenter", cancelClose);
+    el.addEventListener("mouseleave", scheduleClose);
+  });
+
   window.addEventListener("resize", function () {
-    document.querySelectorAll(".nav-item.has-mega.open").forEach(clampMega);
+    if (!desktop()) { closeAll(); return; }
+    if (current) place(current, false);
   });
-  document.addEventListener("click", function () {
-    items.forEach(function (i) { i.classList.remove("open"); });
-  });
+  document.addEventListener("click", function () { closeAll(); });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
-      items.forEach(function (i) { i.classList.remove("open"); });
+      closeAll();
       document.body.classList.remove("nav-open");
       closeOverlays();
     }

@@ -291,10 +291,125 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
 
 .header-cta { flex-shrink: 0; }
 
-/* Desktop hover fallback: mega panels open on :hover even before JS runs.
-   JS still handles click/keyboard and mobile accordion. */
+/* ======================================================================
+   Desktop mega menu: one surface that travels.
+   Instead of six independent dropdowns that close and reopen, there is a
+   single card carrying all the chrome and a tail that slides to point at
+   whichever trigger is active. Moving along the menu bar morphs the card's
+   size and position rather than dismissing it — so the menu reads as one
+   object being redirected, not six separate ones blinking in and out.
+
+   Gated behind .nav-travel, which main.js adds once it has taken over. If
+   the script never runs the menu stays exactly as it was: six self-contained
+   dropdowns that open on hover.
+   ====================================================================== */
 @media (min-width: 1281px) {
-  .nav-item.has-mega:hover .mega { display: grid; }
+  .nav:not(.nav-travel) .nav-item.has-mega:hover .mega { display: grid; }
+
+  /* static so .mega, .nav-card and .nav-tail all resolve against the sticky
+     header — one shared coordinate space is what lets the card travel. */
+  .nav.nav-travel > .nav-item { position: static; }
+
+  .nav-travel .nav-card, .nav-travel .nav-tail {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+  }
+  .nav-travel .nav-card {
+    z-index: 1;
+    width: 0; height: 0;
+    margin-top: 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    /* the morph. Same curve and duration as the tail and the panel fade, so
+       the whole assembly moves as one piece. */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.18s ease,
+                visibility 0s linear 0.18s;
+  }
+  .nav-travel .nav-tail {
+    z-index: 3;
+    width: 46px; height: 11px;
+    margin-left: -23px;          /* centres the tail on its trigger */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.18s ease,
+                visibility 0s linear 0.18s;
+  }
+  .nav-travel .nav-tail svg { display: block; width: 100%; height: 100%; }
+  .nav-travel .nav-tail path {
+    fill: var(--surface); stroke: var(--line); stroke-width: 1.2px;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* visibility flips immediately on the way in, so the first frame of the
+     slide is already on screen. */
+  .nav-travel.menu-open .nav-card,
+  .nav-travel.menu-open .nav-tail {
+    opacity: 1; visibility: visible; transition-delay: 0s;
+  }
+
+  /* Panels: same coordinate space as the card, no chrome of their own,
+     stacked and cross-faded. They stay laid out rather than display:none so
+     the script can measure the next one before the card morphs to fit it. */
+  .nav-travel .mega {
+    display: grid;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    transform: none;
+    margin-top: 10px;
+    /* Each panel gets the explicit width its column count was designed around.
+       Left to size itself, an absolutely positioned grid with left:0 and no
+       right either stretched to the whole header (1fr against the full width)
+       or, with max-content, let the longest teaser decide — either way every
+       menu came out the same width and the card had nothing to morph between.
+       These are the old min-width values, now binding. */
+    width: 560px;
+    z-index: 2;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.18s ease,
+                visibility 0s linear 0.18s;
+  }
+  .nav-travel .mega.narrow { width: 320px; }
+  .nav-travel .mega.m2 { width: 540px; }
+  .nav-travel .mega.m3 { width: 760px; }
+  .nav-travel .mega.m4 { width: 880px; }
+  .nav-travel .mega.m3.clients-mega { width: 1020px; }
+  .nav-travel .mega { max-width: calc(100vw - 2rem); }
+
+  .nav-travel .mega.panel-on {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s, 0.06s, 0s;  /* fade lags the move slightly */
+  }
+  /* The old per-panel hover bridge would now float over the page; the card's
+     own 10px offset plus the close delay in main.js covers the gap. */
+  .nav-travel .mega::before { content: none; }
+}
+
+/* Desktop furniture only — the drawer keeps its accordion, where each panel
+   sits in flow under its own trigger. */
+@media (max-width: 1280px) {
+  .nav-card, .nav-tail { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-card, .nav-tail, .nav-travel .mega { transition-duration: 0.01ms; }
 }
 
 .nav-toggle {
@@ -1398,17 +1513,6 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   background: #fff; box-shadow: 0 1px 3px rgba(13, 13, 20, 0.05);
 }
 .svc-comp h3 { margin-bottom: 0.5rem; }
-
-/* ---------- /sitemap/ : the full page index ---------- */
-/* Single column, bulleted, child pages nested one level in. */
-/* Degrades safely: without these it is still a plain nested list. */
-.sitemap-list, .sitemap-list ul { list-style: disc; }
-.sitemap-list { padding-left: 1.35rem; margin: 1.5rem 0 0; }
-.sitemap-list ul { padding-left: 1.6rem; margin: 0.45rem 0 0.6rem; }
-.sitemap-list li { margin: 0 0 0.45rem; font-size: 0.95rem; line-height: 1.5; }
-.sitemap-list li::marker { color: var(--blue); }
-.sitemap-list a { color: var(--blue); text-decoration: none; }
-.sitemap-list a:hover { text-decoration: underline; }
 .svc-comp .svc-when { color: var(--blue); font-weight: 700; font-size: 0.9rem; display: block; margin-bottom: 0.5rem; }
 .svc-comp p { margin: 0.35rem 0 0; color: var(--muted); }
 
