@@ -135,10 +135,20 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
 /* ---------- Proof bar (sitewide, above nav) ---------- */
 
 .proof-bar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
+  /* The brand blue, same value as the buttons (Cruz). White on it is 3.1:1 —
+     the same ratio the primary button has carried sitewide since launch, and
+     under the 4.5:1 floor for text this size. Noted rather than quietly
+     substituted: it is a brand decision, not a styling one. */
+  background: var(--blue);
+  border-bottom: 0;
   font-size: 0.85rem;
-  color: var(--muted);
+  /* White on the brand blue, Cruz's call: the bar has to be exactly the button
+     blue. That pairing is 3.1:1 at this size — the same ratio the primary
+     button has carried sitewide — so the weight is stepped up to make the
+     text read as solidly as it can. Dark ink would measure 6.2:1 but looked
+     heavy against the white header below it. */
+  color: #FFFFFF;
+  font-weight: 600;
 }
 .proof-bar .wrap {
   display: grid;
@@ -152,13 +162,15 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
 /* Client Login sits in the right-hand column so the left group isn't crammed. */
 .proof-right { display: flex; gap: 1.25rem; justify-self: end; }
 .proof-links a, .proof-right a {
-  color: var(--muted);
+  color: #FFFFFF;
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
 }
-.proof-links a:hover, .proof-right a:hover { color: var(--white); }
-.proof-bar strong { color: var(--blue); font-weight: 700; }
+.proof-links a:hover, .proof-right a:hover { color: #D9ECFD; }
+/* the stat carried brand blue on the old dark bar; on the blue bar it
+   stands out by weight instead */
+.proof-bar strong { color: #FFFFFF; font-weight: 800; }
 .proof-stat .ps-short { display: none; }
 @media (max-width: 720px) {
   .proof-bar .wrap { grid-template-columns: auto 1fr; }
@@ -195,13 +207,37 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
+/* ---------- Floating white header ----------
+   After searchkings.ca: the <header> itself is just a transparent rail and
+   the white bar inside it floats, inset from the edges with a radius and a
+   hairline, so it reads as a card sitting on the page rather than a band
+   welded to the top of it. */
+.site-header {
+  /* White rail, not transparent. The floating bar is inset, so a transparent
+     rail let the dark page background show as a band framing it. */
+  background: #FFFFFF;
+  border-bottom: 0;
+  padding-block: 0.6rem;
+}
+.site-header::before { display: none; }   /* the blur belonged to the dark band */
 .site-header .wrap {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1.25rem;
-  min-height: 72px;
+  min-height: 68px;
+  background: #FFFFFF;
+  border: 1px solid #E4E7EC;
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(13, 13, 20, 0.10);
+  padding-inline: 1.25rem;
 }
+/* Everything in the bar flips to the light palette. */
+.site-header .logo { color: #0D0D14; }
+.site-header .nav a.top, .site-header .nav button.top { color: #0D0D14; }
+.site-header .nav a.top:hover, .site-header .nav button.top:hover { background: #F1F3F6; }
+.site-header .nav button.top .caret { color: #6C6C7A; }
+.site-header .nav-toggle { color: #0D0D14; }
 
 .logo {
   font-family: var(--font-display);
@@ -742,8 +778,86 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
     color-mix(in srgb, var(--ink) 65%, transparent) 55%,
     color-mix(in srgb, var(--ink) 60%, transparent) 100%);
 }
-.hero-centred h1, .hero-centred .lead { max-width: 44rem; }
-.hero-centred h1 { margin-left: auto; margin-right: auto; }
+.hero-centred .lead { max-width: 46rem; }
+/* The headline was inheriting its width cap from the video-hero rule. With no
+   video it fell back to the lead's 44rem and broke to three lines; this keeps
+   it on two. */
+.hero-centred h1 { max-width: 66rem; margin-left: auto; margin-right: auto; }
+
+/* ---------- Light hero (homepage) ----------
+   White field with a soft brand wash instead of a background video. The reel
+   was dark, and every line on top of it had to be measured and fought into
+   legibility against moving frames; on white the type simply reads. It also
+   drops ~3MB off the first paint. */
+/* The wash lives on the PAGE, not on the hero, so it runs unbroken from the
+   top of the header rail down past the hero and stops where the next section
+   paints its own white. Put on the hero it started below the header, which
+   left the rail as a separate band — the dark line between the two. The
+   header and hero both go transparent and sit on it. */
+body.home-light {
+  background-color: #FFFFFF;
+  background-image:
+    radial-gradient(ellipse 58% 46% at 10% 0%,   rgba(33, 150, 243, 0.22) 0%, rgba(33, 150, 243, 0) 68%),
+    radial-gradient(ellipse 48% 40% at 92% 10%,  rgba(33, 150, 243, 0.14) 0%, rgba(33, 150, 243, 0) 70%),
+    radial-gradient(ellipse 72% 30% at 50% 62%,  rgba(21, 101, 192, 0.11) 0%, rgba(21, 101, 192, 0) 72%);
+  background-repeat: no-repeat;
+  /* Tall enough to carry past the hero and through the logo band, so the two
+     sections read as one field. The lowest wash is centred at 62% and fades
+     out around 1290px, well inside the 1400px band — a gradient still live at
+     the band's edge would cut off as a hard line. */
+  background-size: 100% 1400px;
+  background-position: top center;
+}
+body.home-light .site-header { background: none; }
+.hero-light { background: none; border-bottom: 0; }
+/* .svc-page paints its own white, which was covering the wash and drawing the
+   seam between the hero and the section below it. On the homepage it defers to
+   the page, whose background-color is already white. */
+body.home-light .svc-page { background: transparent; }
+/* 64px of padding above "Trusted by Ontario businesses" read as dead space
+   once the background stopped changing there. */
+body.home-light .logo-band { padding-top: 1.6rem; }
+/* .logo-band fills with var(--ink), which inside .svc-page resolves to white —
+   so it was painting over the lower wash. Transparent on the homepage lets the
+   field carry straight through the logo row. */
+body.home-light .logo-band { background: transparent; }
+/* The light field takes the light palette, the same way .svc-page does. */
+.hero-light {
+  --muted: #4B4B57;
+  --dim: #6C6C7A;
+  --white: #0D0D14;
+  color: #0D0D14;
+}
+/* .hero-bg is the video container and carries a dark ink fill as the
+   pre-load fallback. With no video it was simply painting over the white. */
+.hero-light .hero-bg { background: none; }
+/* .btn takes its label from --white, and the light hero redefines --white to
+   near-black for the body copy — so the filled button came out with a dark
+   label on blue. Same trap as the menu rail. The filled button keeps the
+   page's white; the ghost button is correct dark-on-light as it is. */
+.hero-light .btn:not(.ghost) { color: #FFFFFF; }
+.hero-light h1 { color: #0D0D14; text-shadow: none; }
+.hero-light .lead { color: #4B4B57; text-shadow: none; }
+.hero-light .kicker { color: #1565C0; text-shadow: none; }
+
+/* Google rating, above the headline, where the eyebrow used to sit. */
+.review-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  color: #27272F;
+}
+.review-strip .rs-g { display: block; width: 18px; height: 18px; }
+.review-strip .rs-text strong { font-weight: 800; color: #0D0D14; }
+/* Google's own star amber. The #FFD54F picked for the dark hero is all but
+   invisible on white. Gold cannot reach 4.5:1 on white at any shade that
+   still reads as gold — these are decorative, carry aria-hidden, and the
+   rating itself is in the text beside them, so the contrast rule is met by
+   that text rather than by the glyphs. */
+.review-strip .star-glyphs { font-size: 1.1rem; color: #FBBC04; }
 
 /* Proof row sitting inside the hero rather than in the white band below. */
 .trust-in-hero {
@@ -768,6 +882,10 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
   max-width: 64rem;
 }
 .trust-in-hero .t-item { color: #FFFFFF; }
+.hero-light .trust-in-hero .t-item { color: #3A3A46; }
+.hero-light .trust-in-hero .t-item strong { color: #0D0D14; }
+/* #6C6C7A fell to 4.17 over the densest part of the wash */
+.hero-light .trust-in-hero .risk-reversal { color: #55555F; }
 .trust-in-hero .t-item strong { color: #FFFFFF; }
 .trust-in-hero .risk-reversal { color: #E8EAF0; margin-top: 0.3rem; font-size: 0.9rem; }
 @media (max-width: 700px) {
