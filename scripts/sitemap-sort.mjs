@@ -44,7 +44,14 @@ function insertIntoHtmlSitemap(html, url, title) {
   const slugPath = url.replace(/^https?:\/\/[^/]+/, '');
   if (html.includes(`href="${slugPath}"`)) return html;      // already there
 
-  const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Titles usually arrive already HTML-escaped, because --title is lifted from
+  // the page's own <title> tag. Escaping "&" unconditionally turned an existing
+  // "&amp;" into "&amp;amp;", which a browser renders as the literal text
+  // "&amp;" -- six links on /sitemap/ read "Awards &amp; Recognition" that way.
+  // The lookahead leaves a well-formed entity alone and escapes a bare "&".
+  const esc = (t) => t
+    .replace(/&(?!(?:[a-zA-Z][a-zA-Z0-9]*|#\d+|#[xX][0-9a-fA-F]+);)/g, '&amp;')
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const li = `<li><a href="${slugPath}">${esc(title)}</a></li>`;
 
   // A child page (/blog/x/, /articles/x/) belongs in the nested <ul> that
