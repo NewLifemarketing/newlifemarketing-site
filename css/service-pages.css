@@ -76,3 +76,24 @@ figure + .svc-sub,
 .svc-vid { margin: 2rem 0 0; }
 .svc-vid img { width: 100%; height: auto; border-radius: 14px; display: block; }
 .svc-vid figcaption { margin-top: 0.6rem; }
+
+
+/* ---------------------------------------------------------------------------
+   Case-study hero: tighter.
+   style.css sets .camp-hero to min-height 58vh with content bottom-aligned,
+   which leaves ~86px of dead space between the site header and the kicker.
+   Only pages that link this stylesheet are affected.
+   ------------------------------------------------------------------------ */
+.camp-hero { min-height: 40vh; align-items: center; }
+.camp-hero .wrap { padding-block: clamp(1.25rem, 2.2vw, 1.9rem); }
+
+/* Brighter footage. style.css dims the clip to 0.32; at 0.55 the build is
+   actually readable behind the headline. */
+.camp-hero-bg { opacity: 0.78; }
+
+/* The stock veil is bottom-heavy (0.92 at the base) because the stock hero
+   pins its text to the bottom. Centred text sits in the 40-60% band, so the
+   gradient is evened out -- enough contrast to read, far less mud. */
+.camp-hero-veil { background:
+  radial-gradient(70% 90% at 80% 15%, rgba(33,150,243,0.14), transparent 60%),
+  linear-gradient(180deg, rgba(13,13,20,0.42) 0%, rgba(13,13,20,0.30) 50%, rgba(13,13,20,0.58) 100%); }
