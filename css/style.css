@@ -699,7 +699,10 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
 .trust-band .stars { color: var(--blue); letter-spacing: 0.1em; }
 /* Review stars read as gold everywhere people see them, so blue made the
    rating look like one more brand accent instead of a Google score. */
-.star-glyphs { color: #FFC107; letter-spacing: 0.08em; }
+/* Amber 300 rather than 500. Gold is mid-luminance, and once the proof row
+   moved up the shorter hero it landed on brighter footage and measured 4.40 —
+   just under. One step lighter is still unmistakably a review star. */
+.star-glyphs { color: #FFD54F; letter-spacing: 0.08em; }
 
 /* ---------- Centred hero (homepage) ----------
    The copy was ranged left against a full-bleed video, which left the right
@@ -748,18 +751,25 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
   background: none;
   margin-top: 1.6rem;
 }
+.trust-in-hero {
+  /* Stepped up from 0.9rem. It is the proof you read right after deciding, so
+     it was carrying less weight than it earns. Still below the button, which
+     keeps the lead on visual weight through size, uppercase, italics and the
+     filled pill rather than through point size alone. */
+  font-size: 1rem;
+}
 .trust-in-hero .wrap {
   justify-content: center;
-  gap: 0.45rem 1.6rem;
+  gap: 0.5rem 1.6rem;
   padding-block: 0;
   padding-inline: 0;
-  /* the four items plus their gaps measure 870px; 52rem (832px) dropped
-     "Fully in-house team" onto a second line by 38px */
-  max-width: 58rem;
+  /* widened with the type: at 1rem the four items plus gaps need ~965px, and
+     58rem (928px) would have dropped the last one onto a second line */
+  max-width: 64rem;
 }
 .trust-in-hero .t-item { color: #FFFFFF; }
 .trust-in-hero .t-item strong { color: #FFFFFF; }
-.trust-in-hero .risk-reversal { color: #E8EAF0; margin-top: 0.15rem; }
+.trust-in-hero .risk-reversal { color: #E8EAF0; margin-top: 0.3rem; font-size: 0.9rem; }
 @media (max-width: 700px) {
   .trust-in-hero .wrap { gap: 0.35rem 1.1rem; font-size: 0.82rem; }
 }
