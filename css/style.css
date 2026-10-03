@@ -2674,3 +2674,146 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
   .mini-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 560px) { .mini-grid { grid-template-columns: 1fr; } }
+
+/* ---------- Services and industries (homepage) ----------
+   Each was twelve bordered cards in a three-column grid (1,300-1,600px apiece).
+   Now each stays its own section, in its original place in the page, but the
+   twelve items are compact rows — name plus a one-line subhead, whole row
+   clickable — laid out left to right across three columns. No dividers; a
+   hover wash and spacing do the work. */
+.duo-band .kicker { margin-bottom: 0.4rem; }
+.duo-lead { color: var(--muted); font-size: 1.02rem; margin: 0 0 1.4rem; max-width: 46rem; }
+.pick-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 1.25rem; }
+.pick {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+  padding: 0.7rem 0.9rem; border-radius: 10px; text-decoration: none; color: inherit;
+  transition: background 0.15s ease;
+}
+.pick-text { display: flex; flex-direction: column; min-width: 0; }
+.pick-name { font-weight: 700; font-size: 1.02rem; color: var(--white); line-height: 1.3; }
+.pick-sub { font-size: 0.88rem; color: var(--dim); line-height: 1.35; }
+.pick-go { color: var(--blue); font-weight: 700; line-height: 1.3; opacity: 0; transform: translateX(-4px); transition: opacity 0.15s ease, transform 0.15s ease; flex: none; }
+.pick:hover, .pick:focus-visible { background: var(--blue-dim); }
+.pick:hover .pick-go, .pick:focus-visible .pick-go { opacity: 1; transform: none; }
+@media (hover: none) { .pick-go { opacity: 0.55; transform: none; } }
+
+@media (max-width: 980px) { .pick-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .pick-list { grid-template-columns: 1fr; } }
+
+/* "What we do": each service is a quiet card with a line-icon tile, so the twelve
+   read as twelve distinct things. Corporate, not decorative — one blue, hairline
+   border, no fills beyond the icon tile; hover lifts the card and blues the edge. */
+.pick-list.rich { gap: 0.85rem 1.1rem; }
+.rich .pick {
+  align-items: center; gap: 0.9rem; padding: 0.95rem 1.05rem;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+.rich .pick:hover, .rich .pick:focus-visible {
+  background: var(--surface); border-color: color-mix(in srgb, var(--blue) 55%, var(--line));
+  box-shadow: 0 10px 28px rgba(21, 101, 192, 0.10); transform: translateY(-2px);
+}
+.pick-ic {
+  flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--blue-dim); color: var(--blue); transition: background 0.18s ease, color 0.18s ease;
+}
+.pick-ic svg { width: 22px; height: 22px; display: block; }
+.rich .pick:hover .pick-ic, .rich .pick:focus-visible .pick-ic { background: var(--blue); color: #FFFFFF; }
+.rich .pick-text { flex: 1; }
+.rich .pick-go { opacity: 0.45; transform: none; align-self: center; }
+.rich .pick:hover .pick-go { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .rich .pick:hover { transform: none; } }
+/* the icon + arrow leave a three-column card ~250px for text below this width */
+@media (max-width: 1180px) { .pick-list.rich { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .pick-list.rich { grid-template-columns: 1fr; } }
+
+/* ---------- Homepage software tabs: a boxed, showcase treatment ----------
+   Four equal tabs across the top (logo + name), the active one filled; under
+   them one large boxed panel holding the platform's name, copy and button on
+   the left and its dashboard in a framed window on the right. Reads as "pick a
+   platform, here is the product" rather than a row of small pills. */
+.hp-sw-tabs {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.6rem; margin-bottom: 0.6rem;
+}
+.hp-sw-tab {
+  justify-content: center; gap: 0.7rem; padding: 1rem 1.1rem; border-radius: 14px;
+  font-style: normal; text-transform: none; letter-spacing: 0; font-weight: 700; font-size: 1.02rem;
+  background: #E3E8EF; border: 1px solid transparent; color: #4B4B57; min-height: 64px;
+}
+.hp-sw-tab:hover { background: #D6DDE8; color: #0D0D14; border-color: transparent; }
+.hp-sw-tab.active { background: #0F3D73; color: #FFFFFF; border-color: transparent; box-shadow: 0 8px 22px rgba(15, 61, 115, 0.28); }
+.hp-sw-chip {
+  flex: none; width: 34px; height: 34px; border-radius: 9px; background: #FFFFFF;
+  display: grid; place-items: center; box-shadow: 0 0 0 1px rgba(13, 13, 20, 0.08);
+}
+.hp-sw-chip img { width: 24px; height: 24px; object-fit: contain; display: block; }
+.hp-sw-tab:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+.hp-sw-panel {
+  background: #FFFFFF; border: 1px solid var(--line); border-radius: 22px;
+  padding: clamp(1.4rem, 3.5vw, 3rem); box-shadow: 0 18px 50px rgba(15, 61, 115, 0.09);
+  position: relative; overflow: hidden;
+}
+.hp-sw-panel::before {
+  content: ""; position: absolute; inset: auto -10% -45% 38%; height: 90%; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, rgba(33, 150, 243, 0.16), rgba(33, 150, 243, 0) 68%);
+}
+.hp-sw-panel .svc-mod { position: relative; grid-template-columns: 0.8fr 1.2fr; }
+.hp-sw-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.hp-sw-tile {
+  flex: none; width: 60px; height: 60px; border-radius: 16px; background: #FFFFFF;
+  display: grid; place-items: center; box-shadow: 0 0 0 1px var(--line), 0 6px 16px rgba(13, 13, 20, 0.08);
+}
+.hp-sw-tile .hp-sw-logo { height: 34px; width: 34px; object-fit: contain; margin: 0; }
+.hp-sw-head h3 { margin: 0; font-size: clamp(1.45rem, 2.5vw, 2rem); line-height: 1.1; }
+.hp-sw-panel .lead { font-size: 1.08rem; }
+.hp-sw-panel .camp-shot {
+  border-radius: 16px; border: 1px solid rgba(13, 13, 20, 0.12);
+  box-shadow: 0 24px 60px rgba(13, 13, 20, 0.28), 0 4px 12px rgba(13, 13, 20, 0.12);
+}
+@media (max-width: 900px) {
+  .hp-sw-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hp-sw-panel .svc-mod { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .hp-sw-tab { padding: 0.8rem 0.7rem; font-size: 0.92rem; gap: 0.5rem; min-height: 56px; }
+  .hp-sw-chip { width: 30px; height: 30px; }
+}
+
+/* ---------- "Who it's for": two grouped panels ----------
+   Same twelve links, still a compact list, but set apart from "What we do"
+   (icon cards): the industries sit in two panels by buyer type — a light panel
+   for local and small business, a deep-blue panel for B2B and enterprise. */
+.who-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: stretch; }
+.who-panel { border-radius: 20px; padding: clamp(1.3rem, 2.6vw, 2rem); }
+.who-head { margin-bottom: 0.9rem; padding-bottom: 0.9rem; }
+.who-tag { display: block; font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; line-height: 1.2; }
+.who-head p { margin: 0.25rem 0 0; font-size: 0.92rem; }
+.who-list { display: grid; gap: 2px; }
+.who-panel .pick { padding: 0.62rem 0.8rem; }
+.who-local { background: #EEF4FB; border: 1px solid #D9E5F4; }
+.who-local .who-tag { color: #0D0D14; }
+.who-local .who-head p { color: #4B4B57; }
+.who-local .who-head { border-bottom: 1px solid #D3E0F1; }
+.who-local .pick:hover, .who-local .pick:focus-visible { background: #FFFFFF; }
+.who-b2b { background: #0F3D73; border: 1px solid #0F3D73; color: #FFFFFF; box-shadow: 0 16px 40px rgba(15, 61, 115, 0.22); }
+.who-b2b .who-tag { color: #FFFFFF; }
+.who-b2b .who-head p { color: rgba(255, 255, 255, 0.78); }
+.who-b2b .who-head { border-bottom: 1px solid rgba(255, 255, 255, 0.18); }
+.who-b2b .pick-name { color: #FFFFFF; }
+.who-b2b .pick-sub { color: rgba(255, 255, 255, 0.72); }
+.who-b2b .pick-go { color: #8FD0FF; }
+.who-b2b .pick:hover, .who-b2b .pick:focus-visible { background: rgba(255, 255, 255, 0.10); }
+@media (max-width: 860px) { .who-grid { grid-template-columns: 1fr; } }
+
+/* two light panels stacked on the left; the B2B panel on the right spreads its
+   six rows to the same height, so the block is one even rectangle */
+.who-grid { grid-template-columns: 1fr 1fr; }
+.who-stack { display: grid; gap: 1.1rem; align-content: start; }
+.who-stack .who-panel { padding-block: 1.2rem; }
+.who-stack .who-head { margin-bottom: 0.6rem; padding-bottom: 0.7rem; }
+.who-b2b { display: flex; flex-direction: column; }
+.who-b2b .who-list { flex: 1; grid-auto-rows: 1fr; align-content: stretch; }
+.who-b2b .pick { align-items: center; }
+.who-panel .pick { padding: 0.55rem 0.8rem; }
+@media (max-width: 860px) { .who-grid { grid-template-columns: 1fr; } }
