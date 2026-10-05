@@ -3285,3 +3285,26 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 .rv-band .rv2-head > div:first-child { flex: 1; min-width: 0; }
 .rv2-score { flex: none; }
 @media (max-width: 760px) { .rv-band .rv2-head { flex-wrap: wrap; } }
+
+/* "What we do" is split into Expertise and Strategies, as in the header menu.
+   The labels are a quiet line of small type spanning the grid — a break, not a
+   heading — so the section grows by about 50px, not a row of cards. */
+.pick-group {
+  grid-column: 1 / -1; margin: 0.9rem 0 0.05rem; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.12em;
+  text-transform: uppercase; color: #1565C0; display: flex; align-items: center; gap: 0.7rem;
+}
+.pick-group::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.pick-group.first { margin-top: 0; }
+/* Four across on desktop: Expertise is two rows of four and Strategies one row of
+   four, so splitting the section in two costs two small labels and no extra rows. */
+@media (min-width: 1181px) {
+  .pick-list.rich { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.8rem 0.9rem; }
+  .rich .pick { padding: 0.85rem 0.85rem; gap: 0.7rem; }
+  .rich .pick .pick-ic { width: 40px; height: 40px; }
+  .rich .pick-go { display: none; }
+}
+@media (min-width: 1181px) {
+  .rich .pick-sub { font-size: 0.8rem; }
+  .rich .pick-name { font-size: 0.98rem; }
+  .rich .pick { padding: 0.8rem 0.8rem; gap: 0.6rem; }
+}
