@@ -97,3 +97,137 @@ figure + .svc-sub,
 .camp-hero-veil { background:
   radial-gradient(70% 90% at 80% 15%, rgba(33,150,243,0.14), transparent 60%),
   linear-gradient(180deg, rgba(13,13,20,0.42) 0%, rgba(13,13,20,0.30) 50%, rgba(13,13,20,0.58) 100%); }
+
+/* ---- The SEO grid matrix ------------------------------------------------
+   A real matrix, not a diagram: top-left is the homepage, the top row is the
+   service pages, the left column is the area pages, and every interior cell is
+   a service x area page. Built as a CSS grid rather than an SVG so it scales,
+   stays selectable, and can be read on a phone by scrolling sideways. */
+.seo-matrix-wrap { margin: 2.5rem 0 1rem; }
+
+.seo-matrix-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.75rem;
+}
+
+.seo-matrix {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.25fr) repeat(4, minmax(130px, 1fr));
+  gap: 8px;
+  min-width: 700px;
+}
+
+.seo-matrix .mx {
+  border-radius: 10px;
+  padding: 0.85rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 74px;
+  border: 1px solid transparent;
+}
+
+.seo-matrix .mx-k {
+  font-family: var(--font-body);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.seo-matrix .mx-t {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+.seo-matrix .mx-s {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  opacity: 0.78;
+  line-height: 1.3;
+}
+
+/* top-left: the homepage, the one page everybody already has */
+.seo-matrix .mx-home {
+  /* Explicit near-black, NOT var(--ink): .svc-page redefines --ink to #FFFFFF
+     because service pages are a light theme, which rendered this cell white on
+     white. Same trap the inline SVGs on this page avoid by hardcoding #0D0D14. */
+  background: #0D0D14;
+  color: #fff;
+  border-color: #0D0D14;
+}
+.seo-matrix .mx-home .mx-k { color: var(--blue); opacity: 1; }
+
+/* top row: service pages */
+.seo-matrix .mx-svc {
+  background: rgba(33, 150, 243, 0.12);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+/* left column: area pages */
+.seo-matrix .mx-area {
+  background: rgba(33, 150, 243, 0.12);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+/* interior: the multiplication — service x area */
+.seo-matrix .mx-cell {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+.seo-matrix .mx-cell .mx-t { font-size: 0.8rem; }
+.seo-matrix .mx-cell .mx-s { opacity: 0.85; }
+
+/* the "and the rest" cell */
+.seo-matrix .mx-more {
+  background: transparent;
+  border: 1px dashed rgba(33, 150, 243, 0.55);
+  color: inherit;
+  align-items: center;
+  text-align: center;
+}
+
+.seo-matrix-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+  margin-top: 1.1rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+}
+.seo-matrix-legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
+.seo-matrix-legend i {
+  width: 14px; height: 14px; border-radius: 4px; display: inline-block; flex: 0 0 auto;
+}
+.seo-matrix-legend .lg-home { background: #0D0D14; }
+.seo-matrix-legend .lg-edge { background: rgba(33, 150, 243, 0.25); border: 1px solid rgba(33, 150, 243, 0.5); }
+.seo-matrix-legend .lg-cell { background: var(--blue); }
+
+.seo-matrix-hint { display: none; }
+
+@media (max-width: 760px) {
+  .seo-matrix-hint {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-bottom: 0.5rem;
+  }
+  .seo-matrix { gap: 6px; }
+  .seo-matrix .mx { min-height: 64px; padding: 0.6rem 0.55rem; }
+}
+
+/* On a phone the hero's svc-mod stacks copy-then-media, which pushed the intro
+   video ~490px below the fold behind the h1, the lead, a second heading and the
+   CTAs. The video is the first thing we want seen, so on narrow screens the
+   media column comes first: headline, video, then the supporting copy. */
+@media (max-width: 860px) {
+  .hero .svc-mod { display: flex; flex-direction: column; }
+  .hero .svc-mod .svc-mod-media { order: -1; margin-bottom: 1.25rem; }
+}
