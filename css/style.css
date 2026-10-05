@@ -837,6 +837,13 @@ body.home-light .site-header { background: none; }
    seam between the hero and the section below it. On the homepage it defers to
    the page, whose background-color is already white. */
 body.home-light .svc-page { background: transparent; }
+/* .hero-bg carries an ink fill as the background-video fallback. Inside
+   .svc-page, --ink resolves to WHITE, so on a light page it painted a solid
+   white slab over the page wash for the hero's full height -- the glow was only
+   visible in the strip above the hero, which reads as a glow around the header
+   and nowhere else. The homepage clears it with .hero-light .hero-bg; any page
+   taking the wash needs the same. */
+body.home-light .hero-bg { background: none; }
 /* 64px of padding above "Trusted by Ontario businesses" read as dead space
    once the background stopped changing there. */
 body.home-light .logo-band { padding-top: 1.6rem; }
