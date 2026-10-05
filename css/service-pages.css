@@ -231,3 +231,49 @@ figure + .svc-sub,
   .hero .svc-mod { display: flex; flex-direction: column; }
   .hero .svc-mod .svc-mod-media { order: -1; margin-bottom: 1.25rem; }
 }
+
+/* ---- Link-weighting toggle (the 500 vs 12 graphic) ----------------------
+   The point of that figure is that counting links and weighting them give
+   opposite answers. Letting the reader flip between the two views makes the
+   argument themselves instead of being told it. */
+.lw-controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 0.9rem 0 0.2rem;
+}
+.lw-btn {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.lw-btn:hover { border-color: var(--blue); }
+.lw-btn.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+/* Respect a reduced-motion preference: the flowing lines are decoration, and a
+   looping animation is exactly what that setting exists to stop. */
+@media (prefers-reduced-motion: reduce) {
+  .abm-fig animate { display: none; }
+}
+
+/* The hero slot shows the video placeholder, which already has a play button
+   drawn into the artwork, so the CSS one on top of it renders a second circle.
+   Remove this rule once a real poster frame replaces the placeholder. */
+.seo-hero-video > .play { display: none; }
+
+/* The weighted view draws over the counted one, so the parts it replaces fade
+   out rather than showing through it. Default opacity stays on the elements'
+   own presentation attributes; only the hidden state is set here. */
+.lw-count { transition: opacity 0.3s ease; }
+[data-linkweigh].is-weighted .lw-count { opacity: 0; }
