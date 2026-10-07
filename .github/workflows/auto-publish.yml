@@ -668,16 +668,41 @@ jobs:
           set +e
           HEAD_REF="${{ steps.meta.outputs.head_ref }}" node .github/scripts/validate-landing-pr.mjs
           v=$?
-          # Chrome gate: the new landing page must carry the header/footer markers and match
-          # the canonical partials, so it is born in sync and stays syncable.
-          SLUG="${{ steps.meta.outputs.head_ref }}"; SLUG="${SLUG#*/}"
-          chrome=$(node scripts/sync-chrome.mjs --check --only "$SLUG/index.html" --require-participation 2>&1)
-          c=$?
+          # Chrome gate: every new landing page must carry the header/footer markers
+          # and match the canonical partials, so it is born in sync and stays syncable.
+          #
+          # The page list comes from the validator, not from the branch name. A
+          # landing-review batch adds many pages and the branch is named after the
+          # batch ("grid-batch-ottawa-hamilton"), so deriving one slug from it checked
+          # a page that does not exist and failed every grid run.
+          PAGES=""
+          if [ -f validation-result.json ]; then
+            PAGES=$(jq -r '.pages[]?.path // empty' validation-result.json)
+          fi
+          if [ -z "$PAGES" ]; then
+            # The validator crashed or produced nothing. Fall back to the old
+            # branch-name guess so a single-page PR is still gated.
+            SLUG="${{ steps.meta.outputs.head_ref }}"; SLUG="${SLUG#*/}"
+            PAGES="$SLUG/index.html"
+          fi
+          c=0; chrome=""; n=0
+          while IFS= read -r p; do
+            [ -n "$p" ] || continue
+            n=$((n+1))
+            # A --only glob that matches nothing scans zero files and exits 0, so a
+            # missing page would pass this gate silently. Fail on it instead.
+            if [ ! -f "$p" ]; then chrome="$chrome
+          $p: not on disk — chrome gate could not check it"; c=1; continue; fi
+            out=$(node scripts/sync-chrome.mjs --check --only "$p" --require-participation 2>&1) || c=1
+            chrome="$chrome$out
+          "
+          done <<< "$PAGES"
           echo "$chrome"
+          echo "chrome gate: checked $n page(s), exit $c"
           set -e
           if [ "$c" -ne 0 ]; then
             [ -f validation-result.json ] || echo '{"failures":[]}' > validation-result.json
-            msg='Site chrome check failed — the new landing page is missing the header/footer markers or is out of date with partials/. Regenerate from the current template, or run `node scripts/sync-chrome.mjs --write`. See partials/README.md.'
+            msg='Site chrome check failed — a new landing page is missing the header/footer markers or is out of date with partials/. Regenerate from the current template, or run `node scripts/sync-chrome.mjs --write`. See partials/README.md.'
             tmp=$(mktemp); jq --arg m "$msg" '.failures += [$m] | .pass=false' validation-result.json > "$tmp" && mv "$tmp" validation-result.json
           fi
           if [ "$v" -ne 0 ] || [ "$c" -ne 0 ]; then echo "exit_code=1" >> "$GITHUB_OUTPUT"; else echo "exit_code=0" >> "$GITHUB_OUTPUT"; fi
@@ -703,8 +728,10 @@ jobs:
       - name: Review branch — report the pass, do not merge
         if: steps.validate.outputs.exit_code == '0' && startsWith(steps.meta.outputs.head_ref, 'landing-review/')
         run: |
+          COUNT=$(jq -r '.pageCount // 1' validation-result.json)
+          if [ "$COUNT" -gt 1 ]; then WHAT="all $COUNT pages"; else WHAT="the page"; fi
           gh pr comment ${{ steps.pr.outputs.number }} --repo ${{ github.repository }} \
-            --body "**Validation passed.** This is a landing-review branch, so it is not merged automatically. Review the page and merge it yourself. Once 3 landing pages are live the system switches to landing/ branches, which merge here on a pass."
+            --body "**Validation passed** — $WHAT. This is a landing-review branch, so it is not merged automatically. Review and merge it yourself. Once 3 landing pages are live the system switches to landing/ branches, which merge here on a pass; those stay one page per branch."
 
       - name: Squash-merge the PR
         if: steps.validate.outputs.exit_code == '0' && startsWith(steps.meta.outputs.head_ref, 'landing/')
