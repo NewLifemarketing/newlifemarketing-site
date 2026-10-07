@@ -105,7 +105,11 @@ if (retired.length) {
   let xml = read('sitemap.xml');
   let dropped = 0;
   for (const u of retired) {
-    const re = new RegExp(`\\s*<url>\\s*<loc>${ORIGIN}${u.replace(/[/-]/g, (m) => `\\${m}`)}</loc>[\\s\\S]*?</url>`, 'g');
+    // 39 of this sitemap's entries use https://www. and 340 do not, so match
+    // either host rather than only the canonical one. Missing that silently
+    // leaves a retired page listed, which is the one thing this must not do.
+    const esc = u.replace(/[/\-]/g, (m) => `\\${m}`);
+    const re = new RegExp(`\\s*<url>\\s*<loc>https://(?:www\\.)?newlifemarketing\\.ca${esc}</loc>[\\s\\S]*?</url>`, 'g');
     const before = xml; xml = xml.replace(re, '');
     if (xml !== before) dropped += 1;
   }
