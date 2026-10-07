@@ -164,19 +164,33 @@ if (modified.includes("blog/index.html")) {
 }
 
 // ---------------------------------------------------------------------
-// 3. sitemap.xml — must be a pure insertion of exactly one <url> entry
+// 3. sitemap.xml — additive: nothing lost, and the new post listed
 // ---------------------------------------------------------------------
+//
+// This used to compare a common prefix and suffix and call anything in between
+// a violation. sitemap-sort.mjs keeps the file alphabetical, so a new entry
+// lands in the middle and everything after it shifts — which that test reports
+// as "existing entries were changed, removed, or reordered" even though nothing
+// was. PR #96 sat unmergeable for five days on exactly this, with the run report
+// noting "that diff rewrites about 170 lines".
+//
+// What actually matters is that no existing URL disappeared and the new post is
+// listed. Order is checked separately, further down, against a real sort.
 if (modified.includes("sitemap.xml")) {
   const oldContent = showAtRef(mergeBase, "sitemap.xml");
   const newContent = readFile(path.join(REPO_ROOT, "sitemap.xml"));
   if (oldContent === null) {
     fail("sitemap.xml modified but no previous version found at merge-base.");
   } else {
-    const { oldMiddle } = pureInsertionMiddle(oldContent, newContent);
-    if (oldMiddle !== "") {
-      fail("sitemap.xml was not purely additive — existing <url> entries were changed, removed, or reordered.");
-    } else if (slug && !newContent.includes(`${SITE_ORIGIN}/blog/${slug}/`)) {
-      fail(`sitemap.xml's inserted content doesn't reference the new post's canonical URL.`);
+    const locs = (s) => [...s.matchAll(/<loc>([\s\S]*?)<\/loc>/gi)].map((m) => m[1].trim());
+    const after = new Set(locs(newContent));
+    const lost = locs(oldContent).filter((l) => !after.has(l));
+    if (lost.length) {
+      fail(`sitemap.xml lost ${lost.length} existing entr${lost.length === 1 ? "y" : "ies"} — a blog PR may only add. `
+        + `First: ${lost.slice(0, 3).join(", ")}${lost.length > 3 ? ", …" : ""}`);
+    }
+    if (slug && !after.has(`${SITE_ORIGIN}/blog/${slug}/`)) {
+      fail(`sitemap.xml does not list the new post's canonical URL ${SITE_ORIGIN}/blog/${slug}/.`);
     }
   }
 }
