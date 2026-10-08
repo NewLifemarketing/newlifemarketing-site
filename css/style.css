@@ -3326,6 +3326,28 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
   .rich .pick { padding: 0.8rem 0.8rem; gap: 0.6rem; }
 }
 
+/* ---------- "Who it's for": six industries ----------
+   Three featured cards with their one-line promise (B2B & Enterprise in navy,
+   as before), and the other three as quiet rows beneath. */
+.who3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.who-card {
+  position: relative; display: flex; flex-direction: column; gap: 0.5rem; padding: 1.3rem 1.4rem 1.2rem; border-radius: 18px; text-decoration: none; color: inherit;
+  background: #EEF4FB; border: 1px solid #D9E5F4; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.who-card:hover, .who-card:focus-visible { transform: translateY(-3px); border-color: #2196F3; box-shadow: 0 14px 30px rgba(15, 61, 115, 0.16); }
+.who-card-name { font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; line-height: 1.2; color: #0D0D14; padding-right: 1.6rem; }
+.who-card-tag { font-size: 0.97rem; line-height: 1.45; color: #3A3A46; }
+.who-card-go { position: absolute; top: 1.2rem; right: 1.3rem; font-weight: 800; color: #2196F3; transition: transform 0.2s ease; }
+.who-card:hover .who-card-go { transform: translateX(3px); }
+.who-card.navy { background: #0F3D73; border-color: #0F3D73; box-shadow: 0 16px 40px rgba(15, 61, 115, 0.22); }
+.who-card.navy .who-card-name { color: #FFFFFF; }
+.who-card.navy .who-card-tag { color: rgba(255, 255, 255, 0.82); }
+.who-card.navy .who-card-go { color: #8FD0FF; }
+.who3-mini { margin-top: 0.6rem; gap: 0.5rem 1rem; }
+.who-mini { display: flex; flex-direction: column; padding: 0.65rem 0.9rem; border-radius: 12px; text-decoration: none; color: inherit; transition: background 0.15s ease; }
+.who-mini:hover, .who-mini:focus-visible { background: var(--blue-dim); }
+@media (max-width: 900px) { .who3 { grid-template-columns: 1fr; } .who3-mini { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .who3-mini { grid-template-columns: 1fr; } }
 /* ---- Hero title that is NOT the H1 --------------------------------------
    On the SEO page the <h1> is the short keyword line above this one. This class
    carries the presentation the H1 used to have, so the page looks unchanged.
