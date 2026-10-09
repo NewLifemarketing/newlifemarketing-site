@@ -3381,3 +3381,5 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 .svc-page .hero .hero-title:has(+ .svc-subhead) { margin-bottom: 0.75rem; }
 .camp-hero .hero-title { color: #fff; font-size: clamp(1.85rem, 3.9vw, 3.1rem); max-width: 22ch; margin-bottom: 0.5rem; }
 @media (max-width: 820px) { .hero:has(.hero-video) .hero-title, .hero:has(.hero-photo) .hero-title { max-width: 100%; } }
+
+.camp-results-grid .stat-label{color:var(--muted)}
