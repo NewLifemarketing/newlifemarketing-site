@@ -4,7 +4,7 @@
 :root{--ink:#0D0D14;--muted:#4B4B57;--line:#E3E5EC;--soft:#F5F7FB;--blue:#2196F3;--blue-d:#1565C0;--navy:#0D0D14;--gold:#B8860B}
 *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:84px}
 body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:#fff;line-height:1.6;-webkit-font-smoothing:antialiased}
-img{max-width:100%;display:block}a{color:var(--blue-d)}
+img{max-width:100%;height:auto;display:block}a{color:var(--blue-d)}
 .wrap{max-width:1160px;margin:0 auto;padding:0 20px}
 h1,h2,h3{font-family:Archivo,Inter,sans-serif;text-transform:uppercase;font-style:italic;font-weight:900;line-height:1.05;margin:0 0 .6em;letter-spacing:-.01em}
 h1{font-size:clamp(2.2rem,5.6vw,4rem)}h2{font-size:clamp(1.7rem,3.6vw,2.6rem)}h3{font-size:1.15rem;font-weight:800}
