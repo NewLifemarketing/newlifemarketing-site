@@ -161,6 +161,11 @@ if (modified.includes("blog/index.html")) {
       fail(`blog/index.html's inserted content doesn't link to the new post (/blog/${slug}/).`);
     }
   }
+} else if (slug) {
+  // Required, not just checked when present. Added 2026-10-14 after
+  // barrieinsulation-site#11 shipped a post with no card on /blog/: live at its
+  // URL, reported by the owner as not live, because nothing linked to it.
+  fail(`blog/index.html was not modified — the new post (/blog/${slug}/) has no card on the blog page.`);
 }
 
 // ---------------------------------------------------------------------
@@ -193,6 +198,8 @@ if (modified.includes("sitemap.xml")) {
       fail(`sitemap.xml does not list the new post's canonical URL ${SITE_ORIGIN}/blog/${slug}/.`);
     }
   }
+} else if (slug) {
+  fail(`sitemap.xml was not modified — the new post (/blog/${slug}/) is not listed.`);
 }
 
 // ---------------------------------------------------------------------
