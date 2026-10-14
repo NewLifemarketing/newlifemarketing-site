@@ -242,6 +242,25 @@ jobs:
           git commit -m "Add Open Graph and Twitter Card tags to the new page"
           # HEAD is detached (checkout used refs/pull/N/head), so push explicitly.
           git push origin "HEAD:refs/heads/$BRANCH"
+      # Repair the mechanical defects a draft's frontmatter leaks into the
+      # <head>: whitespace in a URL, a stray quote that closes an attribute
+      # early, a JSON-LD date that is not ISO. ONLY those -- each has exactly
+      # one correct answer. Judgement calls are left alone and fail below.
+      #
+      # This step commits and pushes the same way the Open Graph step above
+      # already does, so the pattern is not new to this workflow.
+      - name: Repair the head (mechanical defects only)
+        run: |
+          PAGE="${{ steps.meta.outputs.head_ref }}/index.html"
+          node .github/scripts/blog-head-runner.mjs --page "$PAGE" --repair || true
+          if ! git diff --quiet; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -u
+            git commit -m "head gate: repair mechanical defects in $PAGE" -m "Recorded in .github/blog-head-repairs.jsonl so a defect that keeps recurring stays visible; a silent repair means whatever produces it never gets fixed."
+            git push origin "HEAD:refs/heads/${{ steps.meta.outputs.head_ref }}"
+          fi
+
       - name: Run validation gate
         id: validate
         run: |
@@ -259,6 +278,12 @@ jobs:
           idx=$(node scripts/build-indexes.mjs --check --og-only --page "${{ steps.meta.outputs.head_ref }}/index.html" 2>&1)
           x=$?
           echo "$idx"
+          # Head gate: the canonical is this page's own URL, well formed, and
+          # no attribute has been closed early by a stray quote. Run FRESH --
+          # the repair above is never the thing that decides.
+          head=$(node .github/scripts/blog-head-runner.mjs --page "${{ steps.meta.outputs.head_ref }}/index.html" 2>&1)
+          h=$?
+          echo "$head"
           set -e
           if [ "$c" -ne 0 ]; then
             [ -f validation-result.json ] || echo '{"failures":[]}' > validation-result.json
@@ -270,7 +295,12 @@ jobs:
             msg='Link-preview check failed — the new page has no og:image, so a shared link renders as bare text. Run: node scripts/build-indexes.mjs --og-only --page <page>'
             tmp=$(mktemp); jq --arg m "$msg" '.failures += [$m] | .pass=false' validation-result.json > "$tmp" && mv "$tmp" validation-result.json
           fi
-          if [ "$v" -ne 0 ] || [ "$c" -ne 0 ] || [ "$x" -ne 0 ]; then echo "exit_code=1" >> "$GITHUB_OUTPUT"; else echo "exit_code=0" >> "$GITHUB_OUTPUT"; fi
+          if [ "$h" -ne 0 ]; then
+            [ -f validation-result.json ] || echo '{"failures":[]}' > validation-result.json
+            msg=$(printf 'Head check failed — the page%s <head> is malformed. %s' "'" "$head")
+            tmp=$(mktemp); jq --arg m "$msg" '.failures += [$m] | .pass=false' validation-result.json > "$tmp" && mv "$tmp" validation-result.json
+          fi
+          if [ "$v" -ne 0 ] || [ "$c" -ne 0 ] || [ "$x" -ne 0 ] || [ "$h" -ne 0 ]; then echo "exit_code=1" >> "$GITHUB_OUTPUT"; else echo "exit_code=0" >> "$GITHUB_OUTPUT"; fi
 
       - name: Read validation result
         id: result
