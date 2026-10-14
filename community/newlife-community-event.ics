@@ -1,0 +1,13 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//NewLife Marketing//Community//EN
+BEGIN:VEVENT
+UID:newlife-community-2026-11-07@newlifemarketing.ca
+DTSTAMP:20261013T000000Z
+DTSTART:20261107T150000Z
+DTEND:20261107T163000Z
+SUMMARY:NewLife Community: free business owner event
+DESCRIPTION:30 minute live Q&A with a panel of business owners\, then 60 minutes of networking with free coffee and breakfast.
+LOCATION:Venue and address sent to every member by email
+END:VEVENT
+END:VCALENDAR
