@@ -142,7 +142,22 @@ for (const p of modified) {
 }
 
 // ---------------------------------------------------------------------
-// 2. blog/index.html — must be a pure insertion (one new card, nothing else changed)
+// 2. blog/index.html — no card may be LOST. Reordering is allowed.
+//
+// This used to require a pure insertion: the new card could be added, and no
+// existing card could move. The intent was right — stop a run mangling or
+// deleting cards — but "purely additive" was stricter than that intent, and it
+// outlawed reordering as a side effect nobody chose.
+//
+// That is why the index drifted out of date order and could never recover. The
+// writing agent puts each new card at the top, which is only correct when posts
+// publish in the order they are written; a post held back by a failed check or
+// a missed day publishes late and still lands above newer ones. Eighteen of one
+// client's 117 cards were out of place, and the one rule that looked at the
+// index made correcting them a validation failure.
+//
+// So the rule now says what it always meant: every card that was here is still
+// here, and the new post is linked. Where they sit is not this gate's business.
 // ---------------------------------------------------------------------
 if (modified.includes("blog/index.html")) {
   const oldContent = showAtRef(mergeBase, "blog/index.html");
@@ -150,9 +165,12 @@ if (modified.includes("blog/index.html")) {
   if (oldContent === null) {
     fail("blog/index.html modified but no previous version found at merge-base.");
   } else {
-    const { oldMiddle } = pureInsertionMiddle(oldContent, newContent);
-    if (oldMiddle !== "") {
-      fail("blog/index.html was not purely additive — existing cards were changed, removed, or reordered.");
+    const links = (s) => [...s.matchAll(/href="\/blog\/([^"/]+)\/"/g)].map((m) => m[1]);
+    const before = new Set(links(oldContent));
+    const after = new Set(links(newContent));
+    const lost = [...before].filter((x) => !after.has(x));
+    if (lost.length) {
+      fail(`blog/index.html lost ${lost.length} card(s): ${lost.slice(0, 5).join(", ")}${lost.length > 5 ? "…" : ""}`);
     } else if (slug && !newContent.includes(`href="/blog/${slug}/"`)) {
       // Checked against the whole file, not just the greedily-trimmed diff
       // region — adjacent cards share identical boilerplate

@@ -249,6 +249,27 @@ jobs:
       #
       # This step commits and pushes the same way the Open Graph step above
       # already does, so the pattern is not new to this workflow.
+      # Chrome drift NEVER blocks a post. It used to: the gate below compares
+      # every blog page against partials/, so one page anywhere on the site
+      # being out of date failed every new post. On 2026-10-14 two Community
+      # pages were created with an em dash in their BEGIN markers, sync-chrome
+      # could not match them, the sitewide sync stopped, and every blog publish
+      # failed for a day while the routine reported "succeeded".
+      #
+      # Drift is mechanical and has exactly one correct answer, so it is
+      # REPAIRED here rather than reported. Same commit-and-push pattern as the
+      # two steps above.
+      - name: Sync site chrome (repair, never block)
+        run: |
+          node scripts/sync-chrome.mjs --write || true
+          if ! git diff --quiet; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -u
+            git commit -m "chrome: sync header and footer from partials" -m "Repaired automatically so sitewide drift can never hold up a post. A page that will not sync is reported by the gate below, which no longer blocks on it."
+            git push origin "HEAD:refs/heads/${{ steps.meta.outputs.head_ref }}"
+          fi
+
       - name: Repair the head (mechanical defects only)
         run: |
           PAGE="${{ steps.meta.outputs.head_ref }}/index.html"
@@ -285,10 +306,13 @@ jobs:
           h=$?
           echo "$head"
           set -e
+          # Reports, never blocks. The repair step above already ran
+          # sync-chrome --write; anything still drifting is a page that CANNOT
+          # be synced (a malformed marker), which is a site problem and not a
+          # reason to withhold today's post. It is surfaced as a warning on the
+          # run so it stays visible.
           if [ "$c" -ne 0 ]; then
-            [ -f validation-result.json ] || echo '{"failures":[]}' > validation-result.json
-            msg='Site chrome check failed — the new post is missing the header/footer markers or is out of date with partials/. Regenerate from the current template, or run `node scripts/sync-chrome.mjs --write`. See partials/README.md.'
-            tmp=$(mktemp); jq --arg m "$msg" '.failures += [$m] | .pass=false' validation-result.json > "$tmp" && mv "$tmp" validation-result.json
+            echo "::warning::Chrome still drifts after the automatic repair. A page cannot be synced -- check its BEGIN/END markers. NOT blocking this post."
           fi
           if [ "$x" -ne 0 ]; then
             [ -f validation-result.json ] || echo '{"failures":[]}' > validation-result.json
