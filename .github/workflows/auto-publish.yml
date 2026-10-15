@@ -270,6 +270,27 @@ jobs:
             git push origin "HEAD:refs/heads/${{ steps.meta.outputs.head_ref }}"
           fi
 
+      # The blog index, in date order, by code rather than by instruction.
+      #
+      # The writer adds each new card at the top, which is only correct when
+      # posts publish in the order they are written. One held back by a failing
+      # check or a missed day publishes later and still lands above newer
+      # posts. 18 of 117 cards had drifted out of place that way, and the rule
+      # that looked at the index forbade reordering, so it could never recover.
+      #
+      # Sorting it by hand fixes nothing: the next late post puts it back. This
+      # runs on every post, so the order is maintained instead of corrected.
+      - name: Sort the blog index by date
+        run: |
+          node scripts/sort-blog-index.mjs --write || true
+          if ! git diff --quiet -- blog/index.html; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add blog/index.html
+            git commit -m "blog index: sort by publish date, newest first" -m "Maintained automatically. A post held back publishes late and would otherwise sit above newer ones."
+            git push origin "HEAD:refs/heads/${{ steps.meta.outputs.head_ref }}"
+          fi
+
       - name: Repair the head (mechanical defects only)
         run: |
           PAGE="${{ steps.meta.outputs.head_ref }}/index.html"
