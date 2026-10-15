@@ -5,3 +5,9 @@ validation-result.json
 
 # keyword-audit baseline (local, per-edit)
 .keyword-baseline.json
+
+# Agent scratch. A stray file here once blocked three days of blog posts:
+# ensure-clean-main.cjs refuses to run against a dirty checkout, correctly,
+# and an untracked brief from a hand session is indistinguishable from
+# uncommitted work somebody cares about.
+.claude/
