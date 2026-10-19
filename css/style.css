@@ -3455,3 +3455,6 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 @media (max-width: 820px) { .hero:has(.hero-video) .hero-title, .hero:has(.hero-photo) .hero-title { max-width: 100%; } }
 
 .camp-results-grid .stat-label{color:var(--muted)}
+
+/* Company menu: red "Limited time" tag on the Free Website For Trades item */
+.m-ltd{display:inline-block;vertical-align:middle;margin-left:.4rem;padding:.18rem .5rem;border-radius:999px;background:linear-gradient(90deg,#E5342B,#FF6A3D,#E5342B);background-size:200% 100%;color:#fff;font:800 .6rem/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;font-style:normal;animation:m-ltd-shine 3s linear infinite}@keyframes m-ltd-shine{to{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.m-ltd{animation:none}}

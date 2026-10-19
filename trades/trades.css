@@ -555,3 +555,16 @@ details{border-bottom:1px solid var(--line);padding:1.1rem 0}summary{cursor:poin
 .wbn-card{grid-template-columns:1fr auto}
 .wbn-date{padding:0 .6rem 0 .4rem}
 @media(max-width:900px){.wbn-card{grid-template-columns:1fr}.wbn-date{order:-1}}
+/* header: "Limited time / Free Website" pill (links to /trades/free-website/) */
+@media(min-width:1181px){.hdr-pill .bar{max-width:1180px}.hdr-pill .menu{gap:1.35rem}}
+@media(max-width:1180px){.hdr-pill .tog{display:block}.hdr-pill .menu{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;background:rgba(13,13,20,.96);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.12);border-radius:20px;flex-direction:column;align-items:flex-start;padding:1.2rem 24px 1.4rem;gap:1.1rem}.hdr-pill .menu.open{display:flex}.hdr-pill .menu .main{display:inline}}
+.menu a.fw-nav{display:inline-flex;align-items:center;gap:.5rem;padding:.32rem .85rem .32rem .7rem;border-radius:999px;background:linear-gradient(90deg,#E5342B,#FF6A3D,#E5342B);background-size:200% 100%;color:#fff;white-space:nowrap;line-height:1;animation:fw-shine 3s linear infinite,fw-ring 2s ease-out infinite}
+.menu a.fw-nav:hover{color:#fff;filter:brightness(1.08)}
+.menu a.fw-nav i{width:7px;height:7px;border-radius:50%;background:#fff;flex:none;animation:fw-blink 1s steps(2,start) infinite}
+.menu a.fw-nav span{display:grid;gap:2px;text-align:left}
+.menu a.fw-nav small{font:800 .56rem Inter;letter-spacing:.14em;text-transform:uppercase;opacity:.9}
+.menu a.fw-nav b{font:900 italic .8rem Archivo;letter-spacing:.06em;text-transform:uppercase}
+@keyframes fw-shine{to{background-position:-200% 0}}
+@keyframes fw-ring{0%{box-shadow:0 0 0 0 rgba(229,52,43,.55)}100%{box-shadow:0 0 0 12px rgba(229,52,43,0)}}
+@keyframes fw-blink{to{visibility:hidden}}
+@media (prefers-reduced-motion:reduce){.menu a.fw-nav,.menu a.fw-nav i{animation:none}}
