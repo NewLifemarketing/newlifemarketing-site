@@ -870,6 +870,14 @@ body.home-light .logo-band { background: transparent; }
 .hero-light .lead { color: #4B4B57; text-shadow: none; }
 .hero-light .kicker { color: #1565C0; text-shadow: none; }
 
+/* The <h1> IS the kicker: small on screen, carrying the exact keyword, with
+   the display line beneath it as a paragraph. Hero variants size h1 directly
+   (.hero-light h1), which outranks .kicker on specificity and blew the kicker
+   up to headline size on the homepage. This clones the kickers own size back
+   onto it rather than inventing a second opinion about what a kicker looks
+   like. */
+h1.kicker { font-size: 0.8rem; }
+
 /* Google rating, above the headline, where the eyebrow used to sit. */
 .review-strip {
   display: flex;
