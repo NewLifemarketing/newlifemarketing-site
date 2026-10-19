@@ -102,7 +102,7 @@
         <label>Town or city<input name="city" type="text" autocomplete="address-level2" required></label>
         <label>Phone<input name="phone" type="tel" autocomplete="tel" required></label>
         <label>Email<input name="email" type="email" autocomplete="email" required></label>
-        <label>Current website (if any)<input name="website" type="url" placeholder="https://"></label>
+        <label>Current website (if any)<input name="website" type="text" inputmode="url" autocomplete="url" placeholder="e.g. yourbusiness.ca"></label>
         <label>Years in business<input name="years" type="text" inputmode="numeric" placeholder="e.g. 8" required></label>
         <label class="full">List your services<textarea name="services" rows="2" placeholder="e.g. Roof replacements, repairs, eavestroughs, skylights"></textarea></label>
         <button class="btn" type="submit">Send My Application →</button>
@@ -261,7 +261,7 @@ if(f){
     var full=g('name'),sp=full.indexOf(' ');
     var payload={first_name:sp===-1?full:full.slice(0,sp),last_name:sp===-1?'':full.slice(sp+1),full_name:full,
       email:g('email'),phone:g('phone'),business_name:g('business'),trade:g('trade'),city:g('city'),
-      website_url:g('website'),years_in_business:g('years'),services:g('services'),
+      website_url:(function(u){return u&&!/^https?:\/\//i.test(u)?'https://'+u:u;})(g('website')),years_in_business:g('years'),services:g('services'),
       agreement:document.querySelector('.fw-terms').textContent.trim(),
       page_url:location.href,form_name:'Free Website Form',source:'newlife_free_website_form'};
     btn.disabled=true;
