@@ -3439,6 +3439,111 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 .cm-note { margin-top: 1.5rem; padding: 1rem 1.2rem; border-left: 4px solid #2196F3; border-radius: 0 12px 12px 0;
   background: rgba(33,150,243,.08); color: var(--muted); }
 .cm-note strong { color: var(--white); }
+
+/* Six top-level menus (Free Resources added after Company) no longer fit the 1200px bar:
+   the logo was squeezed against "Services". The bar gets a little more room and the
+   items a little less padding, on desktop only; the mobile drawer is untouched. */
+@media (min-width: 1281px) {
+  .site-header .wrap { max-width: min(1280px, calc(100vw - 2rem)); }
+  .nav a.top, .nav button.top { padding-inline: 0.5rem; }
+  .site-header .logo { flex: none; }
+}
+
+/* Mobile drawer: the light header sets every top-level label to near-black (specificity 0,3,1),
+   but the drawer itself is dark, so Services / Industries / Clients / ... were invisible.
+   White labels and a light-on-dark hover inside the drawer. */
+@media (max-width: 1280px) {
+  .site-header .nav a.top, .site-header .nav button.top { color: #FFFFFF; }
+  .site-header .nav a.top:hover, .site-header .nav button.top:hover { background: rgba(255, 255, 255, 0.08); }
+  .site-header .nav button.top .caret { color: #AFB4C2; }
+}
+
+/* ======================= Menu drawer, v2: a coloured side panel =======================
+   Replaces the full-screen black sheet. At 1280px and below (phones, iPad portrait and
+   landscape, small laptops) the menu is a panel that slides in from the right and takes
+   most of the screen but not all of it, over a dimmed backdrop you can tap to close.
+   Brand-blue gradient, white labels, white tap-cards for the links. */
+@media (max-width: 1280px) {
+  .nav {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(88vw, 430px);
+    max-width: none;
+    height: 100vh; height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    z-index: 95;
+    padding: 5rem 1.25rem 2.5rem;
+    background: linear-gradient(168deg, #0A2A6B 0%, #0F4BAE 48%, #1E88E5 100%);
+    box-shadow: -24px 0 60px rgba(6, 12, 30, 0.45);
+    border-radius: 22px 0 0 22px;
+    overflow-x: hidden; overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateX(104%);
+    visibility: hidden;
+    transition: transform 0.3s cubic-bezier(.2,.8,.2,1), visibility 0s linear 0.3s;
+  }
+  body.nav-open .nav {
+    transform: none; visibility: visible;
+    transition: transform 0.3s cubic-bezier(.2,.8,.2,1), visibility 0s;
+  }
+  .nav::before {
+    content: "Menu";
+    position: absolute; top: 1.55rem; left: 1.4rem;
+    font-family: var(--font-display); font-style: italic; font-weight: 900;
+    text-transform: uppercase; letter-spacing: 0.04em; font-size: 1.35rem;
+    color: #FFFFFF;
+  }
+  /* dimmed backdrop, inside the header's stacking context so it sits under the drawer */
+  body.nav-open .site-header::after {
+    content: ""; position: fixed; inset: 0; z-index: 94;
+    background: rgba(7, 12, 28, 0.58);
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  }
+  .nav-close {
+    background: #FFFFFF; color: #0F4BAE; border-color: #FFFFFF;
+    box-shadow: 0 4px 14px rgba(6, 12, 30, 0.25);
+  }
+  /* top-level rows */
+  .nav > .nav-item { border-bottom: 1px solid rgba(255, 255, 255, 0.16); }
+  .site-header .nav a.top, .site-header .nav button.top {
+    color: #FFFFFF; font-size: 1.12rem; font-weight: 700; padding: 1.05rem 0.4rem;
+  }
+  .site-header .nav a.top:hover, .site-header .nav button.top:hover { background: rgba(255, 255, 255, 0.10); }
+  .site-header .nav button.top .caret { color: #BFE0FF; }
+  .nav > .nav-item.open { background: rgba(255, 255, 255, 0.10); border-radius: 14px; border-bottom-color: transparent; padding: 0 0.5rem 0.5rem; margin-bottom: 0.3rem; }
+  .nav > .nav-item.open > .top, .site-header .nav .nav-item.open > button.top { color: #FFFFFF; }
+  /* group and column headings inside an open panel */
+  .nav .mega .m-group, .nav .mega .m-colhead {
+    color: #BFE0FF; font-size: 0.7rem; letter-spacing: 0.14em; padding: 0 0.25rem; margin: 0.9rem 0 0.4rem;
+  }
+  /* links become white tap-cards with a blue edge */
+  .nav .mega a {
+    background: #FFFFFF; border: 0; border-left: 4px solid #2196F3; border-radius: 12px;
+    margin: 0 0 0.45rem; padding: 0.8rem 0.9rem;
+    box-shadow: 0 2px 8px rgba(6, 12, 30, 0.14);
+  }
+  .nav .mega a:hover, .nav .mega a:active { background: #EAF4FF; }
+  .nav .mega .m-title { color: #0D0D14; font-size: 0.98rem; }
+  .nav .mega .m-teaser { color: #4B4B57; font-size: 0.8rem; line-height: 1.35; }
+  .nav .mega .m-teaser strong { color: #1565C0; }
+  /* footer actions */
+  .nav-drawer-foot .ndf-ctas .btn:not(.ghost) { background: #FFFFFF; color: #0F4BAE; border-color: #FFFFFF; }
+  .nav-drawer-foot .ndf-ctas .btn.ghost { background: transparent; color: #FFFFFF; border: 2px solid rgba(255, 255, 255, 0.85); }
+  .nav-drawer-foot .ndf-meta, .nav-drawer-foot .ndf-meta a { color: rgba(255, 255, 255, 0.85); }
+  .nav-drawer-foot .ndf-social a { color: #FFFFFF; text-decoration: underline; text-underline-offset: 3px; }
+}
+@media (max-width: 480px) {
+  .nav { width: 90vw; padding-inline: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav, body.nav-open .nav { transition-duration: 0.01ms; }
+}
+@media (min-width: 1281px) { body.nav-open .site-header::after { display: none; } body.nav-open { overflow: auto; } }
+
+/* Free Resources menu: red "Limited time" tag on the Free Website For Trades item */
 /* ---- Hero title that is NOT the H1 --------------------------------------
    On the SEO page the <h1> is the short keyword line above this one. This class
    carries the presentation the H1 used to have, so the page looks unchanged.

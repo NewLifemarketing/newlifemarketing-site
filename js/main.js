@@ -19,6 +19,21 @@
       if (toggle) toggle.setAttribute("aria-expanded", "false");
     });
   }
+  /* Tap the dimmed backdrop (anything outside the drawer) to close it. */
+  document.addEventListener("click", function (e) {
+    if (!document.body.classList.contains("nav-open")) return;
+    if (e.target.closest(".nav") || e.target.closest(".nav-toggle") || e.target.closest(".nav-close")) return;
+    document.body.classList.remove("nav-open");
+    if (toggle) toggle.setAttribute("aria-expanded", "false");
+  });
+  /* Choosing a link closes the drawer (same-page anchors would otherwise leave it open). */
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest(".nav .mega a, .nav a.top");
+    if (a && document.body.classList.contains("nav-open")) {
+      document.body.classList.remove("nav-open");
+      if (toggle) toggle.setAttribute("aria-expanded", "false");
+    }
+  });
 
   /* ---------- Mega menu ----------
      Desktop: one card that travels. All six panels share a single piece of
@@ -58,7 +73,11 @@
     var br = btn.getBoundingClientRect();
     var centre = br.left + br.width / 2;
     var x = centre - pw / 2;
-    if (x + pw > window.innerWidth - EDGE) x = window.innerWidth - EDGE - pw;
+    /* The last trigger (Free Resources) sits near the bar's right end; keep the card inside
+       the bar's right edge as well as the viewport, so it never overhangs the header. */
+    var bar = header.querySelector(".wrap") || header;
+    var rightLimit = Math.min(window.innerWidth - EDGE, bar.getBoundingClientRect().right);
+    if (x + pw > rightLimit) x = rightLimit - pw;
     if (x < EDGE) x = EDGE;
     x = Math.round(x - hb.left);               /* header-relative */
 
@@ -183,6 +202,7 @@
   });
 
   window.addEventListener("resize", function () {
+    if (desktop()) document.body.classList.remove("nav-open");
     if (!desktop()) { closeAll(); return; }
     if (current) place(current, false);
   });
