@@ -305,6 +305,16 @@
     t.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
   });
 
+  /* ---------- Phone: 10 digits, sent to GoHighLevel as +1 and the 10 digits ----------
+     Spaces, dashes, dots and brackets are stripped; a typed leading 1 or +1 is accepted and not
+     doubled. Returns "+1XXXXXXXXXX", or "" when it is not a 10-digit number. */
+  function nlPhone(raw) {
+    var d = String(raw || "").replace(/\D/g, "");
+    if (d.length === 11 && d.charAt(0) === "1") d = d.slice(1);
+    return d.length === 10 ? "+1" + d : "";
+  }
+  var PHONE_ERR = "Please enter a 10-digit phone number, like 705-555-0142.";
+
   /* ---------- Booking form → calendar page ---------- */
   var bookForm = document.getElementById("book-form");
   if (bookForm) {
@@ -330,6 +340,13 @@
         var f = bookForm.querySelector("[name=" + n + "]");
         return f ? f.value.trim() : "";
       };
+      var phone = nlPhone(g("phone"));
+      if (!phone) {
+        showBookMsg(PHONE_ERR, false);
+        var pf = bookForm.querySelector("[name=phone]");
+        if (pf) pf.focus();
+        return;
+      }
       var full = g("name");
       var sp = full.indexOf(" ");
       var payload = {
@@ -337,7 +354,7 @@
         last_name: sp === -1 ? "" : full.slice(sp + 1),
         full_name: full,
         email: g("email"),
-        phone: g("phone"),
+        phone: phone,
         business_name: g("business"),
         website_url: g("website"),
         service_interest: g("service"),
@@ -367,6 +384,15 @@
           if (typeof gtag === "function") {
             gtag("event", "generate_lead", { form: "book", value: 0, currency: "CAD" });
           }
+        } catch (err) {}
+        /* Hand the details to /book/call/ so the calendar opens already filled in. Session
+           storage only, never the address bar (Google Analytics records full page addresses);
+           the calendar page reads it once and deletes it. */
+        try {
+          sessionStorage.setItem("nl_book_lead", JSON.stringify({
+            first_name: payload.first_name, last_name: payload.last_name,
+            email: payload.email, phone: payload.phone
+          }));
         } catch (err) {}
         showBookMsg("✓ Got it — taking you to pick your call time…", true);
         bookForm.reset();
@@ -398,13 +424,22 @@
         var f = contactForm.querySelector("[name=" + n + "]");
         return f ? f.value.trim() : "";
       };
+      var phone = nlPhone(g("phone"));
+      if (!phone) {
+        showContactMsg(PHONE_ERR, false);
+        var pf = contactForm.querySelector("[name=phone]");
+        if (pf) pf.focus();
+        return;
+      }
+      var full = g("name");
+      var sp = full.indexOf(" ");
       var payload = {
-        first_name: g("first_name"),
-        last_name: g("last_name"),
-        full_name: (g("first_name") + " " + g("last_name")).trim(),
+        first_name: sp === -1 ? full : full.slice(0, sp),
+        last_name: sp === -1 ? "" : full.slice(sp + 1),
+        full_name: full,
         email: g("email"),
-        phone: g("phone"),
-        message: g("message"),
+        phone: phone,
+        message: g("message"),   /* optional: an empty string, never an error */
         source: "newlife_contact_form"
       };
       var btn = contactForm.querySelector("button[type=submit]");
