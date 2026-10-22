@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 // Add a case study to the Case Studies mega-menu, then propagate the nav.
 //
-//   node scripts/add-case-study-to-nav.mjs <slug> [--write]
+//   node scripts/add-case-study-to-nav.mjs <slug> [--name "Menu name"] [--write]
 //
-// WHY A SCRIPT FOR A ONE-LINE EDIT. The mega-menu lists every case study, and the
-// owner keeps it that way and updates it himself (his decision, 2026-09-06). The
+// The menu shows the NEWEST case studies only: the new one goes to the top and the
+// oldest falls off, keeping MAX entries (owner's rule, 2026-10-22; it used to list
+// every case study). Every new case study must go through this script.
+// --name overrides the menu title (default: the Article JSON-LD "about" name), for
+// anonymous or non-client case studies whose "about" is not a short client name.
+//
+// WHY A SCRIPT FOR A ONE-LINE EDIT. The owner updates the menu himself. The
 // weekly pipeline is forbidden from touching partials/header.html, because doing
 // so means a ~180-file chrome commit in every PR and no validator can safely gate
 // that. So this is the manual step -- and a manual step that takes one command is
@@ -24,9 +29,12 @@ import { execFileSync } from 'node:child_process';
 const ROOT = path.resolve(import.meta.dirname, '..');
 const HEADER = path.join(ROOT, 'partials', 'header.html');
 
+const MAX = 5;   // case studies shown in the menu (plus "All Case Studies")
 const args = process.argv.slice(2);
 const WRITE = args.includes('--write');
-const slug = args.find((a) => !a.startsWith('--'));
+const nameAt = args.indexOf('--name');
+const NAME = nameAt >= 0 ? args[nameAt + 1] : null;
+const slug = args.find((a, i) => !a.startsWith('--') && i !== nameAt + 1);
 
 if (!slug) {
   console.error('Usage: node scripts/add-case-study-to-nav.mjs <slug> [--write]');
@@ -56,8 +64,8 @@ if (header.includes(`href="/case-studies/${slug}/"`)) {
 // m-title is the client name, taken from the Article block's `about` rather than
 // the h1: the h1 is a full sentence ("How Elite Cards Toronto Turned $17K...")
 // and would blow out the dropdown.
-let clientName = null;
-const ld = page.match(/<script type="application\/ld\+json">(\{"@context[^<]*"@type":"Article"[^<]*)<\/script>/);
+let clientName = NAME;
+const ld = clientName ? null : page.match(/<script type="application\/ld\+json">(\{"@context[^<]*"@type":"Article"[^<]*)<\/script>/);
 if (ld) {
   try { clientName = JSON.parse(ld[1])?.about?.name ?? null; } catch { /* fall through */ }
 }
@@ -89,10 +97,19 @@ if (!header.includes(ALL)) {
   console.error('The mega-menu markup changed; update this script rather than editing by hand.');
   process.exit(1);
 }
-const next = header.replace(ALL, ALL + entry);
+let next = header.replace(ALL, ALL + entry);
+
+// --- keep only the newest MAX entries: drop from the bottom (oldest) ----------
+const start = next.indexOf(ALL) + ALL.length;
+const end = next.indexOf('<div class="mega-foot">', start);
+const block = next.slice(start, end);
+const entries = block.match(/<a href="\/case-studies\/[^"]+\/">[\s\S]*?<\/a>/g) || [];
+const removed = entries.slice(MAX);
+if (removed.length) next = next.slice(0, start) + entries.slice(0, MAX).join('') + block.slice(entries.join('').length) + next.slice(end);
 
 console.log(`entry for ${slug}:`);
 console.log(`  ${clientName} — ${statValue} ${statLabel}`);
+for (const r of removed) console.log('  dropping oldest: ' + r.match(/href="([^"]+)"/)[1]);
 console.log('');
 
 if (!WRITE) {

@@ -1,5 +1,9 @@
 #!/usr/bin/env node
-// Does the Case Studies mega-menu still list every case study?
+// Does the Case Studies mega-menu show the NEWEST case studies, newest first?
+//
+// Rule (owner, 2026-10-22): the menu shows the MAX most recent case studies by
+// publish date (data-published on the index cards). Older ones live on /case-studies/.
+// Before 2026-10-22 the rule was "every case study"; the history below still applies.
 //
 // WHY THIS EXISTS. The nav is not stored once. Every page carries its own pasted
 // copy and scripts/sync-chrome.mjs propagates partials/header.html into all of
@@ -41,52 +45,44 @@ function read(p, label) {
 // embedded in this page too, so a whole-file scan would compare the header
 // against itself and always pass -- a check that can never fail is worse than
 // no check, because it reads as reassurance.
-function slugsFromIndex(html) {
+const MAX = 5;   // keep in step with scripts/add-case-study-to-nav.mjs
+
+function cardsFromIndex(html) {
   const start = html.indexOf('<div class="chips" data-filter-group');
   if (start < 0) {
     console.error('case-studies/index.html: could not find the card grid. The page');
     console.error('structure changed; this check needs updating rather than ignoring.');
     process.exit(1);
   }
-  const grid = html.slice(start);
-  return [...new Set([...grid.matchAll(/href="\/case-studies\/([^/"]+)\//g)].map((m) => m[1]))];
+  const grid = html.slice(start), seen = new Set(), out = [];
+  for (const m of grid.matchAll(/href="\/case-studies\/([^/"]+)\/"[^>]*data-published="([0-9-]+)"/g)) {
+    if (!seen.has(m[1])) { seen.add(m[1]); out.push({ slug: m[1], date: m[2] }); }
+  }
+  return out;
 }
 
 function slugsFromHeader(html) {
   return [...new Set([...html.matchAll(/href="\/case-studies\/([^/"]+)\//g)].map((m) => m[1]))];
 }
 
-const published = slugsFromIndex(read(INDEX, 'case-studies/index.html'));
+const cards = cardsFromIndex(read(INDEX, 'case-studies/index.html'));
+// Newest first; ties keep the index page's order (stable sort).
+const expected = cards.map((c, i) => ({ ...c, i })).sort((x, y) => y.date.localeCompare(x.date) || x.i - y.i)
+  .slice(0, MAX).map((c) => c.slug);
 const inNav = slugsFromHeader(read(HEADER, 'partials/header.html'));
+const ok = expected.length === inNav.length && expected.every((s, k) => inNav[k] === s);
 
-const missing = published.filter((s) => !inNav.includes(s));
-const stale = inNav.filter((s) => !published.includes(s));
+console.log(`published: ${cards.length}   menu shows: ${inNav.length} (rule: newest ${MAX})`);
+for (let k = 0; k < Math.max(expected.length, inNav.length); k++)
+  console.log(`  ${expected[k] === inNav[k] ? 'ok     ' : 'WRONG  '} expected ${expected[k] || '-'}   menu ${inNav[k] || '-'}`);
 
-console.log(`published: ${published.length}   in the mega-menu: ${inNav.length}`);
-if (LIST_ONLY || (!missing.length && !stale.length)) {
-  for (const s of published) {
-    console.log(`  ${inNav.includes(s) ? 'in nav ' : 'MISSING'}  ${s}`);
-  }
-}
-
-if (!missing.length && !stale.length) {
-  console.log('\nOK — the mega-menu lists every case study and nothing extra.');
+if (ok) {
+  console.log('\nOK — the mega-menu shows the newest case studies, newest first.');
   process.exit(0);
 }
-
-console.log('');
-if (missing.length) {
-  console.log(`${missing.length} case stud${missing.length === 1 ? 'y is' : 'ies are'} live but NOT in the mega-menu:`);
-  for (const s of missing) console.log(`  ✗ ${s}`);
-  console.log('');
-  console.log('Add each one, then propagate the nav to every page:');
-  for (const s of missing) console.log(`  node scripts/add-case-study-to-nav.mjs ${s}`);
-}
-if (stale.length) {
-  console.log(`${stale.length} entr${stale.length === 1 ? 'y' : 'ies'} in the mega-menu no longer exist${stale.length === 1 ? 's' : ''} on the index:`);
-  for (const s of stale) console.log(`  ✗ ${s}`);
-  console.log('  Remove by hand from partials/header.html, then: node scripts/sync-chrome.mjs --write');
-}
+console.log('\nThe menu is out of date. For each newer case study, oldest first:');
+for (const s of expected.filter((s) => !inNav.includes(s)).reverse())
+  console.log(`  node scripts/add-case-study-to-nav.mjs ${s} --name "<short menu name>" --write`);
 
 if (LIST_ONLY) process.exit(0);
 process.exit(1);
