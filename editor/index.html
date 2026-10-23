@@ -176,9 +176,9 @@ form.addEventListener('submit',function(e){
   .then(function(x){
     if(x.s===200){wait.innerHTML=md(x.j.reply);history_.push({role:'assistant',content:x.j.reply});return;}
     history_.pop();
-    wait.textContent=x.s===401?'The editor is invite-only for now.':x.s===429?'Editor is busy. Try again in a moment.':'Something went wrong. Try again.';
+    wait.textContent=x.s===401?'The editor is unavailable right now. Try again later.':x.s===429?(x.j.error==='daily chat limit reached'?'You have reached today's chat limit. Come back tomorrow.':'Editor is busy. Try again in a moment.'):'Something went wrong. Try again.';
   })
-  .catch(function(){history_.pop();wait.textContent='Editor offline. The team computer needs to be on.';})
+  .catch(function(){history_.pop();wait.textContent='The editor is offline right now. Try again later.';})
   .then(function(){busy=false;send.disabled=false;log.scrollTop=log.scrollHeight;});
 });
 
@@ -186,7 +186,7 @@ form.addEventListener('submit',function(e){
 var API=conf.bridge.replace(/\/$/,''),hdr={'X-Editor-Key':conf.key},upload=null,
     fileIn=document.getElementById('ed-file'),make=document.getElementById('ed-make'),makeBtn=document.getElementById('ed-make-btn');
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-function fail(m,s){m.textContent=s===401?'The editor is invite-only for now.':s===423?'The editor is locked for safety. Ask the team admin.':'Upload failed: '+s;}
+function fail(m,s){m.textContent=s===401?'The editor is unavailable right now. Try again later.':s===423?'The editor is paused right now. Try again later.':'Upload failed: '+s;}
 document.getElementById('ed-attach').addEventListener('click',function(){fileIn.click();});
 fileIn.addEventListener('change',function(){
   var f=fileIn.files[0];fileIn.value='';if(!f)return;
