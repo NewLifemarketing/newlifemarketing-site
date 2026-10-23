@@ -15,8 +15,12 @@
     meta:     { title: "Meta Ads", platform: "meta", section: "meta" },
     google:   { title: "Google Ads", platform: "google_ads", section: "google_ads" },
     gbp:      { title: "Google Business Profile", platform: "gbp", section: "gbp" },
-    seo:      { title: "SEO", platform: "seo", section: "seo" },
-    organic:  { title: "Organic", platform: "organic", section: "organic" },
+    seo:      { title: "Search Engine Optimization", platform: "seo", section: "seo" },
+    organic:  { title: "Social Media Analytics", platform: "organic", section: "organic" },
+    website:  { title: "Website Analytics", platform: "website", section: "website" },
+    /* Not a reporting channel: the Friday video + PDF. No platform, and no
+       section gate — every client gets it. */
+    weekly:   { title: "Weekly Report", platform: null, section: null },
     onboarding: { title: "Onboarding", platform: null, section: null }
   };
   /* Overview channel blocks, in display order */
@@ -24,8 +28,9 @@
     { view: "meta", platform: "meta", label: "Meta Ads" },
     { view: "google", platform: "google_ads", label: "Google Ads" },
     { view: "gbp", platform: "gbp", label: "Google Business Profile" },
-    { view: "seo", platform: "seo", label: "SEO" },
-    { view: "organic", platform: "organic", label: "Organic Social" }
+    { view: "seo", platform: "seo", label: "Search Engine Optimization" },
+    { view: "organic", platform: "organic", label: "Social Media Analytics" },
+    { view: "website", platform: "website", label: "Website Analytics" }
   ];
 
   var ctx = null;          /* from auth.js: { sb, clientId, sections } */
@@ -768,11 +773,213 @@
     Object.keys(charts).forEach(function (k) { try { charts[k].destroy(); } catch (e) {} });
     charts = {};
     renderOverview();
-    ["meta", "google", "gbp", "seo", "organic"].forEach(renderChannel);
+    ["meta", "google", "gbp", "seo", "organic", "website"].forEach(renderChannel);
     /* Everything above renders all five channels, but only one view is
        visible — the other four measured zero. Size whichever is on screen. */
     resizeChartsIn(currentView);
   }
+
+  /* ---------------- weekly report: Friday video + PDF ----------------
+     One row per client per week in public.weekly_reports, kept permanently so
+     a client can come back months later and watch an old one.
+
+     Each asset is EITHER a path in the private `client-files` storage bucket
+     (fetched through a short-lived signed URL) OR an external link. Both are
+     supported deliberately: weekly video across every client would exhaust the
+     Supabase free tier's 1 GB storage within weeks, so an external host is the
+     workable option until storage is sized for it. */
+
+  var weeklyRows = [];       /* newest first */
+  var weeklySel = null;      /* week_ending of the selected row */
+  var weeklySelect = document.getElementById("pl-weekly-select");
+
+  function weekLabel(d) {
+    if (!d) return "";
+    var p = String(d).split("-");
+    var M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return M[parseInt(p[1], 10) - 1] + " " + parseInt(p[2], 10) + ", " + p[0];
+  }
+
+  /* Known video hosts get an embed; anything else is offered as a link rather
+     than guessed at, so an unexpected URL cannot render a broken black box. */
+  function embedUrl(url) {
+    var u = String(url || "");
+    var m;
+    if ((m = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{6,})/))) {
+      return "https://www.youtube.com/embed/" + m[1];
+    }
+    if ((m = u.match(/youtube\.com\/embed\/([\w-]{6,})/))) return u;
+    if ((m = u.match(/loom\.com\/(?:share|embed)\/([0-9a-f]{8,})/i))) {
+      return "https://www.loom.com/embed/" + m[1];
+    }
+    if ((m = u.match(/vimeo\.com\/(?:video\/)?(\d{6,})/))) {
+      return "https://player.vimeo.com/video/" + m[1];
+    }
+    if ((m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/))) {
+      return "https://drive.google.com/file/d/" + m[1] + "/preview";
+    }
+    return null;
+  }
+
+  /* Storage paths are private; a signed URL is minted per view and expires. */
+  function signedUrl(path) {
+    if (!path || !ctx || !ctx.sb || !ctx.sb.storage) return Promise.resolve(null);
+    try {
+      return ctx.sb.storage.from("client-files").createSignedUrl(path, 3600)
+        .then(function (r) { return (r && r.data && r.data.signedUrl) || null; })
+        .catch(function () { return null; });
+    } catch (e) { return Promise.resolve(null); }
+  }
+
+  function renderWeeklyCurrent(row) {
+    var host = document.getElementById("pl-weekly-current");
+    if (!host) return;
+    if (!row) { host.innerHTML = ""; return; }
+
+    var when = weekLabel(row.week_ending);
+    var title = row.title || ("Week ending " + when);
+    host.innerHTML =
+      '<div class="pl-panel">' +
+        '<div class="pl-panel-head"><h3>' + esc(title) + "</h3>" +
+        '<span class="pl-dim">' + esc(when) + "</span></div>" +
+        '<div class="pl-weekly-video"></div>' +
+        (row.summary ? '<p class="pl-muted" style="margin:0.25rem 0 0">' + esc(row.summary) + "</p>" : "") +
+        '<div class="pl-weekly-actions"></div>' +
+      "</div>";
+
+    var videoHost = host.querySelector(".pl-weekly-video");
+    var actions = host.querySelector(".pl-weekly-actions");
+
+    /* --- video --- */
+    if (row.video_url) {
+      var emb = embedUrl(row.video_url);
+      if (emb) {
+        videoHost.innerHTML = '<div class="pl-video-wrap"><iframe src="' + esc(emb) +
+          '" allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture; fullscreen"' +
+          ' allowfullscreen title="' + esc(title) + '"></iframe></div>';
+      } else {
+        actions.innerHTML += '<a class="pl-btn" href="' + esc(row.video_url) +
+          '" target="_blank" rel="noopener">Watch the video →</a>';
+      }
+    } else if (row.video_path) {
+      /* Attach the panel first, then set src. A <video> (like an <img>) that is
+         given a source while detached never starts loading. */
+      videoHost.innerHTML = '<div class="pl-video-wrap"><video controls preload="metadata"></video></div>';
+      var vid = videoHost.querySelector("video");
+      signedUrl(row.video_path).then(function (u) {
+        if (u) { vid.src = u; return; }
+        videoHost.innerHTML = '<p class="pl-muted" style="margin:0">This week’s video could not be loaded. ' +
+          'Email <a href="mailto:contact@newlifemarketing.ca">contact@newlifemarketing.ca</a> and we’ll send it over.</p>';
+      });
+    }
+
+    /* --- pdf --- */
+    if (row.pdf_url) {
+      actions.innerHTML += '<a class="pl-btn ghost" href="' + esc(row.pdf_url) +
+        '" target="_blank" rel="noopener">Open the PDF breakdown</a>';
+    } else if (row.pdf_path) {
+      var a = document.createElement("a");
+      a.className = "pl-btn ghost";
+      a.textContent = "Open the PDF breakdown";
+      a.target = "_blank"; a.rel = "noopener";
+      a.href = "#";
+      a.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        a.textContent = "Opening…";
+        signedUrl(row.pdf_path).then(function (u) {
+          a.textContent = "Open the PDF breakdown";
+          if (u) window.open(u, "_blank", "noopener");
+          else alert("That PDF could not be opened. Please email contact@newlifemarketing.ca.");
+        });
+      });
+      actions.appendChild(a);
+    }
+
+    if (!row.video_url && !row.video_path && !row.pdf_url && !row.pdf_path) {
+      videoHost.innerHTML = '<p class="pl-muted" style="margin:0">This week’s report is being prepared.</p>';
+    }
+  }
+
+  function renderWeeklyArchive() {
+    var host = document.getElementById("pl-weekly-archive");
+    if (!host) return;
+    if (weeklyRows.length < 2) { host.innerHTML = ""; return; }
+    host.innerHTML =
+      '<div class="pl-panel"><div class="pl-panel-head"><h3>Past weekly reports</h3>' +
+      '<span class="pl-dim">' + weeklyRows.length + " in total</span></div>" +
+      '<div class="pl-archive-list"></div></div>';
+    var list = host.querySelector(".pl-archive-list");
+    weeklyRows.forEach(function (r) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "pl-archive-row" + (r.week_ending === weeklySel ? " on" : "");
+      var tags = [];
+      if (r.video_url || r.video_path) tags.push('<span class="pl-tag on">Video</span>');
+      if (r.pdf_url || r.pdf_path) tags.push('<span class="pl-tag on">PDF</span>');
+      b.innerHTML =
+        "<span><span class=\"pl-archive-when\">" + esc(weekLabel(r.week_ending)) + "</span>" +
+        (r.title ? '<span class="pl-archive-meta"> · ' + esc(r.title) + "</span>" : "") + "</span>" +
+        '<span class="pl-archive-tags">' + (tags.join("") || '<span class="pl-tag">Being prepared</span>') + "</span>";
+      b.addEventListener("click", function () { selectWeek(r.week_ending); });
+      list.appendChild(b);
+    });
+  }
+
+  function selectWeek(weekEnding) {
+    weeklySel = weekEnding;
+    var row = null;
+    for (var i = 0; i < weeklyRows.length; i++) {
+      if (weeklyRows[i].week_ending === weekEnding) { row = weeklyRows[i]; break; }
+    }
+    if (weeklySelect) weeklySelect.value = weekEnding || "";
+    renderWeeklyCurrent(row);
+    renderWeeklyArchive();
+  }
+
+  function renderWeekly() {
+    var emptyHost = document.querySelector('[data-empty="weekly"]');
+    var sub = document.getElementById("pl-weekly-sub");
+    if (emptyHost) { emptyHost.hidden = true; emptyHost.innerHTML = ""; }
+
+    if (!weeklyRows.length) {
+      if (weeklySelect) weeklySelect.hidden = true;
+      document.getElementById("pl-weekly-current").innerHTML = "";
+      document.getElementById("pl-weekly-archive").innerHTML = "";
+      if (sub) sub.textContent = "A short video walkthrough and a written breakdown, published every Friday.";
+      emptyState("weekly", "weekly");
+      return;
+    }
+    if (weeklySelect) {
+      weeklySelect.hidden = false;
+      weeklySelect.innerHTML = weeklyRows.map(function (r) {
+        return '<option value="' + esc(r.week_ending) + '">' + esc(weekLabel(r.week_ending)) + "</option>";
+      }).join("");
+    }
+    if (sub) {
+      sub.textContent = weeklyRows.length === 1
+        ? "Your weekly video walkthrough and written breakdown."
+        : "Every Friday’s video and written breakdown. " + weeklyRows.length + " weeks available.";
+    }
+    selectWeek(weeklySel || weeklyRows[0].week_ending);
+  }
+
+  function loadWeekly() {
+    if (!ctx || !ctx.clientId) { weeklyRows = []; renderWeekly(); return Promise.resolve(); }
+    return ctx.sb.from("weekly_reports")
+      .select("week_ending, title, summary, video_path, video_url, pdf_path, pdf_url, published_at")
+      .eq("client_id", ctx.clientId)
+      .order("week_ending", { ascending: false })
+      .then(function (r) {
+        weeklyRows = (r.data || []);
+        weeklySel = null;
+        renderWeekly();
+      })
+      .catch(function () { weeklyRows = []; renderWeekly(); });
+  }
+
+  if (weeklySelect) weeklySelect.addEventListener("change", function () {
+    selectWeek(weeklySelect.value);
+  });
 
   /* ---------------- sections / sidebar ---------------- */
   function hasSection(section) {
@@ -870,7 +1077,7 @@
        rescued it. That is exactly why this reached production looking fine.
        Resize this view's charts once it is genuinely on screen. */
     resizeChartsIn(view);
-    if (periodSel) periodSel.hidden = (view === "onboarding") || !periods.length;
+    if (periodSel) periodSel.hidden = (view === "onboarding") || (view === "weekly") || !periods.length;
     if (app) app.classList.remove("nav-open");
     window.scrollTo(0, 0);
   }
@@ -914,7 +1121,7 @@
           periodSel.innerHTML = out.map(function (p, i) {
             return '<option value="' + i + '">' + esc(p.label) + "</option>";
           }).join("");
-          periodSel.hidden = !out.length || currentView === "onboarding";
+          periodSel.hidden = !out.length || currentView === "onboarding" || currentView === "weekly";
         }
         return out;
       });
@@ -982,7 +1189,10 @@
     ctx = e.detail;
     applySections();
     var start = viewFromHash() || "overview";
-    if (!ctx.clientId) { showView(start); renderAll(); return; }
+    if (!ctx.clientId) { showView(start); renderAll(); renderWeekly(); return; }
+    /* The weekly archive is independent of the reporting periods, so it loads
+       in parallel rather than waiting on them. */
+    loadWeekly();
     loadPeriods().then(function (list) {
       showView(start);
       return loadPeriod(list[0] || null);

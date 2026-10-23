@@ -46,7 +46,7 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-img, svg, canvas { display: block; max-width: 100%; height: auto; }
+img, svg, canvas { display: block; max-width: 100%; }
 a { color: var(--blue); text-decoration: none; }
 a:hover { color: var(--blue-hot); }
 :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
@@ -507,3 +507,67 @@ a:hover { color: var(--blue-hot); }
 }
 .pl-admin-exit:hover { color: var(--blue-hot); }
 body.has-admin-bar .pl-view { padding-bottom: 4.5rem; }
+
+/* ===== Weekly Report =================================================
+   The Friday video + PDF. Deliberately set apart from the reporting
+   channels in the sidebar so it does not read as another analytics page. */
+
+.pl-nav-standalone {
+  margin-top: 1.15rem;
+  position: relative;
+}
+/* A hairline above it rather than a heading, so the separation reads as
+   "different kind of thing" without adding another section label. */
+.pl-nav-standalone::before {
+  content: "";
+  position: absolute;
+  top: -0.6rem;
+  left: 0.75rem;
+  right: 0.75rem;
+  height: 1px;
+  background: var(--line);
+  opacity: 0.5;
+}
+
+.pl-weekly-head {
+  display: flex; flex-wrap: wrap; gap: 1rem;
+  align-items: flex-end; justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.pl-weekly-pick { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+.pl-weekly-pick select {
+  font: inherit; padding: 0.45rem 0.6rem; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+
+.pl-video-wrap {
+  position: relative; width: 100%; aspect-ratio: 16 / 9;
+  max-width: 100%; background: #0d1117; border-radius: 10px; overflow: hidden;
+  margin-bottom: 1rem;
+}
+.pl-video-wrap video, .pl-video-wrap iframe {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block;
+}
+
+.pl-weekly-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.25rem; }
+
+.pl-archive-list { display: grid; gap: 0.5rem; margin-top: 0.75rem; }
+.pl-archive-row {
+  display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.9rem; border: 1px solid var(--line);
+  border-radius: 9px; background: var(--surface);
+  cursor: pointer; text-align: left; width: 100%;
+  font: inherit; color: inherit;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.pl-archive-row:hover { border-color: var(--blue); background: var(--surface-2, var(--surface)); }
+.pl-archive-row.on { border-color: var(--blue); box-shadow: inset 2.5px 0 0 var(--blue); }
+.pl-archive-when { font-weight: 700; }
+.pl-archive-meta { font-size: 0.82rem; color: var(--dim); }
+.pl-archive-tags { display: flex; gap: 0.4rem; }
+
+@media (max-width: 640px) {
+  .pl-weekly-head { align-items: stretch; }
+  .pl-weekly-pick { justify-content: space-between; }
+}

@@ -5,12 +5,12 @@
      /portal/reset/ carries a live Supabase recovery token in the URL fragment,
      and GA4's page_location includes the fragment, so the token would be sent
      to a third party. The dashboard also shows client revenue. PostHog is
-     excluded for the same reason - see newlife-marketing/TRACKING.md. -->
+     excluded for the same reason — see newlife-marketing/TRACKING.md. -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Dashboard | NewLife Marketing Portal</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://www.googletagmanager.com" crossorigin><link rel="preconnect" href="https://us.i.posthog.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,700;1,700;1,800;1,900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/portal/portal.css">
@@ -50,11 +50,22 @@
       </button>
       <button class="pl-nav-item" data-view="seo" data-section="seo">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6 4 4 6-6"/></svg>
-        SEO
+        Search Engine Optimization
       </button>
       <button class="pl-nav-item" data-view="organic" data-section="organic">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Organic
+        Social Media Analytics
+      </button>
+      <button class="pl-nav-item" data-view="website" data-section="website">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M7 6.5h.01M10 6.5h.01"/></svg>
+        Website Analytics
+      </button>
+
+      <!-- Set apart from the reporting channels above: this is the Friday
+           video + PDF, not another analytics page. -->
+      <button class="pl-nav-item pl-nav-standalone" data-view="weekly">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></svg>
+        Weekly Report
       </button>
     </nav>
     <div class="pl-sidebar-foot">
@@ -82,7 +93,7 @@
       <div class="pl-panel">
         <div class="pl-progress-head">
           <div>
-            <h2 style="margin:0 0 0.15rem">Welcome - let's get you launched</h2>
+            <h2 style="margin:0 0 0.15rem">Welcome — let's get you launched</h2>
             <p class="pl-muted" style="margin:0;font-size:0.9rem">Complete these steps so we can build and launch your growth system.</p>
           </div>
           <span class="pl-progress-pct" style="margin-left:auto">50%</span>
@@ -96,7 +107,7 @@
           <div class="pl-step done"><div class="check">✓</div><div><div class="s-title">Discovery call</div><div class="s-desc">Kickoff conversation about your goals, market and numbers.</div></div><div class="s-status">Complete</div></div>
           <div class="pl-step done"><div class="check">✓</div><div><div class="s-title">Contract signed</div><div class="s-desc">Scope and terms agreed and signed.</div></div><div class="s-status">Complete</div></div>
           <div class="pl-step active"><div class="check">3</div><div><div class="s-title">Account access</div><div class="s-desc">Grant us access to Meta, Google Ads and your Google Business Profile (below).</div></div><div class="s-status">In progress</div></div>
-          <div class="pl-step"><div class="check">4</div><div><div class="s-title">Strategy &amp; branding</div><div class="s-desc">Offer, angles, funnel and creative direction: agreed before filming.</div></div><div class="s-status todo">To do</div></div>
+          <div class="pl-step"><div class="check">4</div><div><div class="s-title">Strategy &amp; branding</div><div class="s-desc">Offer, angles, funnel and creative direction — agreed before filming.</div></div><div class="s-status todo">To do</div></div>
           <div class="pl-step"><div class="check">5</div><div><div class="s-title">Filming &amp; design</div><div class="s-desc">Shoot day at your location; a month of content produced.</div></div><div class="s-status todo">To do</div></div>
           <div class="pl-step"><div class="check">6</div><div><div class="s-title">Launch &amp; growth</div><div class="s-desc">Campaigns go live, tracking verified, continuous optimization.</div></div><div class="s-status todo">To do</div></div>
         </div>
@@ -114,7 +125,7 @@
         </div>
         <div class="pl-panel">
           <h3>Upload your assets</h3>
-          <p class="pl-muted" style="font-size:0.85rem;margin-top:0">Logos, brand files, product photos, access notes: anything we need.</p>
+          <p class="pl-muted" style="font-size:0.85rem;margin-top:0">Logos, brand files, product photos, access notes — anything we need.</p>
           <div class="pl-drop" id="pl-drop">
             <svg class="big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v13"/></svg>
             <div><strong>Drop files here</strong> or click to browse</div>
@@ -141,7 +152,7 @@
 
       <div class="pl-panel">
         <h3>Grant account access</h3>
-        <p class="pl-muted" style="font-size:0.85rem;margin-top:0">We manage campaigns inside <em>your</em> accounts; you always own them. Add us as a partner/manager:</p>
+        <p class="pl-muted" style="font-size:0.85rem;margin-top:0">We manage campaigns inside <em>your</em> accounts — you always own them. Add us as a partner/manager:</p>
         <div class="pl-access">
           <div class="a-card">
             <h4>Meta Business</h4>
@@ -163,7 +174,7 @@
       </div>
     </section>
 
-    <!-- OVERVIEW (default) - derived client-side from every channel's summary block -->
+    <!-- OVERVIEW (default) — derived client-side from every channel's summary block -->
     <section class="pl-view active" data-view="overview" aria-label="Overview">
       <div class="pl-report-meta" id="pl-meta-overview"></div>
       <div class="pl-kpis" data-kpis="overview"></div>
@@ -219,6 +230,34 @@
       <div data-breakdown="organic"></div>
       <div data-tables="organic"></div>
       <div class="pl-empty" data-empty="organic" hidden></div>
+    </section>
+
+    <!-- WEBSITE ANALYTICS -->
+    <section class="pl-view" data-view="website" aria-label="Website analytics reporting">
+      <div class="pl-report-meta" id="pl-meta-website"></div>
+      <div class="pl-kpis" data-kpis="website"></div>
+      <div data-charts="website"></div>
+      <div data-breakdown="website"></div>
+      <div data-tables="website"></div>
+      <div class="pl-empty" data-empty="website" hidden></div>
+    </section>
+
+    <!-- WEEKLY REPORT - Friday video + PDF, with a permanent archive -->
+    <section class="pl-view" data-view="weekly" aria-label="Weekly report">
+      <div class="pl-weekly-head">
+        <div>
+          <p class="pl-muted" id="pl-weekly-sub" style="margin:0 0 0.35rem">
+            A short video walkthrough and a written breakdown, published every Friday.
+          </p>
+        </div>
+        <label class="pl-weekly-pick">
+          <span class="pl-dim">Week</span>
+          <select id="pl-weekly-select" aria-label="Choose a week"></select>
+        </label>
+      </div>
+      <div id="pl-weekly-current"></div>
+      <div id="pl-weekly-archive"></div>
+      <div class="pl-empty" data-empty="weekly" hidden></div>
     </section>
   </div>
 </div>

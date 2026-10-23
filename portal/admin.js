@@ -15,8 +15,9 @@
     { key: "meta",       label: "Meta Ads" },
     { key: "google_ads", label: "Google Ads" },
     { key: "gbp",        label: "Google Business Profile" },
-    { key: "seo",        label: "SEO" },
-    { key: "organic",    label: "Organic" }
+    { key: "seo",        label: "Search Engine Optimization" },
+    { key: "organic",    label: "Social Media Analytics" },
+    { key: "website",    label: "Website Analytics" }
   ];
   var PLATFORM_LABEL = {};
   PLATFORMS.forEach(function (p) { PLATFORM_LABEL[p.key] = p.label; });
