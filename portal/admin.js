@@ -53,7 +53,7 @@
   }
 
   /* ---------------- view switching ---------------- */
-  var TITLES = { clients: "Clients", rollup: "Roll-up", health: "Data health" };
+  var TITLES = { clients: "Clients", rollup: "Roll-up", weekly: "Weekly Reports", health: "Data health" };
   qsa(".pl-nav-item[data-av]").forEach(function (b) {
     b.addEventListener("click", function () {
       var v = b.getAttribute("data-av");
@@ -236,6 +236,242 @@
     });
   });
 
+
+  /* ================= WEEKLY REPORTS =================
+     Keegan publishes Friday's video + PDF here. Each asset is either uploaded
+     into the private `client-files` bucket or supplied as a link.
+
+     The size guard matters: the project is on the Supabase free tier, which
+     caps a single file at 50 MB and the whole bucket at 1 GB. A 1-2 minute
+     screen recording is routinely 50-150 MB, so an upload will often be
+     refused by the server with an opaque error. We check first and say plainly
+     what to do instead, rather than letting it fail at the end of a long
+     upload with nothing useful on screen. */
+
+  var MAX_UPLOAD_BYTES = 50 * 1024 * 1024;   /* free-tier per-file ceiling */
+
+  var wkEls = {};
+  ["client","week","title","summary","publish","reset","msg","list","count",
+   "video-drop","video-input","video-name","video-url",
+   "pdf-drop","pdf-input","pdf-name","pdf-url","progress","storage"].forEach(function (k) {
+    wkEls[k] = document.getElementById("pl-wk-" + k);
+  });
+
+  var wkFiles = { video: null, pdf: null };
+
+  function humanSize(b) {
+    if (!b && b !== 0) return "";
+    if (b >= 1048576) return (b / 1048576).toFixed(1) + " MB";
+    if (b >= 1024) return Math.round(b / 1024) + " KB";
+    return b + " B";
+  }
+
+  function wkMsg(text, kind) {
+    if (!wkEls.msg) return;
+    wkEls.msg.textContent = text;
+    wkEls.msg.className = kind === "bad" ? "pl-warn" : kind === "good" ? "pl-fresh" : "pl-muted";
+    wkEls.msg.style.display = text ? "block" : "none";
+  }
+
+  /* Friday of the current week, so the field is already right on a Friday. */
+  function lastFriday() {
+    var d = new Date();
+    var delta = (d.getDay() - 5 + 7) % 7;   /* 5 = Friday */
+    d.setDate(d.getDate() - delta);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function attachDrop(dropEl, inputEl, nameEl, kind, accept) {
+    if (!dropEl || !inputEl) return;
+    function take(file) {
+      if (!file) return;
+      if (accept && file.type && file.type.indexOf(accept) !== 0) {
+        wkMsg("That looks like a " + (file.type || "file") + ". Expected a " + kind + ".", "bad");
+        return;
+      }
+      if (file.size > MAX_UPLOAD_BYTES) {
+        wkFiles[kind] = null;
+        nameEl.textContent = "";
+        dropEl.classList.remove("has-file");
+        wkMsg(file.name + " is " + humanSize(file.size) + ". The storage plan caps a single file at " +
+              humanSize(MAX_UPLOAD_BYTES) + ", so this upload would be refused. " +
+              "Paste a Loom or Drive link instead, or compress the file.", "bad");
+        return;
+      }
+      wkFiles[kind] = file;
+      nameEl.textContent = file.name + "  (" + humanSize(file.size) + ")";
+      dropEl.classList.add("has-file");
+      wkMsg("");
+    }
+    dropEl.addEventListener("click", function () { inputEl.click(); });
+    dropEl.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inputEl.click(); }
+    });
+    inputEl.addEventListener("change", function () { take(inputEl.files && inputEl.files[0]); });
+    ["dragenter", "dragover"].forEach(function (ev) {
+      dropEl.addEventListener(ev, function (e) { e.preventDefault(); dropEl.classList.add("drag"); });
+    });
+    ["dragleave", "drop"].forEach(function (ev) {
+      dropEl.addEventListener(ev, function (e) { e.preventDefault(); dropEl.classList.remove("drag"); });
+    });
+    dropEl.addEventListener("drop", function (e) {
+      e.preventDefault();
+      if (e.dataTransfer && e.dataTransfer.files) take(e.dataTransfer.files[0]);
+    });
+  }
+
+  function wkProgress(pct) {
+    if (!wkEls.progress) return;
+    if (pct === null) { wkEls.progress.hidden = true; wkEls.progress.innerHTML = ""; return; }
+    wkEls.progress.hidden = false;
+    if (!wkEls.progress.firstChild) wkEls.progress.innerHTML = "<span></span>";
+    wkEls.progress.firstChild.style.width = Math.max(2, Math.min(100, pct)) + "%";
+  }
+
+  function uploadOne(clientId, week, file, kind) {
+    var ext = (file.name.match(/\.[A-Za-z0-9]+$/) || [""])[0].toLowerCase();
+    var path = clientId + "/weekly/" + week + "/" + kind + ext;
+    return ctx.sb.storage.from("client-files")
+      .upload(path, file, { upsert: true, contentType: file.type || undefined })
+      .then(function (r) {
+        if (r && r.error) throw new Error(r.error.message || "upload failed");
+        return path;
+      });
+  }
+
+  function renderWkList(rows) {
+    if (!wkEls.list) return;
+    wkEls.count.textContent = rows.length + (rows.length === 1 ? " report" : " reports");
+    if (!rows.length) {
+      wkEls.list.innerHTML = '<p class="pl-muted" style="margin:0">Nothing published for this client yet.</p>';
+      return;
+    }
+    wkEls.list.innerHTML = rows.map(function (r) {
+      var bits = [];
+      if (r.video_path || r.video_url) bits.push('<span class="pl-tag on">Video</span>');
+      if (r.pdf_path || r.pdf_url) bits.push('<span class="pl-tag on">PDF</span>');
+      var titleBit = r.title ? '<span class="when"> · ' + esc(r.title) + "</span>" : "";
+      return '<div class="pl-wk-row">' +
+        '<span><span class="who">' + esc(fmtDate(r.week_ending)) + "</span>" + titleBit + "</span>" +
+        "<span>" + (bits.join(" ") || '<span class="pl-tag">Empty</span>') + "</span>" +
+        "</div>";
+    }).join("");
+  }
+
+  function loadWkList() {
+    if (!ctx || !wkEls.client || !wkEls.client.value) return;
+    ctx.sb.from("weekly_reports")
+      .select("week_ending, title, video_path, video_url, pdf_path, pdf_url")
+      .eq("client_id", wkEls.client.value)
+      .order("week_ending", { ascending: false })
+      .then(function (r) { renderWkList((r && r.data) || []); });
+  }
+
+  function wkReset(keepClient) {
+    wkFiles = { video: null, pdf: null };
+    ["video", "pdf"].forEach(function (k) {
+      if (wkEls[k + "-name"]) wkEls[k + "-name"].textContent = "";
+      if (wkEls[k + "-drop"]) wkEls[k + "-drop"].classList.remove("has-file");
+      if (wkEls[k + "-input"]) wkEls[k + "-input"].value = "";
+      if (wkEls[k + "-url"]) wkEls[k + "-url"].value = "";
+    });
+    if (wkEls.title) wkEls.title.value = "";
+    if (wkEls.summary) wkEls.summary.value = "";
+    if (!keepClient && wkEls.week) wkEls.week.value = lastFriday();
+    wkProgress(null);
+    wkMsg("");
+  }
+
+  function wkPublish() {
+    if (!ctx) return;
+    var clientId = wkEls.client && wkEls.client.value;
+    var week = wkEls.week && wkEls.week.value;
+    if (!clientId) { wkMsg("Choose a client first.", "bad"); return; }
+    if (!week) { wkMsg("Set the week-ending date.", "bad"); return; }
+
+    var videoUrl = (wkEls["video-url"].value || "").trim();
+    var pdfUrl = (wkEls["pdf-url"].value || "").trim();
+    if (!wkFiles.video && !videoUrl && !wkFiles.pdf && !pdfUrl) {
+      wkMsg("Add a video or a PDF - either a file or a link - before publishing.", "bad");
+      return;
+    }
+
+    wkEls.publish.disabled = true;
+    wkEls.publish.textContent = "Publishing…";
+    wkProgress(5);
+
+    var row = {
+      client_id: clientId,
+      week_ending: week,
+      title: (wkEls.title.value || "").trim() || null,
+      summary: (wkEls.summary.value || "").trim() || null,
+      video_url: videoUrl || null,
+      pdf_url: pdfUrl || null,
+      video_path: null,
+      pdf_path: null
+    };
+
+    var chain = Promise.resolve();
+    if (wkFiles.video) {
+      chain = chain.then(function () {
+        wkProgress(20);
+        return uploadOne(clientId, week, wkFiles.video, "video").then(function (p) { row.video_path = p; });
+      });
+    }
+    if (wkFiles.pdf) {
+      chain = chain.then(function () {
+        wkProgress(65);
+        return uploadOne(clientId, week, wkFiles.pdf, "pdf").then(function (p) { row.pdf_path = p; });
+      });
+    }
+
+    chain.then(function () {
+      wkProgress(85);
+      /* One row per client per week - publishing again replaces that week. */
+      return ctx.sb.from("weekly_reports").upsert(row, { onConflict: "client_id,week_ending" });
+    }).then(function (r) {
+      if (r && r.error) throw new Error(r.error.message);
+      wkProgress(100);
+      /* Reset FIRST: wkReset clears the message box, so setting the
+         confirmation before it would wipe the only feedback Keegan gets. */
+      wkReset(true);
+      wkMsg("Published \u2014 " + fmtDate(row.week_ending) + " is live for this client now.", "good");
+      setTimeout(function () { wkProgress(null); }, 900);
+      loadWkList();
+    }).catch(function (err) {
+      wkProgress(null);
+      var m = (err && err.message) || "Something went wrong.";
+      if (/exceeded|too large|413|payload/i.test(m)) {
+        m = "The server refused the file as too large. The free storage plan caps a single " +
+            "file at " + humanSize(MAX_UPLOAD_BYTES) + " - paste a Loom or Drive link instead.";
+      } else if (/permission|denied|row-level/i.test(m)) {
+        m = "Permission denied - this account is not an admin, so it cannot publish.";
+      }
+      wkMsg(m, "bad");
+    }).then(function () {
+      wkEls.publish.disabled = false;
+      wkEls.publish.textContent = "Publish to the client";
+    });
+  }
+
+  function initWeekly() {
+    if (!wkEls.client) return;
+    wkEls.client.innerHTML = clients.map(function (c) {
+      return '<option value="' + esc(c.client_id) + '">' + esc(c.business_name || c.name) + "</option>";
+    }).join("");
+    if (wkEls.week && !wkEls.week.value) wkEls.week.value = lastFriday();
+    if (wkEls.storage) {
+      wkEls.storage.textContent = "Single file limit " + humanSize(MAX_UPLOAD_BYTES) + " · links have no limit";
+    }
+    loadWkList();
+  }
+
+  attachDrop(wkEls["video-drop"], wkEls["video-input"], wkEls["video-name"], "video", "video");
+  attachDrop(wkEls["pdf-drop"], wkEls["pdf-input"], wkEls["pdf-name"], "pdf", "application/pdf");
+  if (wkEls.client) wkEls.client.addEventListener("change", loadWkList);
+  if (wkEls.publish) wkEls.publish.addEventListener("click", wkPublish);
+  if (wkEls.reset) wkEls.reset.addEventListener("click", function () { wkReset(true); });
+
   /* ---------------- load ---------------- */
   function load() {
     ctx.sb.rpc("admin_client_overview").then(function (r) {
@@ -249,7 +485,7 @@
         notAdmin("This console is for NewLife staff. Your account is not an admin.");
         return;
       }
-      renderClients(); renderRollup(); renderHealth();
+      renderClients(); renderRollup(); renderHealth(); initWeekly();
     });
   }
 

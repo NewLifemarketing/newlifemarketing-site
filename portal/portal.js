@@ -1018,6 +1018,13 @@
       canvases.forEach(function (c) {
         var inst = Chart.getChart(c);
         if (!inst) return;
+        /* NOTE: if Chart.js ever locks a canvas at 0x0 (it writes the measured
+           size inline), resize() cannot recover it — not by clearing the
+           inline style, and not with explicit dimensions. Both were tried and
+           neither works; only destroying and recreating the chart does. That
+           state needs a window with no width at construction, which a real
+           browser tab does not have, so it is left unhandled rather than
+           carrying machinery that would never run in production. */
         try { inst.resize(); } catch (e) {}
         if (!c.width || !c.height) allSized = false;
       });
