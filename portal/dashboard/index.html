@@ -54,7 +54,11 @@
       </button>
       <button class="pl-nav-item" data-view="organic" data-section="organic">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Organic
+        Social Media
+      </button>
+      <button class="pl-nav-item" data-view="website" data-section="website">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>
+        Website
       </button>
     </nav>
     <div class="pl-sidebar-foot">
@@ -169,6 +173,16 @@
       <div class="pl-kpis" data-kpis="overview"></div>
       <div id="pl-overview-channels"></div>
       <div class="pl-empty" data-empty="overview" hidden></div>
+
+      <!-- Full report history. Every period ever published for this client,
+           each one loading from the table its own run wrote. -->
+      <div class="pl-panel pl-history" id="pl-history" hidden>
+        <button class="pl-history-toggle" id="pl-history-toggle" type="button" aria-expanded="false" aria-controls="pl-history-body">
+          <span>See previous periods</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="pl-history-body" id="pl-history-body" hidden></div>
+      </div>
     </section>
 
     <!-- META ADS -->
@@ -211,14 +225,24 @@
       <div class="pl-empty" data-empty="seo" hidden></div>
     </section>
 
-    <!-- ORGANIC SOCIAL -->
-    <section class="pl-view" data-view="organic" aria-label="Organic social reporting">
+    <!-- SOCIAL MEDIA (organic) -->
+    <section class="pl-view" data-view="organic" aria-label="Social media reporting">
       <div class="pl-report-meta" id="pl-meta-organic"></div>
       <div class="pl-kpis" data-kpis="organic"></div>
       <div data-charts="organic"></div>
       <div data-breakdown="organic"></div>
       <div data-tables="organic"></div>
       <div class="pl-empty" data-empty="organic" hidden></div>
+    </section>
+
+    <!-- WEBSITE -->
+    <section class="pl-view" data-view="website" aria-label="Website reporting">
+      <div class="pl-report-meta" id="pl-meta-website"></div>
+      <div class="pl-kpis" data-kpis="website"></div>
+      <div data-charts="website"></div>
+      <div data-breakdown="website"></div>
+      <div data-tables="website"></div>
+      <div class="pl-empty" data-empty="website" hidden></div>
     </section>
   </div>
 </div>
