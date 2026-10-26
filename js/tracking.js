@@ -62,14 +62,62 @@
     if (!window.history || !window.history.replaceState) return;
     var url = new URL(window.location.href);
     var touched = false;
-    ID_PARAMS.forEach(function (p) {
+    ID_PARAMS.concat([INTERNAL_KEY]).forEach(function (p) {
       if (url.searchParams.has(p)) { url.searchParams.delete(p); touched = true; }
     });
     if (touched) window.history.replaceState({}, document.title, url.toString());
   }
 
-  var fromUrl = readIdFromUrl();
-  var contactId = fromUrl || recall();
+  /* ---------- Internal flag ----------
+
+     Our own phones and laptops must not count as leads or as visitors.
+
+       ?nl_internal=<label>   (e.g. keegan-iphone) sets the flag on this browser, remembers the
+                              label, and strips the parameter from the address bar.
+       ?nl_internal=0         clears it again.
+
+     Setting it ALSO deletes the stored contact id and resets PostHog. A browser that once
+     clicked a lead's link keeps that lead's id and is counted as them on every later visit,
+     which is exactly what our own phones were doing.
+
+     While it is set: any nl_cid / contact_id in the URL is ignored, identify() is never called,
+     and every event carries nl_internal:true and nl_internal_label as super-properties.
+     To test a lead's link, add &nl_internal=1 to it. */
+
+  var INTERNAL_KEY = "nl_internal";
+  var internalParam = new URLSearchParams(window.location.search).get(INTERNAL_KEY);
+  var internalLabel = null;      /* the label while flagged, else null */
+  var internalChanged = null;    /* "set" | "cleared" when this page view changed the flag */
+
+  function recallInternal() {
+    try { return window.localStorage.getItem(INTERNAL_KEY); } catch (e) { return null; }
+  }
+  function storeInternal(v) {
+    try {
+      if (v === null) window.localStorage.removeItem(INTERNAL_KEY);
+      else window.localStorage.setItem(INTERNAL_KEY, v);
+    } catch (e) {}
+  }
+  function forgetContact() {
+    try { window.localStorage.removeItem(STORE_KEY); } catch (e) {}
+  }
+
+  if (internalParam !== null) {
+    if (internalParam === "0") {
+      storeInternal(null);
+      internalChanged = "cleared";
+    } else {
+      internalLabel = internalParam.trim().slice(0, 64) || "internal";
+      storeInternal(internalLabel);
+      forgetContact();
+      internalChanged = "set";
+    }
+  } else {
+    internalLabel = recallInternal() || null;
+  }
+
+  var fromUrl = internalLabel ? null : readIdFromUrl();
+  var contactId = internalLabel ? null : (fromUrl || recall());
   if (fromUrl) store(contactId);
 
   /* Scrub whether or not the id turned out to be usable. An unresolved merge
@@ -96,6 +144,16 @@
        reason to. Identified visitors get one the moment they identify. */
     person_profiles: "identified_only"
   });
+
+  /* Internal flag, PostHog side. reset() first (it also wipes super-properties), then register the
+     flag so it rides on every event; cleared flags are unregistered. */
+  if (internalChanged === "set") posthog.reset();
+  if (internalLabel) {
+    posthog.register({ nl_internal: true, nl_internal_label: internalLabel });
+  } else if (internalChanged === "cleared") {
+    posthog.unregister("nl_internal");
+    posthog.unregister("nl_internal_label");
+  }
 
   /* ---------- Identity bridge ----------
 
@@ -165,6 +223,60 @@
       });
     });
   });
+
+  /* ---------- Human confirmed ----------
+
+     Security scanners (Safe Links and the like) open an emailed link, run the script and leave,
+     so most "clicks" from outreach are not people. A person moves, taps, types or scrolls, or
+     simply stays with the tab visible. human_confirmed fires ONCE per page view, on the first
+     real input or after 3 seconds of the tab being visible, whichever comes first. Scanners do
+     neither. Anything carrying this event is a person; anything without it is not proven to be. */
+
+  (function () {
+    var done = false, timer = null, visibleSince = 0, visibleMs = 0;
+    /* "scroll" itself is NOT listened for: the browser fires it with no input at all (scroll
+       restoration, anchors, scripts that scroll), which made every page view look human. Real
+       scrolling always arrives with one of these: a wheel or trackpad, a finger moving, a key,
+       or a pointer on the scrollbar. */
+    var EVENTS = ["pointerdown", "keydown", "touchstart", "touchmove", "wheel"];
+    function confirm(how) {
+      if (done) return;
+      done = true;
+      if (timer) clearTimeout(timer);
+      EVENTS.forEach(function (ev) { window.removeEventListener(ev, onInput, true); });
+      document.removeEventListener("visibilitychange", onVisibility);
+      posthog.capture("human_confirmed", { trigger: how });
+    }
+    function onInput(e) { confirm(e.type); }
+    function startClock() {
+      visibleSince = Date.now();
+      timer = setTimeout(function () { confirm("visible_3s"); }, Math.max(0, 3000 - visibleMs));
+    }
+    function onVisibility() {
+      if (done) return;
+      if (document.visibilityState === "visible") {
+        startClock();
+      } else {
+        if (timer) { clearTimeout(timer); timer = null; }
+        visibleMs += Date.now() - visibleSince;
+      }
+    }
+    EVENTS.forEach(function (ev) { window.addEventListener(ev, onInput, { capture: true, passive: true }); });
+    document.addEventListener("visibilitychange", onVisibility);
+    if (document.visibilityState === "visible") startClock();
+  })();
+
+  /* ---------- Phone and email link clicks ----------
+     Which kind and from which page only. The number and address are ours, but the rule for
+     this file stays: no values leave the page. */
+  document.addEventListener("click", function (e) {
+    var a = e.target && e.target.closest ? e.target.closest("a[href^='tel:'], a[href^='mailto:']") : null;
+    if (!a) return;
+    posthog.capture("contact_link_click", {
+      kind: a.getAttribute("href").indexOf("tel:") === 0 ? "tel" : "mailto",
+      page: window.location.pathname
+    });
+  }, true);
 
   /* Fired by main.js only after the GoHighLevel webhook returns ok. */
   document.addEventListener("nl:form-success", function (e) {

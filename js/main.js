@@ -313,6 +313,13 @@
     if (d.length === 11 && d.charAt(0) === "1") d = d.slice(1);
     return d.length === 10 ? "+1" + d : "";
   }
+  /* PostHog's id for this browser, so a form fill can be tied back to the visits before it. Empty
+     when analytics is off or has not loaded. */
+  function nlVisitorId() {
+    try {
+      return (window.posthog && typeof window.posthog.get_distinct_id === "function" && window.posthog.get_distinct_id()) || "";
+    } catch (e) { return ""; }
+  }
   var PHONE_ERR = "Please enter a 10-digit phone number, like 705-555-0142.";
 
   /* ---------- Booking form → calendar page ---------- */
@@ -355,6 +362,7 @@
         full_name: full,
         email: g("email"),
         phone: phone,
+        web_visitor_id: nlVisitorId(),
         business_name: g("business"),
         website_url: g("website"),
         service_interest: g("service"),
@@ -439,6 +447,7 @@
         full_name: full,
         email: g("email"),
         phone: phone,
+        web_visitor_id: nlVisitorId(),
         message: g("message"),   /* optional: an empty string, never an error */
         source: "newlife_contact_form"
       };
