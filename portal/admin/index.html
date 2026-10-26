@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Admin Console | NewLife Marketing Portal</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://www.googletagmanager.com" crossorigin><link rel="preconnect" href="https://us.i.posthog.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,700;1,700;1,800;1,900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/portal/portal.css">
@@ -27,6 +27,10 @@
       <button class="pl-nav-item" data-av="rollup">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
         Roll-up
+      </button>
+      <button class="pl-nav-item" data-av="weekly">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></svg>
+        Weekly Reports
       </button>
       <button class="pl-nav-item" data-av="health">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
@@ -81,6 +85,81 @@
     </section>
 
     <!-- HEALTH -->
+    <!-- WEEKLY REPORTS: publish Friday's video + PDF for a client -->
+    <section class="pl-view" data-av="weekly">
+      <div class="pl-panel">
+        <div class="pl-panel-head">
+          <h3>Publish a weekly report</h3>
+          <span class="pl-dim" id="pl-wk-storage" style="font-size:0.78rem"></span>
+        </div>
+        <div class="pl-form-grid">
+          <div>
+            <label for="pl-wk-client">Client</label>
+            <select id="pl-wk-client"></select>
+          </div>
+          <div>
+            <label for="pl-wk-week">Week ending (Friday)</label>
+            <input type="date" id="pl-wk-week">
+          </div>
+          <div class="full">
+            <label for="pl-wk-title">Title <span class="pl-dim">(optional)</span></label>
+            <input type="text" id="pl-wk-title" placeholder="e.g. Creative refresh live">
+          </div>
+          <div class="full">
+            <label for="pl-wk-summary">Summary <span class="pl-dim">(optional, one or two lines)</span></label>
+            <textarea id="pl-wk-summary" rows="2" placeholder="What changed this week and what it means."></textarea>
+          </div>
+        </div>
+
+        <div class="pl-cards-2" style="margin-top:0.5rem">
+          <div>
+            <label class="pl-drop-label">Video</label>
+            <div class="pl-drop" id="pl-wk-video-drop" tabindex="0" role="button"
+                 aria-label="Add the week's video">
+              <strong>Drag the video here</strong>
+              <span class="pl-dim">or click to choose a file</span>
+              <span class="pl-drop-file" id="pl-wk-video-name"></span>
+            </div>
+            <input type="file" id="pl-wk-video-input" accept="video/*" hidden>
+            <label for="pl-wk-video-url" style="margin-top:0.6rem;display:block">
+              …or paste a link <span class="pl-dim">(Loom, YouTube, Vimeo, Drive)</span>
+            </label>
+            <input type="url" id="pl-wk-video-url" placeholder="https://www.loom.com/share/…">
+          </div>
+          <div>
+            <label class="pl-drop-label">PDF breakdown</label>
+            <div class="pl-drop" id="pl-wk-pdf-drop" tabindex="0" role="button"
+                 aria-label="Add the week's PDF">
+              <strong>Drag the PDF here</strong>
+              <span class="pl-dim">or click to choose a file</span>
+              <span class="pl-drop-file" id="pl-wk-pdf-name"></span>
+            </div>
+            <input type="file" id="pl-wk-pdf-input" accept="application/pdf" hidden>
+            <label for="pl-wk-pdf-url" style="margin-top:0.6rem;display:block">
+              …or paste a link
+            </label>
+            <input type="url" id="pl-wk-pdf-url" placeholder="https://drive.google.com/…">
+          </div>
+        </div>
+
+        <div class="pl-wk-progress" id="pl-wk-progress" hidden></div>
+        <div id="pl-wk-msg" style="display:none;margin-top:0.75rem"></div>
+
+        <div style="margin-top:1rem;display:flex;gap:0.6rem;flex-wrap:wrap">
+          <button class="pl-btn" type="button" id="pl-wk-publish">Publish to the client</button>
+          <button class="pl-btn ghost" type="button" id="pl-wk-reset">Clear</button>
+        </div>
+      </div>
+
+      <div class="pl-panel">
+        <div class="pl-panel-head">
+          <h3>Already published</h3>
+          <span class="pl-dim" id="pl-wk-count"></span>
+        </div>
+        <div id="pl-wk-list"></div>
+      </div>
+    </section>
+
     <section class="pl-view" data-av="health">
       <div class="pl-panel">
         <div class="pl-panel-head"><h2>Data health</h2></div>

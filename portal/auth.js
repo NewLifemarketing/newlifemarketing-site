@@ -107,8 +107,29 @@
       if (!sb) { showErr(NOT_CONFIGURED_MSG); return; }
       var email = (loginForm.querySelector("[name=email]").value || "").trim();
       if (!email) { showErr("Enter your email above first, then click “Forgot password?”."); return; }
+      /* Only claim a link was sent if the request actually succeeded. This
+         used to announce "a reset link is on its way" from an unconditional
+         .then() with no error check and no .catch() — so when the Supabase
+         project was paused (free tier sleeps after inactivity) nothing was
+         sent and the page still said it was. That reads as a forgotten
+         password when the real problem is that the backend is down.
+
+         The success wording stays deliberately vague about whether the
+         address has an account — that part is on purpose, so the form cannot
+         be used to discover who has a login. */
       sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + "/portal/reset/" })
-        .then(function () { showErr("If that email has an account, a reset link is on its way."); });
+        .then(function (res) {
+          if (res && res.error) {
+            showErr("Couldn't send a reset link just now — " + res.error.message +
+                    " If this keeps happening, email contact@newlifemarketing.ca.");
+            return;
+          }
+          showErr("If that email has an account, a reset link is on its way.");
+        })
+        .catch(function () {
+          showErr("Couldn't reach the sign-in service, so no reset link was sent. " +
+                  "Check your connection and try again.");
+        });
     });
   }
 

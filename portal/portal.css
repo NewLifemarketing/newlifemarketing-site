@@ -46,7 +46,7 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-img, svg, canvas { display: block; max-width: 100%; height: auto; }
+img, svg, canvas { display: block; max-width: 100%; }
 a { color: var(--blue); text-decoration: none; }
 a:hover { color: var(--blue-hot); }
 :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
@@ -508,100 +508,95 @@ a:hover { color: var(--blue-hot); }
 .pl-admin-exit:hover { color: var(--blue-hot); }
 body.has-admin-bar .pl-view { padding-bottom: 4.5rem; }
 
-/* ============================================================
-   Report history + PDF links
-   The weekly job writes each run to its own table and a PDF per
-   report; this is the client's way back to every one of them.
-   ============================================================ */
+/* ===== Weekly Report =================================================
+   The Friday video + PDF. Deliberately set apart from the reporting
+   channels in the sidebar so it does not read as another analytics page. */
 
-.pl-pdf-bar { margin: -0.6rem 0 1.25rem; }
-a.pl-pdf {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.42rem 0.8rem;
-  border: 1px solid var(--line-strong);
-  border-radius: 9px;
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 600;
-  text-decoration: none;
-  line-height: 1.2;
+.pl-nav-standalone {
+  margin-top: 1.15rem;
+  position: relative;
 }
-a.pl-pdf svg { width: 15px; height: 15px; flex: none; }
-a.pl-pdf:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+/* A hairline above it rather than a heading, so the separation reads as
+   "different kind of thing" without adding another section label. */
+.pl-nav-standalone::before {
+  content: "";
+  position: absolute;
+  top: -0.6rem;
+  left: 0.75rem;
+  right: 0.75rem;
+  height: 1px;
+  background: var(--line);
+  opacity: 0.5;
+}
 
-.pl-history { margin-top: 1.5rem; }
-.pl-history-toggle {
-  display: flex;
-  align-items: center;
+.pl-weekly-head {
+  display: flex; flex-wrap: wrap; gap: 1rem;
+  align-items: flex-end; justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.pl-weekly-pick { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+.pl-weekly-pick select {
+  font: inherit; padding: 0.45rem 0.6rem; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+
+.pl-video-wrap {
+  position: relative; width: 100%; aspect-ratio: 16 / 9;
+  max-width: 100%; background: #0d1117; border-radius: 10px; overflow: hidden;
+  margin-bottom: 1rem;
+}
+.pl-video-wrap video, .pl-video-wrap iframe {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block;
+}
+
+.pl-weekly-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.25rem; }
+
+.pl-archive-list { display: grid; gap: 0.5rem; margin-top: 0.75rem; }
+.pl-archive-row {
+  display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;
   justify-content: space-between;
-  gap: 0.6rem;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--white);
-  text-align: left;
+  padding: 0.7rem 0.9rem; border: 1px solid var(--line);
+  border-radius: 9px; background: var(--surface);
+  cursor: pointer; text-align: left; width: 100%;
+  font: inherit; color: inherit;
+  transition: border-color 0.12s ease, background 0.12s ease;
 }
-.pl-history-toggle .chev {
-  width: 18px; height: 18px; flex: none;
-  color: var(--dim);
-  transition: transform 0.18s ease;
-}
-.pl-history-toggle.open .chev { transform: rotate(180deg); }
-.pl-history-toggle:hover { color: var(--blue); }
+.pl-archive-row:hover { border-color: var(--blue); background: var(--surface-2, var(--surface)); }
+.pl-archive-row.on { border-color: var(--blue); box-shadow: inset 2.5px 0 0 var(--blue); }
+.pl-archive-when { font-weight: 700; }
+.pl-archive-meta { font-size: 0.82rem; color: var(--dim); }
+.pl-archive-tags { display: flex; gap: 0.4rem; }
 
-.pl-history-body { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.4rem; }
-.pl-history-list { list-style: none; margin: 0; padding: 0; }
-
-.pl-history-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--line);
-}
-.pl-history-row:last-child { border-bottom: 0; }
-.pl-history-row.current { background: var(--blue-dim); margin: 0 -0.75rem; padding-left: 0.75rem; padding-right: 0.75rem; border-radius: 8px; }
-
-.pl-history-open {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--white);
-  min-width: 13rem;
-  text-align: left;
-}
-.pl-history-open:hover .h-range { color: var(--blue); text-decoration: underline; }
-.pl-history-open .h-now {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--blue);
-  border: 1px solid rgba(21, 115, 214, 0.35);
-  border-radius: 99px;
-  padding: 0.1rem 0.45rem;
+@media (max-width: 640px) {
+  .pl-weekly-head { align-items: stretch; }
+  .pl-weekly-pick { justify-content: space-between; }
 }
 
-.h-files { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-left: auto; }
-.h-files .pl-pdf { padding: 0.24rem 0.55rem; font-size: 0.74rem; font-weight: 600; }
-
-@media (max-width: 720px) {
-  .pl-history-row { flex-direction: column; align-items: flex-start; }
-  .h-files { margin-left: 0; }
+/* ===== Admin: publish a weekly report ================================ */
+.pl-drop-label { font-size: 0.8rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 0.35rem; }
+.pl-drop {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.2rem; text-align: center;
+  padding: 1.4rem 1rem; min-height: 112px;
+  border: 1.5px dashed var(--line); border-radius: 10px;
+  background: var(--surface); cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
 }
+.pl-drop:hover, .pl-drop:focus-visible { border-color: var(--blue); outline: none; }
+.pl-drop.drag { border-color: var(--blue); background: rgba(21,115,214,0.06); }
+.pl-drop.has-file { border-style: solid; border-color: var(--green); }
+.pl-drop-file { font-size: 0.82rem; font-weight: 700; color: var(--green); margin-top: 0.3rem; word-break: break-all; }
+
+.pl-wk-progress {
+  margin-top: 0.9rem; height: 6px; border-radius: 99px;
+  background: var(--surface-2, var(--line)); overflow: hidden;
+}
+.pl-wk-progress > span { display: block; height: 100%; width: 0; background: var(--blue); transition: width 0.2s ease; }
+
+.pl-wk-row {
+  display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between;
+  padding: 0.65rem 0.85rem; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--surface); margin-bottom: 0.5rem;
+}
+.pl-wk-row .who { font-weight: 700; }
+.pl-wk-row .when { font-size: 0.82rem; color: var(--dim); }

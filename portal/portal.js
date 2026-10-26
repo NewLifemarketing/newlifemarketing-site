@@ -15,40 +15,23 @@
     meta:     { title: "Meta Ads", platform: "meta", section: "meta" },
     google:   { title: "Google Ads", platform: "google_ads", section: "google_ads" },
     gbp:      { title: "Google Business Profile", platform: "gbp", section: "gbp" },
-    seo:      { title: "SEO", platform: "seo", section: "seo" },
-    organic:  { title: "Social Media", platform: "organic", section: "organic" },
-    website:  { title: "Website", platform: "website", section: "website" },
+    seo:      { title: "Search Engine Optimization", platform: "seo", section: "seo" },
+    organic:  { title: "Social Media Analytics", platform: "organic", section: "organic" },
+    website:  { title: "Website Analytics", platform: "website", section: "website" },
+    /* Not a reporting channel: the Friday video + PDF. No platform, and no
+       section gate — every client gets it. */
+    weekly:   { title: "Weekly Report", platform: null, section: null },
     onboarding: { title: "Onboarding", platform: null, section: null }
   };
   /* Overview channel blocks, in display order */
   var CHANNELS = [
     { view: "meta", platform: "meta", label: "Meta Ads" },
     { view: "google", platform: "google_ads", label: "Google Ads" },
-    { view: "seo", platform: "seo", label: "SEO" },
     { view: "gbp", platform: "gbp", label: "Google Business Profile" },
-    { view: "organic", platform: "organic", label: "Social Media" },
-    { view: "website", platform: "website", label: "Website" }
+    { view: "seo", platform: "seo", label: "Search Engine Optimization" },
+    { view: "organic", platform: "organic", label: "Social Media Analytics" },
+    { view: "website", platform: "website", label: "Website Analytics" }
   ];
-
-  /* The weekly reporting job writes each run to its OWN table and registers it
-     in report_runs (see newlife-reporting/db/schema.sql). The portal therefore
-     has two sources of history:
-
-       report_runs + report_<slug>_<date>   every run from the new job
-       report_cache                         the months loaded before it existed
-
-     Both are listed in one period dropdown and both render through the same
-     renderers, because a client should not be able to tell which era of the
-     system produced the week they are looking at. */
-  var REPORT_TO_PLATFORM = {
-    meta_ads: "meta",
-    google_ads: "google_ads",
-    seo: "seo",
-    gbp: "gbp",
-    social: "organic",
-    website: "website",
-    overall: "overall"
-  };
 
   var ctx = null;          /* from auth.js: { sb, clientId, sections } */
   var periods = [];        /* [{ start, end, label }] newest first */
@@ -769,9 +752,7 @@
     var bdHost    = document.querySelector('[data-breakdown="' + view + '"]');
     var emptyHost = document.querySelector('[data-empty="' + view + '"]');
     if (emptyHost) { emptyHost.hidden = true; emptyHost.innerHTML = ""; }
-    var metaHost = document.getElementById("pl-meta-" + view);
-    renderMeta(metaHost, row);
-    renderPdfLink(metaHost, row);
+    renderMeta(document.getElementById("pl-meta-" + view), row);
     if (!row) {
       renderKpis(kpiHost, null);
       if (chartHost) chartHost.innerHTML = "";
@@ -793,133 +774,212 @@
     charts = {};
     renderOverview();
     ["meta", "google", "gbp", "seo", "organic", "website"].forEach(renderChannel);
-    /* The Overall report is a stored row like any other; its PDF belongs on
-       the Overview page, which is the screen version of the same thing. */
-    renderPdfLink(document.getElementById("pl-meta-overview"), reports.overall);
-    /* Marks which period the list is currently showing. */
-    renderHistory();
-    /* Everything above renders every channel, but only one view is visible —
-       the others measured zero. Size whichever is on screen. */
+    /* Everything above renders all five channels, but only one view is
+       visible — the other four measured zero. Size whichever is on screen. */
     resizeChartsIn(currentView);
   }
 
-  /* ---------------- report history ----------------
-     Every period this client has ever been sent, newest first, each row
-     loading from the table its own run wrote. The current period is marked
-     rather than hidden, so the list is the complete record and a client
-     counting their reports gets the number they expect. */
-  var historyOpen = false;
+  /* ---------------- weekly report: Friday video + PDF ----------------
+     One row per client per week in public.weekly_reports, kept permanently so
+     a client can come back months later and watch an old one.
 
-  function renderHistory() {
-    var host = document.getElementById("pl-history");
-    var body = document.getElementById("pl-history-body");
-    var toggle = document.getElementById("pl-history-toggle");
-    if (!host || !body || !toggle) return;
+     Each asset is EITHER a path in the private `client-files` storage bucket
+     (fetched through a short-lived signed URL) OR an external link. Both are
+     supported deliberately: weekly video across every client would exhaust the
+     Supabase free tier's 1 GB storage within weeks, so an external host is the
+     workable option until storage is sized for it. */
 
-    /* One period is simply the current one; there is no history to offer. */
-    if (periods.length < 2) { host.hidden = true; return; }
-    host.hidden = false;
-    toggle.querySelector("span").textContent =
-      "See previous periods (" + (periods.length - 1) + ")";
+  var weeklyRows = [];       /* newest first */
+  var weeklySel = null;      /* week_ending of the selected row */
+  var weeklySelect = document.getElementById("pl-weekly-select");
 
-    body.innerHTML =
-      '<ul class="pl-history-list">' +
-      periods.map(function (p, i) {
-        var isCurrent = current && p.start === current.start && p.end === current.end;
-        return '<li class="pl-history-row' + (isCurrent ? " current" : "") + '">' +
-          '<button class="pl-history-open" type="button" data-period="' + i + '">' +
-            '<span class="h-range">' + esc(p.label) + "</span>" +
-            (isCurrent ? '<span class="h-now">Showing</span>' : "") +
-          "</button>" +
-          '<span class="h-files" data-files="' + i + '"></span>' +
-        "</li>";
-      }).join("") +
-      "</ul>";
-
-    qsa(".pl-history-open").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var p = periods[parseInt(b.getAttribute("data-period"), 10)];
-        if (!p) return;
-        if (periodSel) periodSel.value = String(periods.indexOf(p));
-        loadPeriod(p).then(function () { window.scrollTo(0, 0); });
-      });
-    });
-
-    /* The PDF links for a past period are in that period's own table, so they
-       are fetched only once its row is expanded — otherwise opening the list
-       would fire one query per week the client has been with us. */
-    loadHistoryFiles();
+  function weekLabel(d) {
+    if (!d) return "";
+    var p = String(d).split("-");
+    var M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return M[parseInt(p[1], 10) - 1] + " " + parseInt(p[2], 10) + ", " + p[0];
   }
 
-  /* table name -> the PDF links in it. The LINKS are cached, not merely the
-     fact that they were fetched: opening another period rebuilds the list's
-     markup, and a cache of booleans would skip the refetch and leave every row
-     blank from then on. */
-  var filesByTable = {};
-
-  function paintHistoryFiles() {
-    periods.forEach(function (p, i) {
-      var host = document.querySelector('[data-files="' + i + '"]');
-      if (!host || !p.table) return;
-      var rows = filesByTable[p.table];
-      if (!rows) return;
-      host.innerHTML = rows.map(function (x) {
-        return '<a class="pl-pdf" href="' + esc(x.pdf_url) + '" target="_blank" rel="noopener">' +
-          esc(x.title || x.report) + "</a>";
-      }).join("");
-    });
+  /* Known video hosts get an embed; anything else is offered as a link rather
+     than guessed at, so an unexpected URL cannot render a broken black box. */
+  function embedUrl(url) {
+    var u = String(url || "");
+    var m;
+    if ((m = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{6,})/))) {
+      return "https://www.youtube.com/embed/" + m[1];
+    }
+    if ((m = u.match(/youtube\.com\/embed\/([\w-]{6,})/))) return u;
+    if ((m = u.match(/loom\.com\/(?:share|embed)\/([0-9a-f]{8,})/i))) {
+      return "https://www.loom.com/embed/" + m[1];
+    }
+    if ((m = u.match(/vimeo\.com\/(?:video\/)?(\d{6,})/))) {
+      return "https://player.vimeo.com/video/" + m[1];
+    }
+    if ((m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/))) {
+      return "https://drive.google.com/file/d/" + m[1] + "/preview";
+    }
+    return null;
   }
 
-  var filesPending = {};
-  function loadHistoryFiles() {
-    if (!historyOpen) return;
-    paintHistoryFiles();
-    /* Overall first, then the channels in sidebar order. */
-    var order = ["overall", "meta_ads", "google_ads", "seo", "gbp", "social", "website"];
-    periods.forEach(function (p) {
-      if (!p.table || filesByTable[p.table] || filesPending[p.table]) return;
-      filesPending[p.table] = true;
-      ctx.sb.from(p.table)
-        .select("report, title, pdf_url")
-        .eq("client_id", ctx.clientId)
-        .then(function (r) {
-          var rows = (r.data || []).filter(function (x) { return x.pdf_url; });
-          rows.sort(function (a, b) { return order.indexOf(a.report) - order.indexOf(b.report); });
-          filesByTable[p.table] = rows;
-          paintHistoryFiles();
-        })
-        .catch(function () { filesPending[p.table] = false; });
-    });
+  /* Storage paths are private; a signed URL is minted per view and expires. */
+  function signedUrl(path) {
+    if (!path || !ctx || !ctx.sb || !ctx.sb.storage) return Promise.resolve(null);
+    try {
+      return ctx.sb.storage.from("client-files").createSignedUrl(path, 3600)
+        .then(function (r) { return (r && r.data && r.data.signedUrl) || null; })
+        .catch(function () { return null; });
+    } catch (e) { return Promise.resolve(null); }
   }
 
-  (function wireHistory() {
-    var toggle = document.getElementById("pl-history-toggle");
-    var body = document.getElementById("pl-history-body");
-    if (!toggle || !body) return;
-    toggle.addEventListener("click", function () {
-      historyOpen = !historyOpen;
-      body.hidden = !historyOpen;
-      toggle.setAttribute("aria-expanded", historyOpen ? "true" : "false");
-      toggle.classList.toggle("open", historyOpen);
-      loadHistoryFiles();
-    });
-  })();
-
-  /* The PDF for whatever is on screen. A client reading a channel page should
-     not have to go to the history list to get that channel's PDF. */
-  function renderPdfLink(host, row) {
+  function renderWeeklyCurrent(row) {
+    var host = document.getElementById("pl-weekly-current");
     if (!host) return;
-    var existing = host.querySelector(".pl-pdf-bar");
-    if (existing) existing.remove();
-    if (!row || !row.pdf_url) return;
-    var bar = document.createElement("div");
-    bar.className = "pl-pdf-bar";
-    bar.innerHTML = '<a class="pl-pdf" href="' + esc(row.pdf_url) + '" target="_blank" rel="noopener">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' +
-      '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>' +
-      "Download this report (PDF)</a>";
-    host.appendChild(bar);
+    if (!row) { host.innerHTML = ""; return; }
+
+    var when = weekLabel(row.week_ending);
+    var title = row.title || ("Week ending " + when);
+    host.innerHTML =
+      '<div class="pl-panel">' +
+        '<div class="pl-panel-head"><h3>' + esc(title) + "</h3>" +
+        '<span class="pl-dim">' + esc(when) + "</span></div>" +
+        '<div class="pl-weekly-video"></div>' +
+        (row.summary ? '<p class="pl-muted" style="margin:0.25rem 0 0">' + esc(row.summary) + "</p>" : "") +
+        '<div class="pl-weekly-actions"></div>' +
+      "</div>";
+
+    var videoHost = host.querySelector(".pl-weekly-video");
+    var actions = host.querySelector(".pl-weekly-actions");
+
+    /* --- video --- */
+    if (row.video_url) {
+      var emb = embedUrl(row.video_url);
+      if (emb) {
+        videoHost.innerHTML = '<div class="pl-video-wrap"><iframe src="' + esc(emb) +
+          '" allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture; fullscreen"' +
+          ' allowfullscreen title="' + esc(title) + '"></iframe></div>';
+      } else {
+        actions.innerHTML += '<a class="pl-btn" href="' + esc(row.video_url) +
+          '" target="_blank" rel="noopener">Watch the video →</a>';
+      }
+    } else if (row.video_path) {
+      /* Attach the panel first, then set src. A <video> (like an <img>) that is
+         given a source while detached never starts loading. */
+      videoHost.innerHTML = '<div class="pl-video-wrap"><video controls preload="metadata"></video></div>';
+      var vid = videoHost.querySelector("video");
+      signedUrl(row.video_path).then(function (u) {
+        if (u) { vid.src = u; return; }
+        videoHost.innerHTML = '<p class="pl-muted" style="margin:0">This week’s video could not be loaded. ' +
+          'Email <a href="mailto:contact@newlifemarketing.ca">contact@newlifemarketing.ca</a> and we’ll send it over.</p>';
+      });
+    }
+
+    /* --- pdf --- */
+    if (row.pdf_url) {
+      actions.innerHTML += '<a class="pl-btn ghost" href="' + esc(row.pdf_url) +
+        '" target="_blank" rel="noopener">Open the PDF breakdown</a>';
+    } else if (row.pdf_path) {
+      var a = document.createElement("a");
+      a.className = "pl-btn ghost";
+      a.textContent = "Open the PDF breakdown";
+      a.target = "_blank"; a.rel = "noopener";
+      a.href = "#";
+      a.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        a.textContent = "Opening…";
+        signedUrl(row.pdf_path).then(function (u) {
+          a.textContent = "Open the PDF breakdown";
+          if (u) window.open(u, "_blank", "noopener");
+          else alert("That PDF could not be opened. Please email contact@newlifemarketing.ca.");
+        });
+      });
+      actions.appendChild(a);
+    }
+
+    if (!row.video_url && !row.video_path && !row.pdf_url && !row.pdf_path) {
+      videoHost.innerHTML = '<p class="pl-muted" style="margin:0">This week’s report is being prepared.</p>';
+    }
   }
+
+  function renderWeeklyArchive() {
+    var host = document.getElementById("pl-weekly-archive");
+    if (!host) return;
+    if (weeklyRows.length < 2) { host.innerHTML = ""; return; }
+    host.innerHTML =
+      '<div class="pl-panel"><div class="pl-panel-head"><h3>Past weekly reports</h3>' +
+      '<span class="pl-dim">' + weeklyRows.length + " in total</span></div>" +
+      '<div class="pl-archive-list"></div></div>';
+    var list = host.querySelector(".pl-archive-list");
+    weeklyRows.forEach(function (r) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "pl-archive-row" + (r.week_ending === weeklySel ? " on" : "");
+      var tags = [];
+      if (r.video_url || r.video_path) tags.push('<span class="pl-tag on">Video</span>');
+      if (r.pdf_url || r.pdf_path) tags.push('<span class="pl-tag on">PDF</span>');
+      b.innerHTML =
+        "<span><span class=\"pl-archive-when\">" + esc(weekLabel(r.week_ending)) + "</span>" +
+        (r.title ? '<span class="pl-archive-meta"> · ' + esc(r.title) + "</span>" : "") + "</span>" +
+        '<span class="pl-archive-tags">' + (tags.join("") || '<span class="pl-tag">Being prepared</span>') + "</span>";
+      b.addEventListener("click", function () { selectWeek(r.week_ending); });
+      list.appendChild(b);
+    });
+  }
+
+  function selectWeek(weekEnding) {
+    weeklySel = weekEnding;
+    var row = null;
+    for (var i = 0; i < weeklyRows.length; i++) {
+      if (weeklyRows[i].week_ending === weekEnding) { row = weeklyRows[i]; break; }
+    }
+    if (weeklySelect) weeklySelect.value = weekEnding || "";
+    renderWeeklyCurrent(row);
+    renderWeeklyArchive();
+  }
+
+  function renderWeekly() {
+    var emptyHost = document.querySelector('[data-empty="weekly"]');
+    var sub = document.getElementById("pl-weekly-sub");
+    if (emptyHost) { emptyHost.hidden = true; emptyHost.innerHTML = ""; }
+
+    if (!weeklyRows.length) {
+      if (weeklySelect) weeklySelect.hidden = true;
+      document.getElementById("pl-weekly-current").innerHTML = "";
+      document.getElementById("pl-weekly-archive").innerHTML = "";
+      if (sub) sub.textContent = "A short video walkthrough and a written breakdown, published every Friday.";
+      emptyState("weekly", "weekly");
+      return;
+    }
+    if (weeklySelect) {
+      weeklySelect.hidden = false;
+      weeklySelect.innerHTML = weeklyRows.map(function (r) {
+        return '<option value="' + esc(r.week_ending) + '">' + esc(weekLabel(r.week_ending)) + "</option>";
+      }).join("");
+    }
+    if (sub) {
+      sub.textContent = weeklyRows.length === 1
+        ? "Your weekly video walkthrough and written breakdown."
+        : "Every Friday’s video and written breakdown. " + weeklyRows.length + " weeks available.";
+    }
+    selectWeek(weeklySel || weeklyRows[0].week_ending);
+  }
+
+  function loadWeekly() {
+    if (!ctx || !ctx.clientId) { weeklyRows = []; renderWeekly(); return Promise.resolve(); }
+    return ctx.sb.from("weekly_reports")
+      .select("week_ending, title, summary, video_path, video_url, pdf_path, pdf_url, published_at")
+      .eq("client_id", ctx.clientId)
+      .order("week_ending", { ascending: false })
+      .then(function (r) {
+        weeklyRows = (r.data || []);
+        weeklySel = null;
+        renderWeekly();
+      })
+      .catch(function () { weeklyRows = []; renderWeekly(); });
+  }
+
+  if (weeklySelect) weeklySelect.addEventListener("change", function () {
+    selectWeek(weeklySelect.value);
+  });
 
   /* ---------------- sections / sidebar ---------------- */
   function hasSection(section) {
@@ -958,6 +1018,13 @@
       canvases.forEach(function (c) {
         var inst = Chart.getChart(c);
         if (!inst) return;
+        /* NOTE: if Chart.js ever locks a canvas at 0x0 (it writes the measured
+           size inline), resize() cannot recover it — not by clearing the
+           inline style, and not with explicit dimensions. Both were tried and
+           neither works; only destroying and recreating the chart does. That
+           state needs a window with no width at construction, which a real
+           browser tab does not have, so it is left unhandled rather than
+           carrying machinery that would never run in production. */
         try { inst.resize(); } catch (e) {}
         if (!c.width || !c.height) allSized = false;
       });
@@ -1017,7 +1084,7 @@
        rescued it. That is exactly why this reached production looking fine.
        Resize this view's charts once it is genuinely on screen. */
     resizeChartsIn(view);
-    if (periodSel) periodSel.hidden = (view === "onboarding") || !periods.length;
+    if (periodSel) periodSel.hidden = (view === "onboarding") || (view === "weekly") || !periods.length;
     if (app) app.classList.remove("nav-open");
     window.scrollTo(0, 0);
   }
@@ -1036,129 +1103,6 @@
     b.addEventListener("click", function () { app.classList.remove("nav-open"); });
   });
 
-  /* ---------------- new-format rows -> payload ----------------
-     The weekly job stores plain figures: { metrics: { clicks: { text, value } },
-     tables: [{ title, headers, rows }] }. Every renderer above already speaks
-     the older `payload` shape, so a row is translated into that shape rather
-     than the renderers being rewritten around a second one. One render path,
-     whichever era wrote the row. */
-
-  var METRIC_LABELS = {
-    spend: "Amount spent", cost: "Cost", impressions: "Impressions", reach: "Reach",
-    clicks: "Clicks", ctr: "CTR", cpc: "Cost per click", avg_cpc: "Average CPC",
-    cpm: "CPM", results: "Results", cost_per_result: "Cost per result",
-    conversions: "Conversions", cost_per_conversion: "Cost per conversion",
-    conversion_rate: "Conversion rate",
-    gsc_clicks: "Search clicks", gsc_impressions: "Search impressions",
-    gsc_ctr: "Search CTR", gsc_position: "Average position",
-    visibility: "Visibility", estimated_traffic: "Estimated organic traffic",
-    keywords_tracked: "Keywords tracked", avg_position: "Average tracked position",
-    top3: "Keywords in top 3", top10: "Keywords in top 10", top20: "Keywords in top 20",
-    authority_score: "Authority score", backlinks: "Backlinks",
-    referring_domains: "Referring domains",
-    searches: "Profile searches", views_search: "Views on Search",
-    views_maps: "Views on Maps", calls: "Calls", messages: "Messages",
-    bookings: "Bookings", directions: "Direction requests",
-    website_clicks: "Website clicks", reviews: "Total reviews", rating: "Average rating",
-    fb_reach: "Facebook reach", ig_reach: "Instagram reach",
-    fb_visits: "Facebook visits", ig_visits: "Instagram visits",
-    fb_followers: "Facebook followers gained", ig_followers: "Instagram followers gained",
-    interactions: "Content interactions", link_clicks: "Link clicks", posts: "Posts published",
-    users: "Users", new_users: "New users", sessions: "Sessions",
-    engaged_sessions: "Engaged sessions", engagement_rate: "Engagement rate",
-    avg_engagement_time: "Average engagement time", views: "Page views",
-    form_submissions: "Form submissions"
-  };
-
-  /* The Overview reads a fixed set of names off summary.metrics — `spend`,
-     `leads`, `calls`, `engagements`, `keywords_top10` — and does arithmetic
-     across channels with them. The weekly job stores each source's own name
-     for the same thing ("cost" on Google, "spend" on Meta), so the translation
-     has to happen here or the Overview silently totals zero. */
-  var SUMMARY_KEYS = {
-    meta: { spend: "spend", leads: "results" },
-    google_ads: { spend: "cost", leads: "conversions" },
-    seo: { keywords_top10: "top10" },
-    gbp: { calls: "calls" },
-    organic: { engagements: "interactions" },
-    website: { leads: "form_submissions" }
-  };
-
-  /* The four figures each channel shows on its Overview block. Chosen per
-     channel rather than "the first four stored", so the block leads with the
-     numbers that matter instead of whichever the dashboard happened to list
-     first. */
-  var CARD_KEYS = {
-    meta: ["spend", "impressions", "clicks", "results"],
-    google_ads: ["cost", "impressions", "clicks", "conversions"],
-    seo: ["gsc_clicks", "gsc_impressions", "gsc_position", "top10"],
-    gbp: ["searches", "calls", "directions", "website_clicks"],
-    organic: ["fb_reach", "ig_reach", "interactions", "posts"],
-    website: ["users", "sessions", "engagement_rate", "form_submissions"]
-  };
-
-  function adaptRow(row) {
-    var platform = REPORT_TO_PLATFORM[row.report] || row.report;
-    var metrics = row.metrics || {};
-
-    var kpis = [];
-    Object.keys(metrics).forEach(function (key) {
-      var m = metrics[key] || {};
-      if (m.value == null && !m.text) return;   /* a metric that could not be read stays off the page */
-      kpis.push({
-        label: METRIC_LABELS[key] || key.replace(/_/g, " "),
-        value: m.text != null && m.text !== "" ? m.text : String(m.value)
-      });
-    });
-
-    var tables = (row.tables || []).map(function (t) {
-      var headers = t.headers || [];
-      var columns = headers.map(function (h, i) {
-        return { key: "c" + i, label: h, align: i === 0 ? null : "num" };
-      });
-      var rows = (t.rows || []).map(function (cells) {
-        var o = {};
-        cells.forEach(function (c, i) { o["c" + i] = c; });
-        return o;
-      });
-      return { title: t.title, columns: columns, rows: rows };
-    });
-
-    var sumKeys = SUMMARY_KEYS[platform] || {};
-    var summary = { metrics: {}, cards: [] };
-    Object.keys(sumKeys).forEach(function (out) {
-      var m = metrics[sumKeys[out]];
-      if (m && m.value != null) summary.metrics[out] = m.value;
-    });
-    (CARD_KEYS[platform] || []).forEach(function (key) {
-      var m = metrics[key];
-      if (!m || (m.value == null && !m.text)) return;
-      summary.cards.push({
-        label: METRIC_LABELS[key] || key.replace(/_/g, " "),
-        value: m.text != null && m.text !== "" ? m.text : String(m.value)
-      });
-    });
-
-    return {
-      platform: platform,
-      report: row.report,
-      period_start: row.period_start,
-      period_end: row.period_end,
-      refreshed_at: row.captured_at || row.created_at,
-      is_sample: false,
-      pdf_url: row.pdf_url || null,
-      account: row.account || null,
-      payload: {
-        summary: summary,
-        kpis: kpis,
-        charts: [],
-        tables: tables,
-        notes: row.notes || [],
-        warnings: row.warnings || []
-      }
-    };
-  }
-
   /* ---------------- data loading ---------------- */
   function loadPeriods() {
     /* Scope every read to one client explicitly. A client is already confined to
@@ -1167,81 +1111,32 @@
        merge every client's periods into one list and load the wrong company's
        numbers under this company's name. The filter must be in the query, not
        left to RLS. */
-    /* Completed runs from the weekly job, newest first. A run still being
-       built is left out: half its channels are missing, and a client opening
-       it mid-run would see a week that looks like a collapse. */
-    var runs = ctx.sb.from("report_runs")
-      .select("table_name, run_date, period_start, period_end")
-      .eq("client_id", ctx.clientId)
-      .eq("status", "complete")
-      .order("period_end", { ascending: false })
-      .then(function (r) { return r.data || []; })
-      .catch(function () { return []; });
-
-    var cached = ctx.sb.from("report_cache")
+    return ctx.sb.from("report_cache")
       .select("period_start, period_end")
       .eq("client_id", ctx.clientId)
       .order("period_start", { ascending: false })
-      .then(function (r) { return r.data || []; })
-      .catch(function () { return []; });
-
-    return Promise.all([runs, cached]).then(function (res) {
-      var seen = {}, out = [];
-      function add(start, end, table, runDate) {
-        var k = start + "|" + end;
-        if (seen[k]) return;
-        seen[k] = 1;
-        out.push({
-          start: start, end: end, table: table || null, run_date: runDate || null,
-          label: fmtRange(start, end)
+      .then(function (r) {
+        var seen = {}, out = [];
+        (r.data || []).forEach(function (row) {
+          var k = row.period_start + "|" + row.period_end;
+          if (seen[k]) return;
+          seen[k] = 1;
+          out.push({ start: row.period_start, end: row.period_end, label: fmtRange(row.period_start, row.period_end) });
         });
-      }
-      /* Runs win on a collision: if a week exists in both, the per-run table
-         is the one the PDFs were built from. */
-      res[0].forEach(function (row) { add(row.period_start, row.period_end, row.table_name, row.run_date); });
-      res[1].forEach(function (row) { add(row.period_start, row.period_end, null, null); });
-      out.sort(function (a, b) { return a.end < b.end ? 1 : a.end > b.end ? -1 : 0; });
-
-      periods = out;
-      if (periodSel) {
-        periodSel.innerHTML = out.map(function (p, i) {
-          return '<option value="' + i + '">' + esc(p.label) + "</option>";
-        }).join("");
-        periodSel.hidden = !out.length || currentView === "onboarding";
-      }
-      renderHistory();
-      return out;
-    });
+        periods = out;
+        if (periodSel) {
+          periodSel.innerHTML = out.map(function (p, i) {
+            return '<option value="' + i + '">' + esc(p.label) + "</option>";
+          }).join("");
+          periodSel.hidden = !out.length || currentView === "onboarding" || currentView === "weekly";
+        }
+        return out;
+      });
   }
   function fetchPeriod(p) {
-    /* A period from the weekly job lives in its own table; one from before it
-       lives in report_cache. Same filter on client_id either way: a client is
-       confined by RLS, but an admin deliberately is not, so during "view as"
-       an unscoped select would merge every client's numbers into this one's
-       report. The filter belongs in the query, not in the policy. */
-    if (p.table) {
-      return ctx.sb.from(p.table)
-        .select("report, period_start, period_end, metrics, tables, totals, inbound, channels, notes, warnings, account, pdf_url, captured_at, created_at")
-        .eq("client_id", ctx.clientId)
-        .then(function (r) {
-          var out = {};
-          (r.data || []).forEach(function (row) {
-            var adapted = adaptRow(row);
-            /* `overall` is kept whatever the client's sections are: it is the
-               summary of the channels they do have, and the Overview page
-               links its PDF. */
-            if (adapted.platform === "overall" || hasSection(adapted.platform)) {
-              out[adapted.platform] = adapted;
-            }
-          });
-          return out;
-        })
-        .catch(function () { return {}; });
-    }
-
     return ctx.sb.from("report_cache")
       .select("platform, period_start, period_end, payload, is_sample, refreshed_at")
-      .eq("client_id", ctx.clientId)
+      .eq("client_id", ctx.clientId)   /* see loadPeriods — admins can read every client */
       .eq("period_start", p.start)
       .eq("period_end", p.end)
       .then(function (r) {
@@ -1301,7 +1196,10 @@
     ctx = e.detail;
     applySections();
     var start = viewFromHash() || "overview";
-    if (!ctx.clientId) { showView(start); renderAll(); return; }
+    if (!ctx.clientId) { showView(start); renderAll(); renderWeekly(); return; }
+    /* The weekly archive is independent of the reporting periods, so it loads
+       in parallel rather than waiting on them. */
+    loadWeekly();
     loadPeriods().then(function (list) {
       showView(start);
       return loadPeriod(list[0] || null);
