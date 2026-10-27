@@ -3571,3 +3571,10 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 
 /* Company menu: red "Limited time" tag on the Free Website For Trades item */
 .m-ltd{display:inline-block;vertical-align:middle;margin-left:.4rem;padding:.18rem .5rem;border-radius:999px;background:linear-gradient(90deg,#E5342B,#FF6A3D,#E5342B);background-size:200% 100%;color:#fff;font:800 .6rem/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;font-style:normal;animation:m-ltd-shine 3s linear infinite}@keyframes m-ltd-shine{to{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.m-ltd{animation:none}}
+
+/* Careers: the role with a live Indeed listing. The #bdr link from the Instagram story lands on it, clear
+   of the sticky header, with a blue ring so the eye goes straight to it. */
+.role-featured { scroll-margin-top: 7.5rem; border-color: rgba(33, 150, 243, 0.55); box-shadow: 0 0 0 1px rgba(33, 150, 243, 0.35); }
+.role-featured:target { box-shadow: 0 0 0 3px #2196F3, 0 12px 32px rgba(33, 150, 243, 0.22); }
+.role-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.role-actions .btn { margin: 0; }
