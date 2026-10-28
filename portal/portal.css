@@ -626,13 +626,15 @@ body.has-admin-bar .pl-view { padding-bottom: 4.5rem; }
   max-width: 15rem;
 }
 .pl-period-picker .pl-daterange:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
-.pl-step {
+/* NAME COLLISION, do not reuse: `.pl-step` already belongs to the onboarding
+   checklist rows. These arrows are `.pl-wk-arrow`. */
+.pl-wk-arrow {
   border: 0; background: none; cursor: pointer; color: var(--muted);
   font-size: 1.15rem; line-height: 1; padding: 0 0.7rem; font-family: var(--font-body);
   transition: background 0.12s ease, color 0.12s ease;
 }
-.pl-step:hover:not(:disabled) { background: var(--surface-2); color: var(--white); }
-.pl-step:disabled { opacity: 0.28; cursor: default; }
+.pl-wk-arrow:hover:not(:disabled) { background: var(--surface-2); color: var(--white); }
+.pl-wk-arrow:disabled { opacity: 0.28; cursor: default; }
 #pl-period-prev { border-right: 1px solid var(--line); }
 #pl-period-next { border-left: 1px solid var(--line); }
 
@@ -655,3 +657,13 @@ body.has-admin-bar .pl-view { padding-bottom: 4.5rem; }
 .pl-kpis { grid-template-columns: repeat(auto-fit, minmax(190px, 300px)); justify-content: start; }
 .pl-chan-empty { opacity: 0.86; }
 .pl-chan-empty .pl-panel-head h3 { color: var(--muted); }
+
+/* Onboarding checklist: the circle is the control, and only for staff. */
+.pl-step .check { font-family: inherit; padding: 0; }
+.pl-app:not(.can-edit-onboarding) .pl-step .check { cursor: default; pointer-events: none; }
+.pl-app.can-edit-onboarding .pl-step .check { cursor: pointer; transition: transform 0.1s ease, border-color 0.12s ease; }
+.pl-app.can-edit-onboarding .pl-step .check:hover { border-color: var(--green); transform: scale(1.12); }
+.pl-app.can-edit-onboarding .pl-step .check:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.pl-step.saving { opacity: 0.6; }
+.pl-step.save-failed { border-color: var(--red); }
+.pl-step.save-failed .s-status::after { content: " — not saved"; color: var(--red); }

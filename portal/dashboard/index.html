@@ -86,12 +86,12 @@
       <button class="pl-menu-btn" data-open-nav aria-label="Open menu">☰</button>
       <h1 id="pl-view-title">Overview</h1>
       <div class="pl-period-picker" id="pl-period-wrap" hidden>
-        <button class="pl-step" id="pl-period-prev" type="button" aria-label="Earlier week">&lsaquo;</button>
+        <button class="pl-wk-arrow" id="pl-period-prev" type="button" aria-label="Earlier week">&lsaquo;</button>
         <label class="pl-period-field">
           <span class="pl-period-cap">Week</span>
           <select class="pl-daterange" id="pl-period" aria-label="Choose a reporting week"></select>
         </label>
-        <button class="pl-step" id="pl-period-next" type="button" aria-label="Later week">&rsaquo;</button>
+        <button class="pl-wk-arrow" id="pl-period-next" type="button" aria-label="Later week">&rsaquo;</button>
       </div>
     </div>
 
@@ -103,20 +103,20 @@
             <h2 style="margin:0 0 0.15rem">Welcome — let's get you launched</h2>
             <p class="pl-muted" style="margin:0;font-size:0.9rem">Complete these steps so we can build and launch your growth system.</p>
           </div>
-          <span class="pl-progress-pct" style="margin-left:auto">50%</span>
+          <span class="pl-progress-pct" id="pl-onboard-pct" style="margin-left:auto">0%</span>
         </div>
-        <div class="pl-progress-bar"><i style="width:50%"></i></div>
+        <div class="pl-progress-bar"><i id="pl-onboard-bar" style="width:0%"></i></div>
       </div>
 
       <div class="pl-panel">
         <h3>Your onboarding checklist</h3>
         <div class="pl-steps">
-          <div class="pl-step done"><div class="check">✓</div><div><div class="s-title">Discovery call</div><div class="s-desc">Kickoff conversation about your goals, market and numbers.</div></div><div class="s-status">Complete</div></div>
-          <div class="pl-step done"><div class="check">✓</div><div><div class="s-title">Contract signed</div><div class="s-desc">Scope and terms agreed and signed.</div></div><div class="s-status">Complete</div></div>
-          <div class="pl-step active"><div class="check">3</div><div><div class="s-title">Account access</div><div class="s-desc">Grant us access to Meta, Google Ads and your Google Business Profile (below).</div></div><div class="s-status">In progress</div></div>
-          <div class="pl-step"><div class="check">4</div><div><div class="s-title">Strategy &amp; branding</div><div class="s-desc">Offer, angles, funnel and creative direction — agreed before filming.</div></div><div class="s-status todo">To do</div></div>
-          <div class="pl-step"><div class="check">5</div><div><div class="s-title">Filming &amp; design</div><div class="s-desc">Shoot day at your location; a month of content produced.</div></div><div class="s-status todo">To do</div></div>
-          <div class="pl-step"><div class="check">6</div><div><div class="s-title">Launch &amp; growth</div><div class="s-desc">Campaigns go live, tracking verified, continuous optimization.</div></div><div class="s-status todo">To do</div></div>
+          <div data-step="discovery" class="pl-step done"><button type="button" class="check" aria-pressed="false" title="Mark this step complete">✓</button><div><div class="s-title">Discovery call</div><div class="s-desc">Kickoff conversation about your goals, market and numbers.</div></div><div class="s-status">Complete</div></div>
+          <div data-step="contract" class="pl-step done"><button type="button" class="check" aria-pressed="false" title="Mark this step complete">✓</button><div><div class="s-title">Contract signed</div><div class="s-desc">Scope and terms agreed and signed.</div></div><div class="s-status">Complete</div></div>
+          <div data-step="access" class="pl-step active"><button type="button" class="check" aria-pressed="false" title="Mark this step complete">3</button><div><div class="s-title">Account access</div><div class="s-desc">Grant us access to Meta, Google Ads and your Google Business Profile (below).</div></div><div class="s-status">In progress</div></div>
+          <div data-step="strategy" class="pl-step"><button type="button" class="check" aria-pressed="false" title="Mark this step complete">4</button><div><div class="s-title">Strategy &amp; branding</div><div class="s-desc">Offer, angles, funnel and creative direction — agreed before filming.</div></div><div class="s-status todo">To do</div></div>
+          <div data-step="filming" class="pl-step"><button type="button" class="check" aria-pressed="false" title="Mark this step complete">5</button><div><div class="s-title">Filming &amp; design</div><div class="s-desc">Shoot day at your location; a month of content produced.</div></div><div class="s-status todo">To do</div></div>
+          <div data-step="launch" class="pl-step"><button type="button" class="check" aria-pressed="false" title="Mark this step complete">6</button><div><div class="s-title">Launch &amp; growth</div><div class="s-desc">Campaigns go live, tracking verified, continuous optimization.</div></div><div class="s-status todo">To do</div></div>
         </div>
       </div>
 

@@ -887,6 +887,111 @@
     setTimeout(go, 650);
   }
 
+  /* ---------------- onboarding checklist ----------------
+     Six fixed steps, stored per client in public.onboarding_items (one row per
+     client+key, status todo/in_progress/done). Staff tick a client off as they
+     move through onboarding; clients see the state read-only.
+
+     Only admins get the control. RLS lets a client UPDATE their own rows but
+     not INSERT one, so a client clicking a step that has no row yet would fail
+     silently — rather than ship that, the circles are inert for them. */
+
+  var ONBOARD_KEYS = ["discovery", "contract", "access", "strategy", "filming", "launch"];
+  var onboardState = {};
+
+  function paintStep(el, status) {
+    var key = el.getAttribute("data-step");
+    onboardState[key] = status;
+    var done = status === "done";
+    var active = status === "in_progress";
+    el.classList.toggle("done", done);
+    el.classList.toggle("active", active);
+    var circle = el.querySelector(".check");
+    var label = el.querySelector(".s-status");
+    if (circle) {
+      circle.textContent = done ? "✓" : "";
+      circle.setAttribute("aria-pressed", done ? "true" : "false");
+      circle.title = done ? "Mark this step not done" : "Mark this step complete";
+    }
+    if (label) {
+      label.textContent = done ? "Complete" : active ? "In progress" : "To do";
+      label.className = "s-status" + (done || active ? "" : " todo");
+    }
+  }
+
+  /* The bar shipped hard-coded at 50%. It happened to match three of six
+     steps, so it looked computed — a client who finished everything would
+     still have been told they were halfway. */
+  function refreshOnboardProgress() {
+    var steps = qsa(".pl-step[data-step]");
+    if (!steps.length) return;
+    var done = steps.filter(function (el) { return el.classList.contains("done"); }).length;
+    var pct = Math.round((done / steps.length) * 100);
+    var bar = document.getElementById("pl-onboard-bar");
+    var pctEl = document.getElementById("pl-onboard-pct");
+    if (bar) bar.style.width = pct + "%";
+    if (pctEl) pctEl.textContent = pct + "%";
+  }
+
+  function loadOnboarding() {
+    var steps = qsa(".pl-step[data-step]");
+    if (!steps.length || !ctx || !ctx.clientId) return Promise.resolve();
+    var app = document.getElementById("pl-app");
+    if (app) app.classList.toggle("can-edit-onboarding", !!ctx.isAdmin);
+
+    return ctx.sb.from("onboarding_items")
+      .select("key, status")
+      .eq("client_id", ctx.clientId)
+      .then(function (r) {
+        var byKey = {};
+        (r && r.data ? r.data : []).forEach(function (row) { byKey[row.key] = row.status; });
+        steps.forEach(function (el) {
+          var key = el.getAttribute("data-step");
+          /* No row yet means not started. The markup ships with a couple of
+             steps pre-marked as a sample; real state wins over that. */
+          paintStep(el, byKey[key] || "todo");
+        });
+        refreshOnboardProgress();
+      })
+      .catch(function () { /* leave the markup as-is if the read fails */ });
+  }
+
+  function toggleStep(el) {
+    if (!ctx || !ctx.isAdmin || !ctx.clientId) return;
+    var key = el.getAttribute("data-step");
+    var before = onboardState[key] || "todo";
+    var after = before === "done" ? "todo" : "done";
+
+    paintStep(el, after);                     /* optimistic: it must feel instant */
+    refreshOnboardProgress();
+    el.classList.add("saving");
+
+    ctx.sb.from("onboarding_items")
+      .upsert({ client_id: ctx.clientId, key: key, status: after, updated_at: new Date().toISOString() },
+              { onConflict: "client_id,key" })
+      .then(function (r) {
+        el.classList.remove("saving");
+        if (r && r.error) {
+          paintStep(el, before);              /* put it back - it did not save */
+          refreshOnboardProgress();
+          el.classList.add("save-failed");
+          setTimeout(function () { el.classList.remove("save-failed"); }, 2000);
+        }
+      })
+      .catch(function () {
+        el.classList.remove("saving");
+        paintStep(el, before);
+        refreshOnboardProgress();
+      });
+  }
+
+  qsa(".pl-step[data-step] .check").forEach(function (circle) {
+    circle.addEventListener("click", function (e) {
+      e.preventDefault();
+      toggleStep(circle.closest(".pl-step"));
+    });
+  });
+
   /* ---------------- weekly collector metrics ----------------
      The collectors write one row per client per week into nine per-client
      tables, surfaced to the portal through the `client_weekly_metrics` view
@@ -1655,6 +1760,7 @@
     /* The weekly archive is independent of the reporting periods, so it loads
        in parallel rather than waiting on them. */
     loadWeekly();
+    loadOnboarding();
     loadMetricWeeks().then(function () {
       /* Sidebar visibility depends on what the weeks contain, so it is built
          after they load, not before. */
