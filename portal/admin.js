@@ -38,6 +38,15 @@
     var t = new Date(d + (String(d).length === 10 ? "T00:00:00" : ""));
     return isNaN(t) ? "—" : t.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   }
+  /* Monthly value is mirrored from HQ purely to order this list. It is staff-
+     only - the RPC refuses anyone who is not an admin - and never reaches a
+     client's dashboard. */
+  function money(v) {
+    var n = Number(v);
+    if (!isFinite(n) || v === null || v === undefined) return "";
+    return "$" + Math.round(n).toLocaleString("en-CA") + "/mo";
+  }
+
   function daysSince(d) {
     if (!d) return null;
     var t = new Date(d);
@@ -77,7 +86,7 @@
       clients.length + (clients.length === 1 ? " client" : " clients");
     document.getElementById("pl-admin-sub").textContent =
       clients.length + " clients · " +
-      clients.reduce(function (a, c) { return a + (c.rows_total || 0); }, 0) + " report rows";
+      clients.reduce(function (a, c) { return a + (c.rows_total || 0); }, 0) + " report rows · highest value first";
 
     if (!clients.length) {
       host.innerHTML = '<p class="pl-muted" style="margin:0">No clients yet.</p>';
@@ -102,7 +111,9 @@
       return '' +
         '<div class="pl-crow">' +
           '<div class="pl-crow-main">' +
-            '<div class="pl-crow-name">' + esc(c.business_name || c.name) + "</div>" +
+            '<div class="pl-crow-name">' + esc(c.business_name || c.name) +
+              (c.monthly_value ? ' <span class="pl-mrr">' + esc(money(c.monthly_value)) + "</span>" : "") +
+            "</div>" +
             '<div class="pl-crow-meta">' +
               (c.periods || 0) + (c.periods === 1 ? " period" : " periods") + " · " +
               (c.rows_total || 0) + " rows · " +

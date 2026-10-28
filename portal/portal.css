@@ -667,3 +667,12 @@ body.has-admin-bar .pl-view { padding-bottom: 4.5rem; }
 .pl-step.saving { opacity: 0.6; }
 .pl-step.save-failed { border-color: var(--red); }
 .pl-step.save-failed .s-status::after { content: " — not saved"; color: var(--red); }
+
+/* Monthly value beside a client name in the admin console. Staff-only — this
+   never renders on a client's own dashboard. */
+.pl-mrr {
+  font-size: 0.72rem; font-weight: 700; color: var(--green);
+  background: rgba(20,122,77,0.10); border-radius: 999px;
+  padding: 0.12rem 0.5rem; margin-left: 0.5rem; vertical-align: middle;
+  white-space: nowrap;
+}
