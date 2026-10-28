@@ -3603,3 +3603,15 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 .ugc-terms dd { margin: 0; font-weight: 600; color: var(--white); line-height: 1.4; }
 .ugc-week { margin: .8rem 0 0; padding: .7rem .9rem; border-left: 4px solid #2196F3; background: rgba(33,150,243,.08); border-radius: 0 10px 10px 0; color: var(--muted); }
 .ugc-lane .btn { align-self: flex-start; }
+
+/* Footer contact block: an icon before each line, blue links that pop on the dark footer. */
+.site-footer .foot-contact { list-style: none; margin: 0.8rem 0 0; padding: 0; display: grid; gap: 1rem; }
+.site-footer .foot-contact li { display: grid; grid-template-columns: 24px 1fr; column-gap: 0.75rem; align-items: start; }
+.site-footer .foot-contact a { color: #4DB6FF; font-weight: 600; line-height: 1.45; }
+.site-footer .foot-contact a:hover { color: #FFFFFF; }
+.site-footer .fc-sub { grid-column: 2; display: block; margin-top: 0.25rem; color: var(--muted); font-size: 0.86rem; line-height: 1.4; }
+.fc-ico { width: 22px; height: 22px; margin-top: 1px; background: #2196F3;
+  -webkit-mask: var(--fc) center / contain no-repeat; mask: var(--fc) center / contain no-repeat; }
+.fc-pin   { --fc: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z'/></svg>"); }
+.fc-phone { --fc: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z'/></svg>"); }
+.fc-mail  { --fc: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z'/></svg>"); }
