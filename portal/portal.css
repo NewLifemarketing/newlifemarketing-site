@@ -600,3 +600,8 @@ body.has-admin-bar .pl-view { padding-bottom: 4.5rem; }
 }
 .pl-wk-row .who { font-weight: 700; }
 .pl-wk-row .when { font-size: 0.82rem; color: var(--dim); }
+
+/* A non-interactive hint in the admin sidebar, styled like a nav item but
+   plainly not clickable. */
+.pl-nav-hint { opacity: 0.55; cursor: default; }
+.pl-nav-hint:hover { background: none; color: inherit; }

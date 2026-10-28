@@ -198,6 +198,18 @@
               if (isAdmin && qp && /^[0-9a-f-]{36}$/i.test(qp)) asClient = qp;
             } catch (e) {}
 
+            /* Staff have no client of their own, so the client dashboard is an
+               empty room for them — and it carries no link to the console.
+               Signing in therefore dropped an admin on a blank page with no
+               way through to the back office except typing the URL. Send them
+               where they actually work, unless they deliberately asked to view
+               a specific client. Guarded on the path so this never fires on
+               the console itself, which uses this same session guard. */
+            if (isAdmin && !asClient && /\/portal\/dashboard\/?$/.test(window.location.pathname)) {
+              window.location.replace("/portal/admin/");
+              return;
+            }
+
             function publish(clientRow) {
               window.PORTAL_CTX = {
                 sb: sb,
