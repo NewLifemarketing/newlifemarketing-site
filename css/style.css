@@ -3607,8 +3607,8 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 /* Footer contact block: an icon before each line, blue links that pop on the dark footer. */
 .site-footer .foot-contact { list-style: none; margin: 0.8rem 0 0; padding: 0; display: grid; gap: 1rem; }
 .site-footer .foot-contact li { display: grid; grid-template-columns: 24px 1fr; column-gap: 0.75rem; align-items: start; }
-.site-footer .foot-contact a { color: #4DB6FF; font-weight: 600; line-height: 1.45; }
-.site-footer .foot-contact a:hover { color: #FFFFFF; }
+.site-footer .foot-contact a { color: #FFFFFF; font-weight: 600; line-height: 1.45; }
+.site-footer .foot-contact a:hover { color: #4DB6FF; }
 .site-footer .fc-sub { grid-column: 2; display: block; margin-top: 0.25rem; color: var(--muted); font-size: 0.86rem; line-height: 1.4; }
 .fc-ico { width: 22px; height: 22px; margin-top: 1px; background: #2196F3;
   -webkit-mask: var(--fc) center / contain no-repeat; mask: var(--fc) center / contain no-repeat; }
