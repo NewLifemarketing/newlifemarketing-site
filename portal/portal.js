@@ -528,24 +528,46 @@
   function renderMeta(el, row) {
     if (!el) return;
     if (!row) { el.innerHTML = ""; return; }
-    var tag = row.is_sample
-      ? '<span class="pl-sample-tag">Sample data</span>'
-      : '<span class="pl-period-tag">' + esc(fmtRange(row.period_start, row.period_end)) + "</span>";
-    var upd = row.refreshed_at ? ' <span class="pl-dim">· Last updated ' + esc(fmtUpdated(row.refreshed_at)) + "</span>" : "";
+    /* The period is already stated in full below, so repeating it as a tag was
+       just noise. Only the sample badge earns the space. */
+    var tag = row.is_sample ? '<span class="pl-sample-tag">Sample data</span>' : "";
+    /* Weekly collector rows carry a report DATE, not a timestamp - rendering it
+       as a datetime showed "8:00 p.m." the evening before, which is wrong and
+       looks like a bug. */
+    var upd = row.report_date
+      ? ' <span class="pl-dim">· Report produced ' + esc(fmtDate(row.report_date)) + "</span>"
+      : (row.refreshed_at ? ' <span class="pl-dim">· Last updated ' + esc(fmtUpdated(row.refreshed_at)) + "</span>" : "");
+    /* Search Console does not finalise a day for about three days, so its
+       window is shifted back. Labelling it with the report week would quietly
+       overstate how recent the figures are. */
+    var note = row.platform === "seo"
+      ? '<br><span class="pl-dim" style="font-size:0.82rem">Search Console finalises data about three days late, ' +
+        "so this window sits slightly behind the other channels.</span>"
+      : "";
     el.innerHTML = '<p class="pl-muted" style="margin:0 0 1.25rem">Reporting period: <strong>' +
-      esc(fmtRange(row.period_start, row.period_end)) + "</strong> " + tag + upd + "</p>";
+      esc(fmtRange(row.period_start, row.period_end)) + "</strong> " + tag + upd + note + "</p>";
   }
 
-  function emptyState(view, label) {
+  function emptyState(view, label, reason) {
     var host = document.querySelector('[data-empty="' + view + '"]');
     if (!host) return;
     host.hidden = false;
+    /* When the collector recorded WHY a source produced nothing, say so. An
+       empty panel with no explanation looks like a broken portal; "we could
+       not read it this week" is a different thing from "there was nothing". */
+    var why = reason
+      ? '<p class="pl-muted" style="margin:0.6rem 0 0;font-size:0.85rem">' + esc(reason) + "</p>"
+      : "";
     host.innerHTML =
       '<div class="pl-panel" style="text-align:center;padding:3rem 1.5rem">' +
       '<div style="font-size:2rem;line-height:1;margin-bottom:0.75rem">📊</div>' +
-      "<h3 style=\"margin:0 0 0.4rem\">Your first " + esc(label) + " report is being prepared</h3>" +
-      '<p class="pl-muted" style="margin:0;font-size:0.9rem">As soon as we publish a report for this ' +
-      "period it will appear here automatically.</p></div>";
+      "<h3 style=\"margin:0 0 0.4rem\">" + (reason
+        ? "No " + esc(label) + " figures for this week"
+        : "Your first " + esc(label) + " report is being prepared") + "</h3>" +
+      '<p class="pl-muted" style="margin:0;font-size:0.9rem">' + (reason
+        ? "Everything else on this report is unaffected."
+        : "As soon as we publish a report for this period it will appear here automatically.") +
+      "</p>" + why + "</div>";
   }
 
   /* ---------------- automatic period-over-period deltas ----------------
@@ -558,6 +580,7 @@
      A hand-written delta always wins. This only fills in the gaps. */
 
   var prevReports = {};      /* platform -> previous period's row */
+  var weeklyRowForNotes = null; /* the collector row backing the current period */
   var prevComparable = false; /* are the two periods the same rough length? */
   var prevLabel = "";
 
@@ -671,12 +694,23 @@
         (latestUpd ? ' <span class="pl-dim">· Last updated ' + esc(fmtUpdated(latestUpd)) + "</span>" : "") + "</p>";
     }
 
-    /* headline cards across channels */
+    /* headline cards across channels.
+       `has` and `m` are deliberately separate: a metric that was never
+       collected must not become a zero on the Overview. "GBP calls 0" reads as
+       "nobody rang this week" when the truth is "we could not read it", and
+       the collectors are explicit that null is not zero. A card only appears
+       when at least one contributing channel actually reported the number. */
+    function has(platform, key) {
+      var r = reports[platform];
+      var sm = r && r.payload && r.payload.summary && r.payload.summary.metrics;
+      return !!(sm && sm[key] !== undefined && sm[key] !== null);
+    }
     function m(platform, key) {
       var r = reports[platform];
       var s = r && r.payload && r.payload.summary;
       return s && s.metrics ? num(s.metrics[key]) : 0;
     }
+
     function present(platform) { return !!reports[platform]; }
     var spend = m("meta", "spend") + m("google_ads", "spend");
     var leads = m("meta", "leads") + m("google_ads", "leads");
@@ -706,15 +740,19 @@
       return t;
     }
     var cards = [];
-    if (present("meta") || present("google_ads")) {
+    if (has("meta", "spend") || has("google_ads", "spend")) {
       cards.push(pair("Total ad spend", spend, prevSum(pm("meta", "spend"), pm("google_ads", "spend")), money));
+    }
+    if (has("meta", "leads") || has("google_ads", "leads")) {
       cards.push(pair("Leads / conversions", leads, prevSum(pm("meta", "leads"), pm("google_ads", "leads")), compact));
-      if (value > 0) cards.push(pair("Conversion value", value,
+    }
+    if (has("meta", "conversion_value") || has("google_ads", "conversion_value")) {
+      cards.push(pair("Conversion value", value,
         prevSum(pm("meta", "conversion_value"), pm("google_ads", "conversion_value")), money));
     }
-    if (present("gbp")) cards.push(pair("GBP calls", m("gbp", "calls"), pm("gbp", "calls"), compact));
-    if (present("organic")) cards.push(pair("Organic engagements", m("organic", "engagements"), pm("organic", "engagements"), compact));
-    if (present("seo")) cards.push(pair("Keywords in top 10", m("seo", "keywords_top10"), pm("seo", "keywords_top10"), compact));
+    if (has("gbp", "calls")) cards.push(pair("GBP calls", m("gbp", "calls"), pm("gbp", "calls"), compact));
+    if (has("organic", "engagements")) cards.push(pair("Organic engagements", m("organic", "engagements"), pm("organic", "engagements"), compact));
+    if (has("seo", "keywords_top10")) cards.push(pair("Keywords in top 10", m("seo", "keywords_top10"), pm("seo", "keywords_top10"), compact));
     renderKpis(kpiHost, cards);
 
     /* compact per-channel blocks */
@@ -758,7 +796,7 @@
       if (chartHost) chartHost.innerHTML = "";
       if (tableHost) tableHost.innerHTML = "";
       if (bdHost) bdHost.innerHTML = "";
-      emptyState(view, cfg.title);
+      emptyState(view, cfg.title, weeklyFailureReason(weeklyRowForNotes, cfg.platform));
       return;
     }
     var pl = row.payload || {};
@@ -769,14 +807,304 @@
     renderTables(tableHost, pl.tables);
   }
 
+  var dirtyChannels = {};
+
   function renderAll() {
     Object.keys(charts).forEach(function (k) { try { charts[k].destroy(); } catch (e) {} });
     charts = {};
     renderOverview();
-    ["meta", "google", "gbp", "seo", "organic", "website"].forEach(renderChannel);
-    /* Everything above renders all five channels, but only one view is
-       visible — the other four measured zero. Size whichever is on screen. */
+    /* Only the channel on screen is rendered now. The rest are marked and
+       rendered the first time they are opened.
+
+       This is not an optimisation. A Chart.js chart built against a container
+       that measures zero — which is every hidden view — writes width:0 and
+       height:0 onto its canvas and is then unrecoverable: resize(), clearing
+       the inline style and a window resize event were all tried and none of
+       them bring it back. The only reliable answer is to not build it until
+       the container is genuinely on screen. */
+    ["meta", "google", "gbp", "seo", "organic", "website"].forEach(function (v) {
+      if (v === currentView) { dirtyChannels[v] = false; renderChannel(v); }
+      else { dirtyChannels[v] = true; }
+    });
     resizeChartsIn(currentView);
+  }
+
+  /* Render a channel once its panel is actually visible and settled. The view
+     fade animates a transform for 0.25s and measuring through it gives a bogus
+     size, so wait for the animation to finish (with timed fallbacks for when
+     it never fires). */
+  function renderChannelWhenVisible(view) {
+    var sec = document.querySelector('.pl-view[data-view="' + view + '"]');
+    if (!sec) { renderChannel(view); return; }
+    var done = false;
+    function go() {
+      if (done) return;
+      if (!sec.classList.contains("active")) return;   /* moved on already */
+      done = true;
+      renderChannel(view);
+    }
+    sec.addEventListener("animationend", function onEnd() {
+      sec.removeEventListener("animationend", onEnd);
+      go();
+    });
+    setTimeout(go, 300);
+    setTimeout(go, 650);
+  }
+
+  /* ---------------- weekly collector metrics ----------------
+     The collectors write one row per client per week into nine per-client
+     tables, surfaced to the portal through the `client_weekly_metrics` view
+     (the base tables have RLS with no policies, so the view is the only way
+     in, and it filters to the signed-in client).
+
+     Rather than a second rendering path, each weekly row is turned into the
+     SAME payload shape the portal already renders. Everything downstream -
+     KPI cards, charts, tables, automatic period-over-period deltas, chart
+     sizing - is reused untouched.
+
+     Two conventions from the collectors are load-bearing here:
+       * NULL IS NOT ZERO. Null means not collected, or collected and
+         rejected. Zero means the platform reported zero. A null metric is
+         omitted entirely rather than rendered as 0, and a channel whose
+         metrics are all null is treated as having no report at all, with the
+         reason taken from `sources_failed`.
+       * SEO COVERS A DIFFERENT WEEK. Search Console finalises a day about
+         three days late, so its window is shifted back and recorded in
+         gsc_period_start / gsc_period_end. The SEO panel is labelled with
+         those, never with the row's period_start/period_end. */
+
+  var metricWeeks = [];   /* full rows, newest first */
+
+  /* col: source column · label: what the client sees · fmt: see fmtMetric
+     snapshot: describes the account at capture time, never a weekly total -
+     these must never be summed across weeks. */
+  var WEEKLY_METRICS = {
+    meta: {
+      kpis: [
+        { col: "meta_amount_spent",   label: "Amount spent",    fmt: "money" },
+        { col: "meta_impressions",    label: "Impressions",     fmt: "int" },
+        { col: "meta_reach",          label: "Reach",           fmt: "int" },
+        { col: "meta_results",        label: "Results",         fmt: "int" },
+        { col: "meta_cost_per_result",label: "Cost per result", fmt: "money2" },
+        { col: "meta_ctr_all",        label: "CTR",             fmt: "percent" },
+        { col: "meta_cpc_all",        label: "CPC",             fmt: "money2" },
+        { col: "meta_frequency",      label: "Frequency",       fmt: "decimal" }
+      ],
+      cards: ["meta_amount_spent", "meta_results", "meta_impressions"],
+      metrics: { spend: "meta_amount_spent", leads: "meta_results" },
+      trend: [
+        { col: "meta_amount_spent", label: "Spend ($)", color: "blue", fill: true },
+        { col: "meta_results",      label: "Results",   color: "green" }
+      ]
+    },
+    google_ads: {
+      kpis: [
+        { col: "google_cost",        label: "Cost",          fmt: "money" },
+        { col: "google_clicks",      label: "Clicks",        fmt: "int" },
+        { col: "google_impr",        label: "Impressions",   fmt: "int" },
+        { col: "google_ctr",         label: "CTR",           fmt: "percent" },
+        { col: "google_avg_cpc",     label: "Avg. CPC",      fmt: "money2" },
+        { col: "google_conversions", label: "Conversions",   fmt: "decimal" },
+        { col: "google_cost_conv",   label: "Cost / conv.",  fmt: "money2" },
+        { col: "google_conv_rate",   label: "Conv. rate",    fmt: "percent" }
+      ],
+      cards: ["google_cost", "google_clicks", "google_conversions"],
+      metrics: { spend: "google_cost", leads: "google_conversions", conversion_value: "google_conv_value" },
+      trend: [
+        { col: "google_cost",        label: "Cost ($)",    color: "blue", fill: true },
+        { col: "google_conversions", label: "Conversions", color: "green" }
+      ]
+    },
+    gbp: {
+      kpis: [
+        { col: "gbp_business_profile_interactions", label: "Interactions",      fmt: "int" },
+        { col: "gbp_calls",          label: "Calls",              fmt: "int" },
+        { col: "gbp_directions",     label: "Direction requests", fmt: "int" },
+        { col: "gbp_website_clicks", label: "Website clicks",     fmt: "int" },
+        { col: "gbp_views_on_search",label: "Views on search",    fmt: "int" },
+        { col: "gbp_views_on_maps",  label: "Views on maps",      fmt: "int" },
+        { col: "gbp_total_reviews",  label: "Total reviews",      fmt: "int",     snapshot: true },
+        { col: "gbp_average_rating", label: "Average rating",     fmt: "decimal", snapshot: true }
+      ],
+      cards: ["gbp_calls", "gbp_directions", "gbp_website_clicks"],
+      metrics: { calls: "gbp_calls" },
+      trend: [
+        { col: "gbp_business_profile_interactions", label: "Interactions", color: "blue", fill: true },
+        { col: "gbp_calls", label: "Calls", color: "green" }
+      ]
+    },
+    seo: {
+      /* window comes from gsc_period_start/end, not period_start/end */
+      window: ["gsc_period_start", "gsc_period_end"],
+      kpis: [
+        { col: "gsc_total_clicks",      label: "Clicks",            fmt: "int" },
+        { col: "gsc_total_impressions", label: "Impressions",       fmt: "int" },
+        { col: "gsc_average_ctr",       label: "Average CTR",       fmt: "percent" },
+        { col: "gsc_average_position",  label: "Average position",  fmt: "position" },
+        { col: "gsc_generative_ai_impressions", label: "AI impressions", fmt: "int" }
+      ],
+      cards: ["gsc_total_clicks", "gsc_total_impressions", "gsc_average_position"],
+      metrics: {},
+      trend: [
+        { col: "gsc_total_clicks",      label: "Clicks",      color: "blue", fill: true },
+        { col: "gsc_total_impressions", label: "Impressions", color: "green" }
+      ]
+    },
+    organic: {
+      kpis: [
+        { col: "social_views",                label: "Views",             fmt: "int" },
+        { col: "social_viewers",              label: "Viewers",           fmt: "int" },
+        { col: "social_content_interactions", label: "Interactions",      fmt: "int" },
+        { col: "social_net_follows",          label: "Net new follows",   fmt: "int" },
+        { col: "social_link_clicks",          label: "Link clicks",       fmt: "int" },
+        { col: "social_conversations_started",label: "Conversations",     fmt: "int" },
+        { col: "social_leads",                label: "Leads",             fmt: "int" }
+      ],
+      cards: ["social_views", "social_content_interactions", "social_net_follows"],
+      metrics: { engagements: "social_content_interactions" },
+      trend: [
+        { col: "social_views",                label: "Views",        color: "blue", fill: true },
+        { col: "social_content_interactions", label: "Interactions", color: "green" }
+      ]
+    },
+    website: {
+      kpis: [
+        { col: "ga4_active_users",     label: "Active users",    fmt: "int" },
+        { col: "ga4_new_users",        label: "New users",       fmt: "int" },
+        { col: "ga4_sessions",         label: "Sessions",        fmt: "int" },
+        { col: "ga4_engaged_sessions", label: "Engaged sessions",fmt: "int" },
+        { col: "ga4_engagement_rate",  label: "Engagement rate", fmt: "percent" },
+        { col: "ga4_views",            label: "Page views",      fmt: "int" },
+        { col: "ga4_key_events",       label: "Key events",      fmt: "int" },
+        { col: "ga4_form_submissions", label: "Form submissions",fmt: "int" }
+      ],
+      cards: ["ga4_active_users", "ga4_sessions", "ga4_form_submissions"],
+      metrics: {},
+      trend: [
+        { col: "ga4_sessions",     label: "Sessions",     color: "blue", fill: true },
+        { col: "ga4_active_users", label: "Active users", color: "green" }
+      ]
+    }
+  };
+
+  /* Collector columns arrive as strings from PostgREST (numeric type). */
+  function colNum(row, col) {
+    if (!row) return null;
+    var v = row[col];
+    if (v === null || v === undefined || v === "") return null;   /* null is NOT zero */
+    var n = Number(v);
+    return isFinite(n) ? n : null;
+  }
+
+  /* Which source produced this channel, for reading sources_failed. */
+  var SOURCE_KEY = { meta: "meta_ads", google_ads: "google_ads", gbp: "gbp",
+                     seo: "seo", organic: "social", website: "website" };
+
+  /* Metrics where a FALL is the good news, so the chip should be green when the
+     number drops. Average position is the subtle one: position 3 beats
+     position 12. */
+  var WEEKLY_LOWER_IS_BETTER = /(cost|cpc|cpa|cpl|cpm|position|bounce|unfollow|invalid)/i;
+
+  /* Deltas are computed from the RAW numbers, not from the formatted value.
+     Reading them back out of "3.3K" vs "4.0K" rounds -18.5% into -17.5%. */
+  function weeklyDelta(k, now, before) {
+    if (now === null || before === null || before === 0) return null;
+    var diff = now - before;
+    if (Math.abs(diff) < 1e-9) return { dir: "flat", trend: "flat", text: "no change" };
+
+    var text;
+    if (k.fmt === "percent" || k.fmt === "position" || k.fmt === "x") {
+      text = (Math.round(Math.abs(diff) * 100) / 100) + (k.fmt === "percent" ? "%" : "");
+    } else {
+      text = (Math.round(Math.abs(diff / before) * 1000) / 10) + "%";
+    }
+    var trend = diff > 0 ? "up" : "down";
+    var good = WEEKLY_LOWER_IS_BETTER.test(k.label) ? diff < 0 : diff > 0;
+    return { dir: good ? "up" : "down", trend: trend, text: text + " vs last week" };
+  }
+
+  function weeklyPayload(platform, row, history, prevRow) {
+    var def = WEEKLY_METRICS[platform];
+    if (!def || !row) return null;
+
+    var present = def.kpis.filter(function (k) { return colNum(row, k.col) !== null; });
+    if (!present.length) return null;        /* nothing collected for this channel */
+
+    var kpis = present.map(function (k) {
+      var kpi = { label: k.label, value: fmtMetric(colNum(row, k.col), k.fmt) };
+      /* A snapshot describes the account at capture time; comparing two
+         snapshots is fine, but a backfilled week has none, so this is simply
+         skipped when the previous value is missing. */
+      var d = prevRow ? weeklyDelta(k, colNum(row, k.col), colNum(prevRow, k.col)) : null;
+      if (d) kpi.delta = d;
+      return kpi;
+    });
+
+    var cards = def.cards.map(function (c) {
+      var d = null;
+      for (var i = 0; i < def.kpis.length; i++) if (def.kpis[i].col === c) d = def.kpis[i];
+      var v = colNum(row, c);
+      return (d && v !== null) ? { label: d.label, value: fmtMetric(v, d.fmt) } : null;
+    }).filter(Boolean);
+
+    var metrics = {};
+    Object.keys(def.metrics || {}).forEach(function (key) {
+      var v = colNum(row, def.metrics[key]);
+      if (v !== null) metrics[key] = v;
+    });
+
+    /* Trend over the weeks up to and including this one - never ahead of it,
+       so an older week never shows numbers that had not happened yet. */
+    var charts = [];
+    var series = (def.trend || []).filter(function (t) {
+      return history.some(function (h) { return colNum(h, t.col) !== null; });
+    });
+    if (series.length && history.length > 1) {
+      charts.push({
+        title: "Last " + history.length + " weeks",
+        type: "line",
+        labels: history.map(function (h) { return fmtDate(h.report_date); }),
+        datasets: series.map(function (t) {
+          return { label: t.label, color: t.color, fill: !!t.fill,
+                   data: history.map(function (h) { return colNum(h, t.col); }) };
+        })
+      });
+    }
+
+    var tables = [{
+      title: "This week in full",
+      columns: [{ key: "m", label: "Metric" }, { key: "v", label: "Value", align: "num" }],
+      rows: present.map(function (k) {
+        return { m: k.label + (k.snapshot ? " (as at capture)" : ""),
+                 v: fmtMetric(colNum(row, k.col), k.fmt) };
+      })
+    }];
+
+    return { summary: { cards: cards, metrics: metrics }, kpis: kpis, charts: charts, tables: tables };
+  }
+
+  /* Why a channel has nothing this week, straight from the collector. */
+  function weeklyFailureReason(row, platform) {
+    if (!row || !row.sources_failed) return "";
+    var key = SOURCE_KEY[platform];
+    try {
+      var f = typeof row.sources_failed === "string" ? JSON.parse(row.sources_failed) : row.sources_failed;
+      return (f && f[key]) ? String(f[key]) : "";
+    } catch (e) { return ""; }
+  }
+
+  function loadMetricWeeks() {
+    if (!ctx || !ctx.clientId) { metricWeeks = []; return Promise.resolve([]); }
+    return ctx.sb.from("client_weekly_metrics")
+      .select("*")
+      .eq("client_id", ctx.clientId)
+      .order("report_date", { ascending: false })
+      .limit(26)
+      .then(function (r) {
+        metricWeeks = (r && r.data) || [];
+        return metricWeeks;
+      })
+      .catch(function () { metricWeeks = []; return []; });
   }
 
   /* ---------------- weekly report: Friday video + PDF ----------------
@@ -1083,7 +1411,8 @@
        revealed — so the chart stayed blank until an unrelated window resize
        rescued it. That is exactly why this reached production looking fine.
        Resize this view's charts once it is genuinely on screen. */
-    resizeChartsIn(view);
+    if (dirtyChannels[view]) { dirtyChannels[view] = false; renderChannelWhenVisible(view); }
+    else resizeChartsIn(view);
     if (periodSel) periodSel.hidden = (view === "onboarding") || (view === "weekly") || !periods.length;
     if (app) app.classList.remove("nav-open");
     window.scrollTo(0, 0);
@@ -1105,6 +1434,23 @@
 
   /* ---------------- data loading ---------------- */
   function loadPeriods() {
+    /* The weekly collectors are the system going forward. When they have rows
+       for this client, those weeks ARE the periods. report_cache (the older
+       monthly backfill) is only consulted when there are none, so a client
+       with history but no collector runs yet still sees something. */
+    if (metricWeeks.length) {
+      periods = metricWeeks.map(function (r) {
+        return { start: r.period_start, end: r.period_end, week: r.report_date,
+                 label: fmtRange(r.period_start, r.period_end) };
+      });
+      if (periodSel) {
+        periodSel.innerHTML = periods.map(function (pp, i) {
+          return '<option value="' + i + '">' + esc(pp.label) + "</option>";
+        }).join("");
+        periodSel.hidden = !periods.length || currentView === "onboarding" || currentView === "weekly";
+      }
+      return Promise.resolve(periods);
+    }
     /* Scope every read to one client explicitly. A client is already confined to
        their own rows by RLS, but an ADMIN is not — the policies deliberately let
        an admin read every client, so an unscoped select during "view as" would
@@ -1177,6 +1523,53 @@
       prevLabel = prev.label;
     }
 
+    /* A period that came from the collectors is built from the row we already
+       hold - no extra round trip, and the previous week is right there too. */
+    if (p.week) {
+      var at = -1;
+      for (var k = 0; k < metricWeeks.length; k++) {
+        if (metricWeeks[k].report_date === p.week) { at = k; break; }
+      }
+      if (at !== -1) {
+        var row = metricWeeks[at];
+        var prevRow = metricWeeks[at + 1] || null;
+        /* Oldest-first, ending at the selected week. */
+        var history = metricWeeks.slice(at, at + 8).slice().reverse();
+        var prevHistory = prevRow ? metricWeeks.slice(at + 1, at + 9).slice().reverse() : [];
+
+        Object.keys(WEEKLY_METRICS).forEach(function (platform) {
+          if (!hasSection(platform)) return;
+          var def = WEEKLY_METRICS[platform];
+          var win = def.window || ["period_start", "period_end"];
+          var payload = weeklyPayload(platform, row, history, prevRow);
+          if (payload) {
+            reports[platform] = {
+              platform: platform,
+              period_start: row[win[0]] || row.period_start,
+              period_end: row[win[1]] || row.period_end,
+              payload: payload, is_sample: false,
+              report_date: row.report_date,
+              refreshed_at: null
+            };
+          }
+          var prevPayload = prevRow ? weeklyPayload(platform, prevRow, prevHistory, metricWeeks[at + 2] || null) : null;
+          if (prevPayload) {
+            prevReports[platform] = {
+              platform: platform, payload: prevPayload,
+              period_start: prevRow[win[0]] || prevRow.period_start,
+              period_end: prevRow[win[1]] || prevRow.period_end
+            };
+          }
+        });
+        /* Consecutive collector weeks are always the same length, so a
+           week-over-week delta is always a fair comparison. */
+        prevComparable = !!prevRow;
+        weeklyRowForNotes = row;
+        renderAll();
+        return Promise.resolve();
+      }
+    }
+
     return fetchPeriod(p).then(function (cur) {
       reports = cur;
       if (!prev || !prevComparable) { renderAll(); return; }
@@ -1200,7 +1593,9 @@
     /* The weekly archive is independent of the reporting periods, so it loads
        in parallel rather than waiting on them. */
     loadWeekly();
-    loadPeriods().then(function (list) {
+    loadMetricWeeks().then(function () {
+      return loadPeriods();
+    }).then(function (list) {
       showView(start);
       return loadPeriod(list[0] || null);
     });
