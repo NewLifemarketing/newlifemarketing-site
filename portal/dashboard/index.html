@@ -85,7 +85,14 @@
     <div class="pl-topbar">
       <button class="pl-menu-btn" data-open-nav aria-label="Open menu">☰</button>
       <h1 id="pl-view-title">Overview</h1>
-<select class="pl-daterange" id="pl-period" aria-label="Reporting period" hidden></select>
+      <div class="pl-period-picker" id="pl-period-wrap" hidden>
+        <button class="pl-step" id="pl-period-prev" type="button" aria-label="Earlier week">&lsaquo;</button>
+        <label class="pl-period-field">
+          <span class="pl-period-cap">Week</span>
+          <select class="pl-daterange" id="pl-period" aria-label="Choose a reporting week"></select>
+        </label>
+        <button class="pl-step" id="pl-period-next" type="button" aria-label="Later week">&rsaquo;</button>
+      </div>
     </div>
 
     <!-- ONBOARDING -->

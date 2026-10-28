@@ -605,3 +605,53 @@ body.has-admin-bar .pl-view { padding-bottom: 4.5rem; }
    plainly not clickable. */
 .pl-nav-hint { opacity: 0.55; cursor: default; }
 .pl-nav-hint:hover { background: none; color: inherit; }
+
+/* ===== Week picker ===================================================
+   The bare <select> gave no clue it was a week chooser, and stepping back
+   through weeks meant opening a dropdown every time. */
+.pl-period-picker {
+  margin-left: auto; display: flex; align-items: stretch; gap: 0;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface); box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.pl-period-field { display: flex; align-items: center; gap: 0.5rem; padding: 0 0.15rem 0 0.85rem; }
+.pl-period-cap {
+  font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.1em;
+  font-weight: 700; color: var(--dim); white-space: nowrap;
+}
+.pl-period-picker .pl-daterange {
+  margin: 0; border: 0; background: none; box-shadow: none; border-radius: 0;
+  padding: 0.5rem 0.4rem 0.5rem 0; font-weight: 700; color: var(--white);
+  max-width: 15rem;
+}
+.pl-period-picker .pl-daterange:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.pl-step {
+  border: 0; background: none; cursor: pointer; color: var(--muted);
+  font-size: 1.15rem; line-height: 1; padding: 0 0.7rem; font-family: var(--font-body);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.pl-step:hover:not(:disabled) { background: var(--surface-2); color: var(--white); }
+.pl-step:disabled { opacity: 0.28; cursor: default; }
+#pl-period-prev { border-right: 1px solid var(--line); }
+#pl-period-next { border-left: 1px solid var(--line); }
+
+@media (max-width: 640px) {
+  .pl-period-picker { margin-left: 0; width: 100%; }
+  .pl-period-field { flex: 1; }
+  .pl-period-picker .pl-daterange { flex: 1; max-width: none; }
+}
+
+/* `.pl-nav-item` sets display:flex, and an author rule beats the browser's
+   own [hidden]{display:none}. So setting .hidden on a nav button did nothing
+   visible: clients saw channels they do not have, and clicking one silently
+   bounced them back to Overview because the view is gated separately. Hide
+   them for real. */
+.pl-nav-item[hidden] { display: none !important; }
+
+/* With only two or three metrics the auto-fit grid stretched each card to a
+   third of the screen, so a single number floated in a lot of white. Cap the
+   track and let the row start from the left instead. */
+.pl-kpis { grid-template-columns: repeat(auto-fit, minmax(190px, 300px)); justify-content: start; }
+.pl-chan-empty { opacity: 0.86; }
+.pl-chan-empty .pl-panel-head h3 { color: var(--muted); }

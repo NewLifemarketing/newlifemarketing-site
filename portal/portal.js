@@ -8,6 +8,36 @@
   var app = document.getElementById("pl-app");
   var titleEl = document.getElementById("pl-view-title");
   var periodSel = document.getElementById("pl-period");
+  var periodWrap = document.getElementById("pl-period-wrap");
+  var periodPrev = document.getElementById("pl-period-prev");
+  var periodNext = document.getElementById("pl-period-next");
+
+  /* The whole control hides together - hiding only the <select> would leave
+     the arrows and the "Week" caption floating with nothing to change. */
+  function setPeriodHidden(hide) {
+    if (periodWrap) periodWrap.hidden = !!hide;
+    else if (periodSel) periodSel.hidden = !!hide;
+  }
+  /* periods[0] is the newest week, so "earlier" moves DOWN the list. */
+  function syncPeriodSteppers() {
+    if (!periodSel) return;
+    var i = parseInt(periodSel.value, 10);
+    if (isNaN(i)) i = 0;
+    if (periodPrev) periodPrev.disabled = i >= periods.length - 1;
+    if (periodNext) periodNext.disabled = i <= 0;
+  }
+  function stepPeriod(by) {
+    if (!periodSel || !periods.length) return;
+    var i = parseInt(periodSel.value, 10);
+    if (isNaN(i)) i = 0;
+    var next = i + by;
+    if (next < 0 || next >= periods.length) return;
+    periodSel.value = String(next);
+    syncPeriodSteppers();
+    loadPeriod(periods[next]);
+  }
+  if (periodPrev) periodPrev.addEventListener("click", function () { stepPeriod(1); });
+  if (periodNext) periodNext.addEventListener("click", function () { stepPeriod(-1); });
 
   /* view key -> { title, platform (db enum), section (clients.sections entry) } */
   var VIEWS = {
@@ -687,11 +717,14 @@
     var latestUpd = withData.map(function (c) { return reports[c.platform].refreshed_at; })
       .filter(Boolean).sort().pop();
     if (metaHost) {
+      /* The range is already spelled out, so the tag beside it just repeated
+         itself. Only the sample badge earns its place. */
+      var produced = any.report_date
+        ? ' <span class="pl-dim">· Report produced ' + esc(fmtDate(any.report_date)) + "</span>"
+        : (latestUpd ? ' <span class="pl-dim">· Last updated ' + esc(fmtUpdated(latestUpd)) + "</span>" : "");
       metaHost.innerHTML = '<p class="pl-muted" style="margin:0 0 1.25rem">Reporting period: <strong>' +
-        esc(fmtRange(any.period_start, any.period_end)) + "</strong> " +
-        (anySample ? '<span class="pl-sample-tag">Sample data</span>'
-                   : '<span class="pl-period-tag">' + esc(fmtRange(any.period_start, any.period_end)) + "</span>") +
-        (latestUpd ? ' <span class="pl-dim">· Last updated ' + esc(fmtUpdated(latestUpd)) + "</span>" : "") + "</p>";
+        esc(fmtRange(any.period_start, any.period_end)) + "</strong>" +
+        (anySample ? ' <span class="pl-sample-tag">Sample data</span>' : "") + produced + "</p>";
     }
 
     /* headline cards across channels.
@@ -760,8 +793,11 @@
       chanHost.innerHTML = visible.map(function (c) {
         var r = reports[c.platform];
         if (!r) {
-          return '<div class="pl-panel pl-chan"><div class="pl-panel-head"><h3>' + esc(c.label) + "</h3></div>" +
-            '<p class="pl-muted" style="margin:0;font-size:0.9rem">Report being prepared for this period.</p></div>';
+          var why = weeklyFailureReason(weeklyRowForNotes, c.platform);
+          return '<div class="pl-panel pl-chan pl-chan-empty"><div class="pl-panel-head"><h3>' + esc(c.label) + "</h3></div>" +
+            '<p class="pl-muted" style="margin:0;font-size:0.9rem">' +
+            (why ? "Nothing for this week — " + esc(why) : "Report being prepared for this period.") +
+            "</p></div>";
         }
         var s = (r.payload && r.payload.summary) || {};
         var mini = (s.cards || []).slice(0, 4).map(function (k) {
@@ -1093,6 +1129,25 @@
     } catch (e) { return ""; }
   }
 
+  /* Which channels actually carry numbers, across every week we loaded.
+     `clients.sections` is a hand-maintained list of what a client buys, and it
+     goes stale: DMT's said meta + google_ads from before the collectors
+     existed, so their SEO data was collected, stored, and then hidden behind a
+     nav item that would not even appear. A channel we have numbers for is a
+     channel the client should be able to open. */
+  var channelsWithData = {};
+
+  function computeChannelsWithData() {
+    channelsWithData = {};
+    Object.keys(WEEKLY_METRICS).forEach(function (platform) {
+      var def = WEEKLY_METRICS[platform];
+      var found = metricWeeks.some(function (row) {
+        return def.kpis.some(function (k) { return colNum(row, k.col) !== null; });
+      });
+      if (found) channelsWithData[platform] = true;
+    });
+  }
+
   function loadMetricWeeks() {
     if (!ctx || !ctx.clientId) { metricWeeks = []; return Promise.resolve([]); }
     return ctx.sb.from("client_weekly_metrics")
@@ -1312,6 +1367,10 @@
   /* ---------------- sections / sidebar ---------------- */
   function hasSection(section) {
     if (!section || section === "overview") return true;
+    /* Data we hold beats the stored list. When the collectors start returning
+       a new channel on Friday it appears on its own, with nobody editing a
+       client row — and nothing we have numbers for can stay invisible. */
+    if (channelsWithData[section]) return true;
     return ctx && ctx.sections && ctx.sections.indexOf(section) !== -1;
   }
   function applySections() {
@@ -1413,7 +1472,7 @@
        Resize this view's charts once it is genuinely on screen. */
     if (dirtyChannels[view]) { dirtyChannels[view] = false; renderChannelWhenVisible(view); }
     else resizeChartsIn(view);
-    if (periodSel) periodSel.hidden = (view === "onboarding") || (view === "weekly") || !periods.length;
+    setPeriodHidden((view === "onboarding") || (view === "weekly") || !periods.length);
     if (app) app.classList.remove("nav-open");
     window.scrollTo(0, 0);
   }
@@ -1447,7 +1506,8 @@
         periodSel.innerHTML = periods.map(function (pp, i) {
           return '<option value="' + i + '">' + esc(pp.label) + "</option>";
         }).join("");
-        periodSel.hidden = !periods.length || currentView === "onboarding" || currentView === "weekly";
+        setPeriodHidden(!periods.length || currentView === "onboarding" || currentView === "weekly");
+        syncPeriodSteppers();
       }
       return Promise.resolve(periods);
     }
@@ -1474,7 +1534,8 @@
           periodSel.innerHTML = out.map(function (p, i) {
             return '<option value="' + i + '">' + esc(p.label) + "</option>";
           }).join("");
-          periodSel.hidden = !out.length || currentView === "onboarding" || currentView === "weekly";
+          setPeriodHidden(!out.length || currentView === "onboarding" || currentView === "weekly");
+          syncPeriodSteppers();
         }
         return out;
       });
@@ -1581,6 +1642,7 @@
   }
   if (periodSel) periodSel.addEventListener("change", function () {
     var p = periods[parseInt(periodSel.value, 10)];
+    syncPeriodSteppers();
     if (p) loadPeriod(p);
   });
 
@@ -1594,6 +1656,10 @@
        in parallel rather than waiting on them. */
     loadWeekly();
     loadMetricWeeks().then(function () {
+      /* Sidebar visibility depends on what the weeks contain, so it is built
+         after they load, not before. */
+      computeChannelsWithData();
+      applySections();
       return loadPeriods();
     }).then(function (list) {
       showView(start);
