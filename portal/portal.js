@@ -933,6 +933,33 @@
     if (pctEl) pctEl.textContent = pct + "%";
   }
 
+  /* The access cards shipped with fixed statuses, so every client was told we
+     were still waiting on Meta and Google when in fact we have access to all
+     of them. They follow the "Account access" step now, and a card for a
+     channel the client does not have is not shown at all. */
+  function refreshAccessCards() {
+    var host = document.getElementById("pl-access-cards");
+    if (!host) return;
+    var granted = onboardState.access === "done";
+    var anyShown = false;
+
+    qsa("#pl-access-cards .a-card").forEach(function (card) {
+      var key = card.getAttribute("data-access");
+      var relevant = hasSection(key);
+      card.hidden = !relevant;
+      if (!relevant) return;
+      anyShown = true;
+      var tag = card.querySelector(".a-status");
+      if (!tag) return;
+      tag.textContent = granted ? "\u25cf Granted" : "\u25cf Pending";
+      tag.className = "a-status " + (granted ? "granted" : "pending");
+    });
+
+    host.hidden = granted || !anyShown;
+    var allGood = document.getElementById("pl-access-allgood");
+    if (allGood) allGood.hidden = !(granted && anyShown);
+  }
+
   function loadOnboarding() {
     var steps = qsa(".pl-step[data-step]");
     if (!steps.length || !ctx || !ctx.clientId) return Promise.resolve();
@@ -952,6 +979,7 @@
           paintStep(el, byKey[key] || "todo");
         });
         refreshOnboardProgress();
+        refreshAccessCards();
       })
       .catch(function () { /* leave the markup as-is if the read fails */ });
   }
@@ -964,6 +992,7 @@
 
     paintStep(el, after);                     /* optimistic: it must feel instant */
     refreshOnboardProgress();
+    refreshAccessCards();
     el.classList.add("saving");
 
     ctx.sb.from("onboarding_items")
@@ -974,6 +1003,7 @@
         if (r && r.error) {
           paintStep(el, before);              /* put it back - it did not save */
           refreshOnboardProgress();
+          refreshAccessCards();
           el.classList.add("save-failed");
           setTimeout(function () { el.classList.remove("save-failed"); }, 2000);
         }
@@ -982,6 +1012,7 @@
         el.classList.remove("saving");
         paintStep(el, before);
         refreshOnboardProgress();
+        refreshAccessCards();
       });
   }
 

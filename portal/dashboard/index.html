@@ -146,23 +146,30 @@
       <div class="pl-panel">
         <h3>Grant account access</h3>
         <p class="pl-muted" style="font-size:0.85rem;margin-top:0">We manage campaigns inside <em>your</em> accounts — you always own them. Add us as a partner/manager:</p>
-        <div class="pl-access">
-          <div class="a-card">
+        <!-- Statuses were hard-coded (two Pending, one Granted) and so were
+             wrong for every client. They now follow the "Account access" step
+             on the checklist above, and each card only appears for a channel
+             the client actually has. -->
+        <div class="pl-access" id="pl-access-cards">
+          <div class="a-card" data-access="meta">
             <h4>Meta Business</h4>
             <p>Add NewLife as a partner in Business Settings → Partners. Share your Ad Account &amp; Page.</p>
             <div><span class="a-status pending">● Pending</span></div>
           </div>
-          <div class="a-card">
+          <div class="a-card" data-access="google_ads">
             <h4>Google Ads</h4>
             <p>Accept our manager (MCC) link request, or share your 10-digit customer ID.</p>
             <div><span class="a-status pending">● Pending</span></div>
           </div>
-          <div class="a-card">
+          <div class="a-card" data-access="gbp">
             <h4>Google Business Profile</h4>
             <p>Add us as a manager on your Business Profile so we can post and pull insights.</p>
-            <div><span class="a-status granted">● Granted</span></div>
+            <div><span class="a-status pending">● Pending</span></div>
           </div>
         </div>
+        <p class="pl-muted" id="pl-access-allgood" style="margin:0;font-size:0.9rem" hidden>
+          We already have access to everything we need — nothing for you to do here.
+        </p>
         <p class="pl-dim" style="font-size:0.78rem;margin-top:1rem">Step-by-step instructions for each are in the getting-started guide above.</p>
       </div>
     </section>
