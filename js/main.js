@@ -73,12 +73,16 @@
     var br = btn.getBoundingClientRect();
     var centre = br.left + br.width / 2;
     var x = centre - pw / 2;
-    /* The last trigger (Free Resources) sits near the bar's right end; keep the card inside
-       the bar's right edge as well as the viewport, so it never overhangs the header. */
+    /* Keep the card inside the white header bar on BOTH sides (and inside the viewport), so no
+       menu ever runs past the logo end or the right end of the bar. Wide menus (Services, Clients)
+       slide in from whichever edge they would have overshot; a panel wider than the bar itself
+       lines up with the bar's left edge. */
     var bar = header.querySelector(".wrap") || header;
-    var rightLimit = Math.min(window.innerWidth - EDGE, bar.getBoundingClientRect().right);
+    var br2 = bar.getBoundingClientRect();
+    var rightLimit = Math.min(window.innerWidth - EDGE, br2.right);
+    var leftLimit = Math.max(EDGE, br2.left);
     if (x + pw > rightLimit) x = rightLimit - pw;
-    if (x < EDGE) x = EDGE;
+    if (x < leftLimit) x = leftLimit;
     x = Math.round(x - hb.left);               /* header-relative */
 
     var tx = Math.round(centre - hb.left);     /* tail tracks the trigger, not the card */
