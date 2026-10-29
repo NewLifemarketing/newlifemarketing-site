@@ -187,3 +187,4 @@
   padding:.55rem .8rem;box-shadow:0 2px 10px rgba(0,0,0,.18);filter:none}
 .cs-feature-logo img{height:26px;width:auto;max-width:160px;object-fit:contain;display:block;filter:none}
 @media (max-width:860px){.cs-feature-logo img{height:22px}}
+.cs-feature-logo.bare{background:none;padding:0;box-shadow:none;border-radius:6px;overflow:hidden}.cs-feature-logo.bare img{height:34px}
