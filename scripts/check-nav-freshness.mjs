@@ -55,8 +55,14 @@ function cardsFromIndex(html) {
     process.exit(1);
   }
   const grid = html.slice(start), seen = new Set(), out = [];
-  for (const m of grid.matchAll(/href="\/case-studies\/([^/"]+)\/"[^>]*data-published="([0-9-]+)"/g)) {
-    if (!seen.has(m[1])) { seen.add(m[1]); out.push({ slug: m[1], date: m[2] }); }
+  // Read each card's opening tag and take both attributes from it, in either
+  // order. The cards put data-published BEFORE href, so the old href-then-date
+  // pattern matched nothing, reported "published: 0" and called every menu entry
+  // WRONG.
+  for (const tag of grid.matchAll(/<a\b[^>]*>/g)) {
+    const slug = tag[0].match(/href="\/case-studies\/([^/"]+)\/"/)?.[1];
+    const date = tag[0].match(/data-published="([0-9-]+)"/)?.[1];
+    if (slug && date && !seen.has(slug)) { seen.add(slug); out.push({ slug, date }); }
   }
   return out;
 }
@@ -66,20 +72,33 @@ function slugsFromHeader(html) {
 }
 
 const cards = cardsFromIndex(read(INDEX, 'case-studies/index.html'));
+
+// Every case study page on disk needs a card on /case-studies/. Without one it is
+// invisible twice over: not on the index, and never "expected" in the menu below,
+// because the menu rule is computed FROM the cards. Owner's rule, 2026-10-29: a new
+// case study ships with its index card AND its menu entry, every time.
+const CS_DIR = path.join(ROOT, 'case-studies');
+const carded = new Set(cards.map((c) => c.slug));
+const noCard = fs.readdirSync(CS_DIR, { withFileTypes: true })
+  .filter((e) => e.isDirectory() && fs.existsSync(path.join(CS_DIR, e.name, 'index.html')))
+  .map((e) => e.name)
+  .filter((s) => !carded.has(s));
+for (const s of noCard) console.log(`  NO CARD  case-studies/${s}/ has a page but no card on /case-studies/`);
 // Newest first; ties keep the index page's order (stable sort).
 const expected = cards.map((c, i) => ({ ...c, i })).sort((x, y) => y.date.localeCompare(x.date) || x.i - y.i)
   .slice(0, MAX).map((c) => c.slug);
 const inNav = slugsFromHeader(read(HEADER, 'partials/header.html'));
-const ok = expected.length === inNav.length && expected.every((s, k) => inNav[k] === s);
+const ok = noCard.length === 0 && expected.length === inNav.length && expected.every((s, k) => inNav[k] === s);
 
 console.log(`published: ${cards.length}   menu shows: ${inNav.length} (rule: newest ${MAX})`);
 for (let k = 0; k < Math.max(expected.length, inNav.length); k++)
   console.log(`  ${expected[k] === inNav[k] ? 'ok     ' : 'WRONG  '} expected ${expected[k] || '-'}   menu ${inNav[k] || '-'}`);
 
 if (ok) {
-  console.log('\nOK — the mega-menu shows the newest case studies, newest first.');
+  console.log('\nOK — every case study has an index card, and the mega-menu shows the newest, newest first.');
   process.exit(0);
 }
+if (noCard.length) console.log('\nAdd a card to case-studies/index.html for each NO CARD page above, newest first, then re-run.');
 console.log('\nThe menu is out of date. For each newer case study, oldest first:');
 for (const s of expected.filter((s) => !inNav.includes(s)).reverse())
   console.log(`  node scripts/add-case-study-to-nav.mjs ${s} --name "<short menu name>" --write`);
