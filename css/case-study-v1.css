@@ -210,3 +210,4 @@
   .cs-feature-body{min-height:360px;padding:1.6rem}
   .cs-feature-logo,.cs-feature-logo img{height:42px;max-width:260px}
 }
+.cs-feature-media.pos-centre img{object-position:center center}
