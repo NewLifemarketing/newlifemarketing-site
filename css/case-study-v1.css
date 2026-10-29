@@ -188,3 +188,10 @@
 .cs-feature-logo img{height:26px;width:auto;max-width:160px;object-fit:contain;display:block;filter:none}
 @media (max-width:860px){.cs-feature-logo img{height:22px}}
 .cs-feature-logo.bare{background:none;padding:0;box-shadow:none;border-radius:6px;overflow:hidden}.cs-feature-logo.bare img{height:34px}
+.cs-feature-logo{display:inline-flex;align-items:center;align-self:flex-start;
+  background:none;padding:0;box-shadow:none;border-radius:0;filter:none;
+  margin:0 0 .35rem}
+.cs-feature-logo img{height:52px;width:auto;max-width:230px;object-fit:contain;
+  object-position:left center;display:block;filter:none}
+.cs-feature-body{gap:1rem}
+@media (max-width:860px){.cs-feature-logo img{height:42px;max-width:180px}}
