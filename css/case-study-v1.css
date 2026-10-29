@@ -180,3 +180,10 @@
   .cs-feature,.cs-feature-go{transition:none}
   .cs-feature:hover{transform:none}
 }
+/* Logo on a white chip, not a knockout: a detailed mark survives it and a
+   simple one still reads. Replaces .cs-feature-logo's invert filter. */
+.cs-feature-logo{display:inline-flex;align-items:center;justify-content:center;
+  align-self:flex-start;background:#fff;border-radius:10px;
+  padding:.55rem .8rem;box-shadow:0 2px 10px rgba(0,0,0,.18);filter:none}
+.cs-feature-logo img{height:26px;width:auto;max-width:160px;object-fit:contain;display:block;filter:none}
+@media (max-width:860px){.cs-feature-logo img{height:22px}}
