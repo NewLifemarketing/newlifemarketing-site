@@ -9,6 +9,10 @@
 // --name overrides the menu title (default: the Article JSON-LD "about" name), for
 // anonymous or non-client case studies whose "about" is not a short client name.
 //
+// Since 2026-10-29 (owner's rule) the case-study builder runs this for every new
+// case study, together with the index card, and is not done until
+// scripts/check-nav-freshness.mjs exits 0.
+//
 // WHY A SCRIPT FOR A ONE-LINE EDIT. The owner updates the menu himself. The
 // weekly pipeline is forbidden from touching partials/header.html, because doing
 // so means a ~180-file chrome commit in every PR and no validator can safely gate
@@ -34,7 +38,9 @@ const args = process.argv.slice(2);
 const WRITE = args.includes('--write');
 const nameAt = args.indexOf('--name');
 const NAME = nameAt >= 0 ? args[nameAt + 1] : null;
-const slug = args.find((a, i) => !a.startsWith('--') && i !== nameAt + 1);
+// Skip the --name VALUE only when --name was given. Without that guard, nameAt is
+// -1, so "i !== 0" silently threw away a slug passed first and printed usage.
+const slug = args.find((a, i) => !a.startsWith('--') && !(nameAt >= 0 && i === nameAt + 1));
 
 if (!slug) {
   console.error('Usage: node scripts/add-case-study-to-nav.mjs <slug> [--write]');
