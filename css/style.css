@@ -3615,3 +3615,30 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 .fc-pin   { --fc: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z'/></svg>"); }
 .fc-phone { --fc: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z'/></svg>"); }
 .fc-mail  { --fc: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z'/></svg>"); }
+
+/* ---------- Homepage header + glow on every page ----------
+   Only body.home-light pages had the see-through header rail over the blue
+   wash; everywhere else the rail painted solid white behind the floating bar
+   (a box behind the header), and the dark #0D0D14 body showed through as a
+   black line when the sticky header settled after scrolling back up. Every
+   other page now gets the same treatment: a white page with the top glow, a
+   transparent rail, and light heroes that let the glow through. Heroes with
+   footage or a dark fill keep their own background. The wash is the top two
+   ellipses of the homepage one, sized to fade out inside the hero so no
+   section edge cuts it into a hard line. */
+body:not(.home-light) {
+  background-color: #FFFFFF;
+  background-image:
+    radial-gradient(ellipse 58% 46% at 10% 0%,  rgba(33, 150, 243, 0.22) 0%, rgba(33, 150, 243, 0) 68%),
+    radial-gradient(ellipse 48% 40% at 92% 10%, rgba(33, 150, 243, 0.14) 0%, rgba(33, 150, 243, 0) 70%);
+  background-repeat: no-repeat;
+  background-size: 100% 1000px;
+  background-position: top center;
+}
+body:not(.home-light) .site-header { background: none; }
+body:not(.home-light) .svc-page { background: transparent; }
+body:not(.home-light) .svc-page .hero:not(:has(.hero-video)):not(:has(.hero-photo)) { border-bottom: 0; }
+body:not(.home-light) .svc-page .hero:not(:has(.hero-video)):not(:has(.hero-photo)) .hero-bg { background: none; }
+/* Blog and research articles: the first band paints white, which cut the glow
+   off in a hard line just under the header. */
+body:not(.home-light) main > .post-band.post-light:first-child { background: transparent; }
