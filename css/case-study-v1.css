@@ -195,3 +195,6 @@
   object-position:left center;display:block;filter:none}
 .cs-feature-body{gap:1rem}
 @media (max-width:860px){.cs-feature-logo img{height:42px;max-width:180px}}
+.hero-centred .trust-in-hero{margin-top:1.1rem}
+.hero.hero-centred.hero-light{padding-bottom:2.25rem}
+.hero.hero-centred.hero-light + section.band{padding-top:2.75rem}
