@@ -41,20 +41,24 @@
 .csx-h{font-family:var(--font-display);font-style:italic;font-weight:900;text-transform:uppercase;
   text-align:center;margin:0 0 2rem;font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:1.05}
 
-/* ---- the issue: a dark band, centred ------------------------------------- */
-.csx-issue{background:#16161F;color:#fff}
+/* ---- the issue: the homepage's navy panel, centred ------------------------
+   Same gradient and radius as the homepage .eg panel, inside a white band,
+   rather than a full-bleed near-black that appears nowhere else on the site. */
+.csx-issue-panel{background:linear-gradient(135deg,#0F3D73 0%,#0B2E57 100%);color:#fff;border-radius:22px;
+  padding:clamp(2.5rem,5vw,3.75rem) clamp(1.5rem,5vw,4rem)}
 .csx-issue .csx-h{color:#fff}
+.csx-band.csx-issue{padding-bottom:0}
 .csx-issue p{max-width:860px;margin:0 auto;text-align:center;font-size:clamp(1.05rem,1.6vw,1.25rem);line-height:1.7;color:rgba(255,255,255,.86)}
 .csx-issue p + p{margin-top:1.1rem}
 .csx-issue strong{color:#fff}
 
-/* ---- the goals: three dark cards ----------------------------------------- */
+/* ---- the goals: the homepage's light-blue cards ---------------------------- */
 .csx-goals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.25rem}
-.csx-goal{background:#16161F;color:#fff;border-radius:22px;padding:2.25rem 1.75rem 2rem;text-align:center;
+.csx-goal{background:#EEF4FB;border:1px solid #D9E5F4;color:var(--white,#0D0D14);border-radius:18px;padding:2.25rem 1.75rem 2rem;text-align:center;
   display:flex;flex-direction:column;align-items:center;gap:1rem}
-.csx-goal svg{width:64px;height:64px;color:#fff}
-.csx-goal h3{font-family:var(--font-display);font-weight:800;font-size:1.3rem;line-height:1.2;margin:0;color:#fff}
-.csx-goal p{margin:0;color:rgba(255,255,255,.75);font-size:.98rem;line-height:1.55}
+.csx-goal svg{width:64px;height:64px;color:var(--blue)}
+.csx-goal h3{font-family:var(--font-display);font-weight:800;font-size:1.3rem;line-height:1.2;margin:0;color:var(--white,#0D0D14)}
+.csx-goal p{margin:0;color:var(--muted);font-size:.98rem;line-height:1.55}
 
 /* ---- the approach: media left, steps right, on a grey panel -------------- */
 .csx-approach{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:clamp(1.5rem,4vw,3.5rem);
@@ -122,3 +126,25 @@
 @media (prefers-reduced-motion:reduce){
   .csx-loop-track > .cs-feature{transition:none}
 }
+
+/* ---- pieces the older case studies need (2026-11-03) ----------------------
+   Extra sections carry the depth of the long project stories, alternating
+   white and the homepage's light grey. An approach with no clip is a single
+   column. Two goals sit centred rather than leaving a gap. */
+.csx-approach.no-media{grid-template-columns:1fr}
+.csx-goals.csx-goals-2{grid-template-columns:repeat(2,minmax(0,1fr));max-width:860px;margin:0 auto}
+.csx-extra.alt{background:#F5F6F8}
+.csx-extra .kicker{text-align:center}
+.csx-results-intro{max-width:860px;margin:-.75rem auto 1.75rem;text-align:center;color:var(--muted)}
+.csx-notes{max-width:860px;margin:1.5rem auto 0;text-align:center;font-size:.9rem;color:var(--muted);line-height:1.6}
+@media (max-width:860px){.csx-goals.csx-goals-2{grid-template-columns:1fr}}
+/* a screenshot keeps its own shape (a wide dashboard must not be cropped to a
+   tall video frame), and a caption under it stays visible: some carry a
+   disclosure such as blurred account names. */
+.csx-approach-media.is-img{aspect-ratio:auto;max-height:none;background:none}
+.csx-approach-media.is-img img{height:auto;object-fit:contain;border-radius:22px}
+.csx-approach-fig{margin:0}
+.csx-approach-fig figcaption{font-size:.85rem;color:var(--muted);margin-top:.7rem;line-height:1.5}
+/* a wide screenshot runs full width above the steps instead of shrinking
+   into the side column */
+.csx-approach.has-img{grid-template-columns:1fr}
