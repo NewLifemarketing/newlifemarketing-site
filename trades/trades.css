@@ -572,3 +572,11 @@ details{border-bottom:1px solid var(--line);padding:1.1rem 0}summary{cursor:poin
 /* podcast: embedded YouTube episodes */
 .pframe iframe{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:inherit;background:#000}
 .pod .tcap{font-size:.9rem;line-height:1.3;padding:0 .3rem}
+
+/* podcast: click-to-play thumbnails (large, crisp) */
+.yt{overflow:hidden}.yt .ytb{position:absolute;inset:0;border:0;padding:0;margin:0;background:#000;cursor:pointer;border-radius:inherit;overflow:hidden}
+.yt .ytb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}.yt .ytb:hover img{transform:scale(1.04)}
+.yt .ytb::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.35),transparent 50%)}
+.ytp{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.6);border:2px solid #fff;display:grid;place-items:center;color:#fff;transition:transform .2s,background .2s}.ytp svg{width:26px;height:26px;margin-left:4px}
+.yt .ytb:hover .ytp{background:#2196F3;transform:translate(-50%,-50%) scale(1.08)}
+.pod{max-width:1120px}.pgrid{gap:1.6rem}
