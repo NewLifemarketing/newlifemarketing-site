@@ -211,3 +211,94 @@
   .cs-feature-logo,.cs-feature-logo img{height:42px;max-width:260px}
 }
 .cs-feature-media.pos-centre img{object-position:center center}
+
+/* 2026-11-02: every card the same, taller height, with more room for the
+   logo. The card is a flex row so the body fills it and its content centres,
+   instead of a long headline quietly making one card taller than the rest. */
+.cs-feature{display:flex;min-height:540px}
+.cs-feature-body{justify-content:center}
+.cs-feature-logo{height:76px;max-width:420px;margin:0 0 1.15rem}
+.cs-feature-logo img{height:76px;max-width:420px}
+.hero.hero-centred.hero-light + section.band{padding-top:.5rem}
+@media (max-width:860px){
+  .cs-feature{min-height:520px}
+  .cs-feature-body{min-height:0;justify-content:flex-end}
+  .cs-feature-logo,.cs-feature-logo img{height:58px;max-width:300px}
+  .cs-feature-logo{margin-bottom:.8rem}
+}
+
+/* 2026-11-02: the filter is three equal pills across the full width, not a
+   row of small chips at the left. */
+.cs-grid-band .chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin-bottom:1.75rem}
+.cs-grid-band .chip{width:100%;min-height:54px;padding:.75rem 1.25rem;border-radius:999px;font-family:var(--font-display);font-size:1.05rem;font-weight:700;letter-spacing:.01em;box-shadow:0 2px 10px rgba(0,0,0,.06);cursor:pointer;transition:background .2s ease,border-color .2s ease,color .2s ease}
+.cs-grid-band .chip:hover{border-color:var(--blue)}
+.cs-grid-band .chip.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 6px 18px rgba(33,150,243,.28)}
+@media (max-width:600px){
+  .cs-grid-band .chips{gap:.5rem;margin-bottom:1.25rem}
+  .cs-grid-band .chip{min-height:46px;padding:.6rem .5rem;font-size:.92rem}
+}
+
+/* 2026-11-02: the logo sits exactly halfway between the top of the card and
+   the top of the headline, on every card. The copy is pinned to the bottom and
+   the logo takes equal auto margins; the headline's top margin matches the
+   card's top padding, so the space above and below the logo is the same. */
+.cs-feature-body{justify-content:flex-end;gap:0}
+.cs-feature-body > *{margin-top:1.05rem}
+.cs-feature-body > .cs-feature-go{margin-top:1.25rem}
+.cs-feature-body > .cs-feature-logo{margin:auto 0}
+.cs-feature-body > .cs-feature-logo + *{margin-top:clamp(2rem,3.6vw,3rem)}
+@media (max-width:860px){
+  .cs-feature-body > .cs-feature-logo{margin:auto 0}
+  .cs-feature-body > .cs-feature-logo + *{margin-top:1.6rem}
+}
+
+/* 2026-11-02, case studies index round 3.
+   Hero spacing matched to the reference: more air above the kicker, the
+   subheader tight to the title and the buttons, more room around the proof
+   line. Scoped to .cs-index-hero so no other hero moves. */
+.hero.hero-centred.hero-light.cs-index-hero{padding-top:7rem;padding-bottom:0}
+.cs-index-hero .hero-title{margin-bottom:.6rem}
+.cs-index-hero .lead{margin-bottom:1.4rem}
+.cs-index-hero .trust-in-hero{margin-top:2.25rem;padding-bottom:2.75rem}
+.hero.hero-centred.hero-light + section.cs-grid-band{padding-top:3rem}
+.cs-grid-title{text-align:center;margin:0 0 1.75rem;font-size:clamp(1.45rem,2.75vw,2.3rem)}
+/* Logos are sized by AREA (--lh per card, set when the card is written), so a
+   square badge and a long wordmark carry the same weight. Cards a little
+   shorter so the logo is not floating in empty space. */
+.cs-feature{min-height:510px}
+.cs-feature-logo{height:var(--lh,76px);max-width:420px}
+.cs-feature-logo img{height:var(--lh,76px);max-width:420px}
+@media (max-width:860px){
+  .cs-feature{min-height:480px}
+  .cs-feature-logo,.cs-feature-logo img{height:calc(var(--lh,76px)*.8);max-width:300px}
+}
+/* Google reviews carousel: the centred review is highlighted, its
+   neighbours sit either side, arrows and a link to the live reviews. */
+.cs-reviews{padding:clamp(3.5rem,7vw,5.5rem) 0;overflow:hidden}
+.cs-reviews .wrap{text-align:center}
+.cs-reviews h2{margin:0 0 .9rem}
+.cs-rv-pill{display:inline-block;background:var(--blue);color:#fff;border-radius:10px;padding:0 .4em}
+.cs-reviews .lead{max-width:640px;margin:0 auto}
+.cs-rv{position:relative;margin-top:2rem}
+.cs-rv-track{position:relative;display:flex;align-items:stretch;gap:1.5rem;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:1.5rem calc(50% - min(310px,40vw))}
+.cs-rv-track::-webkit-scrollbar{display:none}
+.cs-rv-card{flex:0 0 min(620px,80vw);scroll-snap-align:center;text-align:left;display:flex;flex-direction:column;gap:.85rem;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:2rem 2.25rem 1.75rem;transform:scale(.92);opacity:.55;cursor:pointer;transition:transform .35s ease,opacity .35s ease,background .35s ease,color .35s ease,box-shadow .35s ease}
+.cs-rv-card.is-active{background:var(--blue);border-color:var(--blue);color:#fff;transform:none;opacity:1;cursor:default;box-shadow:0 24px 60px rgba(33,150,243,.32)}
+.cs-rv-q{font-family:var(--font-display);font-size:4.5rem;font-weight:900;line-height:.75;height:2.4rem;color:var(--blue)}
+.cs-rv-card.is-active .cs-rv-q{color:#fff}
+.cs-rv-card blockquote{margin:0;font-size:1.08rem;line-height:1.6;color:var(--muted)}
+.cs-rv-card.is-active blockquote{color:#fff}
+.cs-rv-stars{margin:auto 0 0;font-weight:700}
+.cs-rv-stars span{color:#FFC83D;letter-spacing:.1em;margin-right:.3rem}
+.cs-rv-name{margin:0;font-weight:700}
+.cs-rv-role{margin:0;font-size:.9rem;opacity:.75}
+.cs-rv-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--blue);font-size:1.7rem;line-height:1;cursor:pointer;display:grid;place-items:center;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.cs-rv-arrow:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+.cs-rv-prev{left:0}.cs-rv-next{right:0}
+.cs-rv-more{margin-top:2rem}
+@media (max-width:620px){.cs-rv-arrow{display:none}.cs-rv-card{padding:1.5rem;transform:scale(.95)}}
+.cs-grid-title .cs-hl{color:var(--blue)}
+.cs-rv-still .cs-rv-card{transition:none}
+
+/* 2026-11-02: every case study is bylined to Cruz Lee, with his photo. */
+.cs-author-img{width:28px;height:28px;border-radius:50%;object-fit:cover;object-position:center 28%;vertical-align:middle;margin:-.2rem .45rem 0 0;display:inline-block}
