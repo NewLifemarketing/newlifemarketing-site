@@ -60,6 +60,14 @@ if (!fs.existsSync(pagePath)) {
 const page = fs.readFileSync(pagePath, 'utf8');
 const header = fs.readFileSync(HEADER, 'utf8');
 
+// 2026-11-03: "Case Studies" in the header is a plain link to /case-studies/ now, not a dropdown. The
+// index page lists every study, so a new one needs no menu entry. Exit cleanly instead of erroring.
+if (!header.includes('<span class="m-title">All Case Studies</span>')) {
+  console.log('The header Case Studies item is a plain link now (no dropdown), so there is no menu to add to.');
+  console.log('Nothing to do: the new study appears on /case-studies/ automatically.');
+  process.exit(0);
+}
+
 if (header.includes(`href="/case-studies/${slug}/"`)) {
   console.log(`${slug} is already in the mega-menu. Nothing to do.`);
   process.exit(0);

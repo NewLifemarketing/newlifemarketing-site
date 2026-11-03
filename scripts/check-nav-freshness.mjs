@@ -71,6 +71,12 @@ function slugsFromHeader(html) {
   return [...new Set([...html.matchAll(/href="\/case-studies\/([^/"]+)\//g)].map((m) => m[1]))];
 }
 
+// 2026-11-03: the header's Case Studies item is a plain link now, so there is no dropdown to keep fresh.
+if (!/<span class="m-title">All Case Studies<\/span>/.test(read(HEADER, 'partials/header.html'))) {
+  console.log('Case Studies is a plain link in the header (no dropdown). Nothing to check.');
+  process.exit(0);
+}
+
 const cards = cardsFromIndex(read(INDEX, 'case-studies/index.html'));
 
 // Every case study page on disk needs a card on /case-studies/. Without one it is
