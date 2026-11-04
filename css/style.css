@@ -3381,7 +3381,7 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 @media (max-width: 900px) { .cm-gets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .cm-gets { grid-template-columns: 1fr; } }
 
-.cm-evs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-top: 1.4rem; }
+.cm-evs { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-top: 1.4rem; }
 .cm-ev { display: flex; flex-direction: column; gap: 0.9rem; padding: 1.1rem; }
 .cm-ev.open { border-color: #2196F3; box-shadow: 0 14px 34px rgba(33, 150, 243, 0.16); }
 .cm-date { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 78px; padding: 0.55rem 0; border-radius: 14px; background: #EEF4FB; line-height: 1.05; }
@@ -3728,6 +3728,28 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 .yt-short-title { position: absolute; left: 0; right: 0; bottom: 0; padding: 1.6rem .7rem .7rem; color: #FFFFFF; font-weight: 700; font-size: .78rem; line-height: 1.3; background: linear-gradient(to top, rgba(7,11,28,.92), rgba(7,11,28,0)); }
 @media (max-width: 560px) { .yt-short-title { display: none; } .yt-shorts { gap: .6rem; } }
 .yt-hero .pc-when + .pc-when { margin-left: .5rem; }
+
+
+/* ---------- Community members app band (dark, matches app.newlifemarketing.ca) ---------- */
+.cm-signin { margin: 1.1rem 0 0; font-size: 0.95rem; color: #E6EDF7; }
+.cm-signin a { color: #FFFFFF; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.band.cm-app { background: #0D0F15; color: #FFFFFF; }
+.cm-app .kicker { color: #4A96F0; }
+.cm-app h2 { color: #FFFFFF; }
+.cm-app .lead { color: #B7C0CE; }
+.cm-app-lock { display: inline-flex; align-items: center; gap: 0.7rem; margin-bottom: 1.6rem; }
+.cm-app-lock span { white-space: nowrap; display: flex; flex-direction: column; line-height: 1.05; font-family: var(--font-display); font-style: italic; font-weight: 900; font-size: 1.15rem; letter-spacing: 0.01em; text-transform: uppercase; color: #FFFFFF; }
+.cm-app-lock b { font-weight: 900; }
+.cm-app-lock i { color: #4A96F0; font-style: italic; }
+.cm-app-lock small { font-family: var(--font-body); font-style: normal; font-weight: 600; font-size: 0.62rem; letter-spacing: 0.2em; color: #8C96A6; margin-top: 0.25rem; }
+.cm-app-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1.8rem; }
+.cm-app-card { background: #151922; border: 1px solid #262C39; border-radius: 16px; padding: 1.2rem 1.25rem; }
+.cm-app-card h3 { margin: 0 0 0.35rem; font-size: 1.05rem; color: #FFFFFF; }
+.cm-app-card p { margin: 0; font-size: 0.93rem; line-height: 1.55; color: #AAB4C3; }
+.cm-app-ctas { margin-top: 2rem; }
+.cm-app-note { margin: 1rem 0 0; font-size: 0.88rem; color: #8C96A6; }
+@media (max-width: 900px) { .cm-app-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .cm-app-grid { grid-template-columns: 1fr; } }
 /* ---------- Homepage header + glow on every page ----------
    Only body.home-light pages had the see-through header rail over the blue
    wash; everywhere else the rail painted solid white behind the floating bar
