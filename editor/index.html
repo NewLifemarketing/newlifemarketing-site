@@ -185,7 +185,7 @@ form.addEventListener('submit',function(e){
   .then(function(x){
     if(x.s===200){wait.innerHTML=md(x.j.reply);history_.push({role:'assistant',content:x.j.reply});return;}
     history_.pop();
-    wait.textContent=x.s===401?'The editor is unavailable right now. Try again later.':x.s===429?(x.j.error==='daily chat limit reached'?'You have reached today's chat limit. Come back tomorrow.':'Editor is busy. Try again in a moment.'):'Something went wrong. Try again.';
+    wait.textContent=x.s===401?'The editor is unavailable right now. Try again later.':x.s===429?(x.j.error==='daily chat limit reached'?'You have reached today’s chat limit. Come back tomorrow.':'Editor is busy. Try again in a moment.'):'Something went wrong. Try again.';
   })
   .catch(function(){history_.pop();wait.textContent='The editor is offline right now. Try again later.';})
   .then(function(){busy=false;send.disabled=false;log.scrollTop=log.scrollHeight;});
