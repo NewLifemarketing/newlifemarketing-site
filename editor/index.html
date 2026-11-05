@@ -36,6 +36,19 @@
 .ed-count b{color:#0D0D14}
 .ed-styles{display:none;grid-template-columns:repeat(2,1fr);gap:.7rem;padding:1rem 1.1rem 0}
 .ed-chat[data-mode="video"] .ed-styles{display:grid}
+.ed-sizes{display:none;grid-template-columns:repeat(3,1fr);gap:.7rem;padding:1rem 1.1rem 0}
+.ed-chat[data-mode="graphic"] .ed-sizes{display:grid}
+.ed-size{display:flex;align-items:center;gap:.6rem;border:2px solid var(--line);border-radius:14px;background:#fff;padding:.7rem .8rem;cursor:pointer;font:700 .92rem var(--font-body);color:#0D0D14;text-align:left}
+.ed-size i{flex:none;border:2px solid var(--blue);border-radius:3px;width:16px}
+.ed-size small{display:block;font:500 .75rem var(--font-body);color:#6C6C7A}
+.ed-size[aria-checked="true"]{border-color:var(--blue);background:#EEF5FE}
+.ed-log[data-for]{display:none}
+.ed-chat[data-mode="graphic"] .ed-log[data-for="graphic"],.ed-chat[data-mode="video"] .ed-log[data-for="video"]{display:flex}
+.ed-chat[data-mode="graphic"] #ed-make,.ed-chat[data-mode="video"] #ed-gmake{display:none}
+.ed-thumbs{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;min-width:0}
+.ed-thumbs img{width:38px;height:38px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:#fff}
+.ed-msg img.out{display:block;width:100%;max-width:320px;margin-top:.6rem;border-radius:10px;border:1px solid var(--line)}
+.ed-tile img.thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .ed-style{display:flex;align-items:center;gap:.7rem;border:2px solid var(--line);border-radius:14px;background:#fff;padding:.8rem .9rem;cursor:pointer;font:700 .95rem var(--font-body);color:#0D0D14;text-align:left}
 .ed-style svg{width:22px;height:22px;flex:none;color:var(--blue)}
 .ed-style[aria-checked="true"]{border-color:var(--blue);background:#EEF5FE}
@@ -68,7 +81,7 @@
 .ed-tile.g4{background:linear-gradient(135deg,#2E7D32,#81C784)}
 .ed-attach{display:none;flex:none;width:46px;height:46px;border:1px solid var(--line);border-radius:14px;background:#F7F8FA;color:#4B4B57;cursor:pointer;align-items:center;justify-content:center}
 .ed-attach svg{width:20px;height:20px}
-.ed-chat[data-mode="video"] .ed-attach{display:inline-flex}
+.ed-attach{display:inline-flex}
 .ed-make{display:flex;align-items:center;justify-content:space-between;gap:.8rem;margin:0 1.1rem 1rem;padding:.7rem .9rem;border:1px dashed var(--blue);border-radius:14px;background:#EEF5FE;font:600 .9rem var(--font-body);color:#0D0D14}
 .ed-make[hidden]{display:none}
 .ed-msg.job{white-space:normal}
@@ -94,7 +107,7 @@
 .ed-gate .ed-gate-err{color:#C0392B;font-weight:600;font-size:.88rem}
 .ed-gate .ed-gate-row{display:flex;gap:.6rem;justify-content:flex-end}
 .ed-gate .ed-gate-row .btn.ghost{background:none}
-@media(max-width:640px){.ed-styles{grid-template-columns:1fr}.ed-log{height:300px}.ed-msg{max-width:90%}}
+@media(max-width:640px){.ed-styles{grid-template-columns:1fr}.ed-size{flex-direction:column;align-items:flex-start;gap:.35rem}.ed-log{height:300px}.ed-msg{max-width:90%}}
 </style>
 <div class="svc-page">
 <section class="ed-hero"><div class="wrap">
@@ -113,11 +126,19 @@
       <button type="button" class="ed-style" role="radio" aria-checked="false" data-style="ad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 8a5 5 0 0 1 0 8"/></svg>Ad</button>
       <button type="button" class="ed-style" role="radio" aria-checked="false" data-style="entertainment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>Entertainment</button>
     </div>
-    <div class="ed-log" id="ed-log" aria-live="polite"><p class="ed-empty">Start a conversation.</p></div>
+    <div class="ed-sizes" role="radiogroup" aria-label="Graphic size">
+      <button type="button" class="ed-size" role="radio" aria-checked="true" data-size="square"><i style="height:16px"></i><span>Square<small>1080 x 1080</small></span></button>
+      <button type="button" class="ed-size" role="radio" aria-checked="false" data-size="portrait"><i style="height:20px"></i><span>Portrait<small>1080 x 1350</small></span></button>
+      <button type="button" class="ed-size" role="radio" aria-checked="false" data-size="story"><i style="height:28px;width:15px"></i><span>Story<small>1080 x 1920</small></span></button>
+    </div>
+    <div class="ed-log" data-for="graphic" aria-live="polite"><p class="ed-empty">Tell us about the graphic you want. Attach photos or a logo with the paperclip.</p></div>
+    <div class="ed-log" data-for="video" aria-live="polite"><p class="ed-empty">Tell us about your video, then attach your footage with the paperclip.</p></div>
     <div class="ed-make" id="ed-make" hidden><span id="ed-make-name"></span><button class="btn sm" type="button" id="ed-make-btn">Make the video</button></div>
+    <div class="ed-make" id="ed-gmake" hidden><span class="ed-thumbs" id="ed-gthumbs"></span><button class="btn sm" type="button" id="ed-gmake-btn">Make the graphic</button></div>
     <form class="ed-input" id="ed-form">
-      <button type="button" class="ed-attach" id="ed-attach" aria-label="Attach footage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.5 12.6 21a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/></svg></button>
+      <button type="button" class="ed-attach" id="ed-attach" aria-label="Attach a file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.5 12.6 21a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/></svg></button>
       <input type="file" id="ed-file" accept="video/*" hidden>
+      <input type="file" id="ed-img" accept="image/png,image/jpeg,image/webp" multiple hidden>
       <textarea id="ed-text" rows="1" placeholder="Message NewLife Editor" aria-label="Message"></textarea>
       <button class="btn" type="submit" id="ed-send">Send</button>
     </form>
@@ -127,7 +148,7 @@
 
 <div class="ed-gate" id="ed-gate" hidden role="dialog" aria-modal="true" aria-labelledby="ed-gate-h">
   <form id="ed-gate-form" novalidate>
-    <h3 id="ed-gate-h">Get your video</h3>
+    <h3 id="ed-gate-h">Get your file</h3>
     <p>Tell us where to reach you and your download starts right away. You only do this once.</p>
     <label>Name<input name="name" type="text" autocomplete="name" required></label>
     <label>Email<input name="email" type="email" autocomplete="email" required></label>
@@ -146,19 +167,25 @@
 </div></section>
 </div>
 <script>(function(){
-var chat=document.getElementById('ed-chat'),log=document.getElementById('ed-log'),form=document.getElementById('ed-form'),
-    text=document.getElementById('ed-text'),hint=document.getElementById('ed-hint'),style=null;
+var chat=document.getElementById('ed-chat'),form=document.getElementById('ed-form'),
+    text=document.getElementById('ed-text'),hint=document.getElementById('ed-hint'),style=null,gsize='square',
+    logs={graphic:chat.querySelector('.ed-log[data-for="graphic"]'),video:chat.querySelector('.ed-log[data-for="video"]')};
+/* Graphic and Video are separate conversations: each mode keeps its own messages and history. */
+function mode(){return chat.getAttribute('data-mode');}
 [].forEach.call(chat.querySelectorAll('.ed-modes button'),function(b){b.addEventListener('click',function(){
   chat.setAttribute('data-mode',b.dataset.mode);
   [].forEach.call(chat.querySelectorAll('.ed-modes button'),function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
-  hint.hidden=true;});});
+  hint.hidden=true;sendState();});});
+[].forEach.call(chat.querySelectorAll('.ed-size'),function(b){b.addEventListener('click',function(){
+  gsize=b.dataset.size;
+  [].forEach.call(chat.querySelectorAll('.ed-size'),function(x){x.setAttribute('aria-checked',x===b?'true':'false');});});});
 [].forEach.call(chat.querySelectorAll('.ed-style'),function(b){b.addEventListener('click',function(){
   style=b.dataset.style;
   [].forEach.call(chat.querySelectorAll('.ed-style'),function(x){x.setAttribute('aria-checked',x===b?'true':'false');});
   hint.hidden=true;});});
 text.addEventListener('input',function(){text.style.height='auto';text.style.height=Math.min(text.scrollHeight,160)+'px';});
 text.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit();}});
-function add(cls,t){var e=log.querySelector('.ed-empty');if(e)e.remove();var m=document.createElement('div');m.className='ed-msg '+cls;m.textContent=t;log.appendChild(m);log.scrollTop=log.scrollHeight;return m;}
+function add(cls,t,md_){var log=logs[md_||mode()],e=log.querySelector('.ed-empty');if(e)e.remove();var m=document.createElement('div');m.className='ed-msg '+cls;m.textContent=t;log.appendChild(m);log.scrollTop=log.scrollHeight;return m;}
 
 /* Chat goes to the NewLife Editor bridge (Claude, text only) on the team computer.
    The team link carries the key (and optionally the bridge address) in the #hash;
@@ -172,23 +199,24 @@ function cfg(){var h=new URLSearchParams(location.hash.slice(1)),k=h.get('k'),b=
 /* minimal, safe formatting for replies: escape first, then **bold**, *italic*, `code` */
 function md(t){return t.replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];})
   .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>').replace(/`([^`\n]+)`/g,'<code>$1</code>');}
-var conf=cfg(),history_=[],busy=false,send=document.getElementById('ed-send');
+var conf=cfg(),hist={graphic:[],video:[]},busy={},send=document.getElementById('ed-send');
+function sendState(){send.disabled=!!busy[mode()];}
 form.addEventListener('submit',function(e){
-  e.preventDefault();var v=text.value.trim();if(!v||busy)return;
-  if(chat.getAttribute('data-mode')==='video'&&!style){hint.hidden=false;return;}
-  add('user',v);text.value='';text.style.height='auto';
+  e.preventDefault();var v=text.value.trim(),m=mode(),history_=hist[m],log=logs[m];if(!v||busy[m])return;
+  if(m==='video'&&!style){hint.hidden=false;return;}
+  add('user',v,m);text.value='';text.style.height='auto';
   history_.push({role:'user',content:v});
-  var wait=add('ai','…');busy=true;send.disabled=true;
+  var wait=add('ai','…',m);busy[m]=true;sendState();
   fetch(conf.bridge.replace(/\/$/,'')+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({key:conf.key,mode:chat.getAttribute('data-mode'),style:style,messages:history_})})
+    body:JSON.stringify({key:conf.key,mode:m,style:style,messages:history_})})
   .then(function(r){return r.json().then(function(j){return{s:r.status,j:j};});})
   .then(function(x){
-    if(x.s===200){wait.innerHTML=md(x.j.reply);history_.push({role:'assistant',content:x.j.reply});return;}
+    if(x.s===200){wait.innerHTML=md(x.j.reply);history_.push({role:'assistant',content:x.j.reply});if(m==='graphic')gmake.hidden=false;return;}
     history_.pop();
     wait.textContent=x.s===401?'The editor is unavailable right now. Try again later.':x.s===429?(x.j.error==='daily chat limit reached'?'You have reached today’s chat limit. Come back tomorrow.':'Editor is busy. Try again in a moment.'):'Something went wrong. Try again.';
   })
   .catch(function(){history_.pop();wait.textContent='The editor is offline right now. Try again later.';})
-  .then(function(){busy=false;send.disabled=false;log.scrollTop=log.scrollHeight;});
+  .then(function(){busy[m]=false;sendState();log.scrollTop=log.scrollHeight;});
 });
 
 /* ---------- footage upload + editing jobs ---------- */
@@ -196,11 +224,11 @@ var API=conf.bridge.replace(/\/$/,''),hdr={'X-Editor-Key':conf.key},upload=null,
     fileIn=document.getElementById('ed-file'),make=document.getElementById('ed-make'),makeBtn=document.getElementById('ed-make-btn');
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function fail(m,s){m.textContent=s===401?'The editor is unavailable right now. Try again later.':s===423?'The editor is paused right now. Try again later.':'Upload failed: '+s;}
-document.getElementById('ed-attach').addEventListener('click',function(){fileIn.click();});
+document.getElementById('ed-attach').addEventListener('click',function(){(mode()==='video'?fileIn:imgIn).click();});
 fileIn.addEventListener('change',function(){
   var f=fileIn.files[0];fileIn.value='';if(!f)return;
   upload=null;make.hidden=true;
-  var m=add('ai','');m.innerHTML='Uploading <strong>'+esc(f.name)+'</strong><div class="ed-bar-prog"><i></i></div>';var bar=m.querySelector('i');
+  var m=add('ai','','video');m.innerHTML='Uploading <strong>'+esc(f.name)+'</strong><div class="ed-bar-prog"><i></i></div>';var bar=m.querySelector('i');
   fetch(API+'/upload',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},hdr),body:JSON.stringify({name:f.name,size:f.size})})
   .then(function(r){return r.json().then(function(j){if(!r.ok)throw j.error||r.status;return j;});})
   .then(function(u){var off=0;
@@ -217,12 +245,43 @@ makeBtn.addEventListener('click',function(){
   if(!upload)return;if(!style){hint.hidden=false;return;}
   makeBtn.disabled=true;
   fetch(API+'/jobs',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},hdr),
-    body:JSON.stringify({uploadId:upload.uploadId,style:style,messages:history_})})
+    body:JSON.stringify({uploadId:upload.uploadId,style:style,messages:hist.video})})
   .then(function(r){return r.json().then(function(j){if(!r.ok)throw j.error||r.status;return j;});})
-  .then(function(job){upload=null;make.hidden=true;makeBtn.disabled=false;track(job.id);})
+  .then(function(job){upload=null;make.hidden=true;makeBtn.disabled=false;track(job.id,'video');})
   .catch(function(e){makeBtn.disabled=false;
-    add('ai',e==='video limit reached'?'You have used all your free videos for now. The limit resets 30 days after each video.':'Could not start the edit: '+e);});
+    add('ai',e==='video limit reached'?'You have used all your free videos for now. The limit resets 30 days after each video.':'Could not start the edit: '+e,'video');});
 });
+
+/* ---------- graphics: optional photos/logo (up to 4), a size, then "Make the graphic" ---------- */
+var imgIn=document.getElementById('ed-img'),gmake=document.getElementById('ed-gmake'),gmakeBtn=document.getElementById('ed-gmake-btn'),
+    gthumbs=document.getElementById('ed-gthumbs'),gimgs=[];
+function drawThumbs(){gthumbs.innerHTML=gimgs.length?gimgs.map(function(g){return '<img src="'+g.url+'" alt="">';}).join('')+'<span>'+gimgs.length+' attached</span>':'<span>Photos or logo: optional</span>';}
+imgIn.addEventListener('change',function(){
+  var files=[].slice.call(imgIn.files,0,4);imgIn.value='';
+  files.reduce(function(p,f){return p.then(function(){
+    if(f.size>25*1024*1024){add('ai',f.name+' is larger than 25 MB.','graphic');return;}
+    var m=add('ai','Uploading '+f.name+'…','graphic');
+    return fetch(API+'/upload',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},hdr),body:JSON.stringify({name:f.name,size:f.size,kind:'image'})})
+      .then(function(r){return r.json().then(function(j){if(!r.ok)throw j.error||r.status;return j;});})
+      .then(function(u){return fetch(API+'/upload/'+u.uploadId+'?offset=0',{method:'PUT',headers:hdr,body:f})
+        .then(function(r){if(!r.ok)throw r.status;return fetch(API+'/upload/'+u.uploadId+'/complete',{method:'POST',headers:hdr});})
+        .then(function(r){return r.json().then(function(j){if(!r.ok)throw j.error||r.status;return j;});});})
+      .then(function(done){gimgs.push({id:done.uploadId,url:URL.createObjectURL(f)});if(gimgs.length>4)gimgs.shift();
+        m.innerHTML='Attached <strong>'+esc(f.name)+'</strong>';drawThumbs();gmake.hidden=false;})
+      .catch(function(e){m.textContent=e===415||/image/.test(String(e))?f.name+' is not a PNG, JPG or WebP image.':'Upload failed: '+e;});
+  });},Promise.resolve());
+});
+gmakeBtn.addEventListener('click',function(){
+  if(!hist.graphic.length){add('ai','Describe the graphic in the chat first, then press Make the graphic.','graphic');return;}
+  gmakeBtn.disabled=true;
+  fetch(API+'/graphics',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},hdr),
+    body:JSON.stringify({uploadIds:gimgs.map(function(g){return g.id;}),format:gsize,messages:hist.graphic})})
+  .then(function(r){return r.json().then(function(j){if(!r.ok)throw j.error||r.status;return j;});})
+  .then(function(job){gimgs=[];drawThumbs();gmakeBtn.disabled=false;track(job.id,'graphic');})
+  .catch(function(e){gmakeBtn.disabled=false;
+    add('ai',e==='graphic limit reached'?'You have used all your free graphics for now. The limit resets 30 days after each graphic.':'Could not start the graphic: '+e,'graphic');});
+});
+drawThumbs();
 function fileUrl(id,n){return API+'/jobs/'+id+'/files/'+encodeURIComponent(n)+'?key='+encodeURIComponent(conf.key);}
 /* Usage limits and saved videos come from the bridge (tracked per IP address), not from this browser. */
 var hasDetails=false;
@@ -246,26 +305,28 @@ gateForm.addEventListener('submit',function(e){e.preventDefault();
   .catch(function(m){gateErr.textContent=String(m).replace(/^./,function(c){return c.toUpperCase();})+'.';gateErr.hidden=false;})
   .then(function(){btn.disabled=false;});});
 function loadLibrary(){fetch(API+'/library',{headers:hdr}).then(function(r){return r.ok?r.json():null;}).then(function(l){if(!l)return;
-  l.videos.forEach(function(v){v.outputs.forEach(function(n){toGrid(fileUrl(v.id,n));});});}).catch(function(){});}
-function track(id){
-  var m=add('ai','');m.classList.add('job');
+  l.videos.forEach(function(v){v.outputs.forEach(function(n){toGrid(fileUrl(v.id,n),v.type);});});}).catch(function(){});}
+function track(id,md_){
+  var m=add('ai','',md_),log=logs[md_];m.classList.add('job');
   (function poll(){
     fetch(API+'/jobs/'+id,{headers:hdr}).then(function(r){return r.json();}).then(function(j){
       var steps=j.steps.map(function(s,i){return '<li'+(i===j.steps.length-1&&j.status==='running'?' class="now"':'')+'>'+esc(s.text)+'</li>';}).join('');
-      var head=j.status==='queued'?'Waiting in line (#'+j.position+')':j.status==='running'?'Editing your video…':j.status==='done'?'Your video is ready':'The edit failed. Try again.';
+      var g=j.type==='graphic';
+      var head=j.status==='queued'?'Waiting in line (#'+j.position+')':j.status==='running'?(g?'Designing your graphic…':'Editing your video…'):j.status==='done'?(g?'Your graphic is ready':'Your video is ready'):(g?'The graphic failed. Try again.':'The edit failed. Try again.');
       var vids=j.status==='done'?j.outputs.map(function(n){var u=API+'/jobs/'+id+'/files/'+encodeURIComponent(n)+'?key='+encodeURIComponent(conf.key);
-        return '<video controls playsinline preload="metadata" src="'+u+'"></video><button type="button" class="btn sm dl" data-url="'+esc(u)+'">Download</button>';}).join(''):'';
+        return (g?'<img class="out" src="'+u+'" alt="Your graphic">':'<video controls playsinline preload="metadata" src="'+u+'"></video>')+'<button type="button" class="btn sm dl" data-url="'+esc(u)+'">Download</button>';}).join(''):'';
       m.innerHTML='<strong>'+head+'</strong><ol>'+steps+'</ol>'+vids;log.scrollTop=log.scrollHeight;
-      if(j.status==='done'){j.outputs.forEach(function(n){toGrid(fileUrl(id,n));});refreshUsage();return;}
+      if(j.status==='done'){j.outputs.forEach(function(n){toGrid(fileUrl(id,n),j.type);});refreshUsage();return;}
       if(j.status==='failed'){refreshUsage();return;}
       setTimeout(poll,4000);
     }).catch(function(){setTimeout(poll,8000);});
   })();
 }
-function toGrid(src){
+function toGrid(src,type){
   var t=[].find.call(grid.children,function(x){return !x.classList.contains('filled')||x.classList.contains('sample');});if(!t)return;
-  t.className='ed-tile filled';t.innerHTML='<video muted playsinline preload="metadata" src="'+src+'#t=0.5"></video>'+play+'<span class="ed-day"></span>'
-    +'<button type="button" class="dl ed-tile-dl" data-url="'+esc(src)+'" aria-label="Download this video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></button>';number();
+  var g=type==='graphic';
+  t.className='ed-tile filled';t.innerHTML=(g?'<img class="thumb" src="'+src+'" alt="">'+img:'<video muted playsinline preload="metadata" src="'+src+'#t=0.5"></video>'+play)+'<span class="ed-day"></span>'
+    +'<button type="button" class="dl ed-tile-dl" data-url="'+esc(src)+'" aria-label="Download this file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></button>';number();
 }
 
 /* 30-day grid: sample tiles so reordering can be tried in the preview */
