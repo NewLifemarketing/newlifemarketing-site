@@ -242,6 +242,7 @@ async function audit(target) {
    * site states which pages are services and which are areas in its owner's
    * own words, and a parsed page summary has thrown that away. */
   let homeHtml = first.ok ? first.text : '';
+  let hubHtml = '';
   const pages = await mapLimit(urls, CONCURRENCY, async (u) => {
     // The homepage is already in hand from the origin resolution above. Fetching
     // it twice would spend a subrequest to learn nothing.
@@ -249,11 +250,12 @@ async function audit(target) {
     const res = await get(u);
     if (!res.ok || !res.text) return { url: path(u), status: res.status, error: true, why: res.why };
     if (path(u) === '/') homeHtml = res.text;
+    if (HUB_PATH.test(path(u))) hubHtml = res.text;
     return assess(path(u), res.text);
   });
 
   const good = pages.filter((p) => !p.error);
-  const grid = detectGrid(good, homeHtml, sitemap);
+  const grid = detectGrid(good, homeHtml, sitemap, hubHtml);
   return {
     origin,
     discovered_by: source,
@@ -467,6 +469,8 @@ const NOT_A_SERVICE = new RegExp('^(' + [
   'icons?', 'buttons?', 'demo(-.*)?', 'test(-page)?', 'lorem-ipsum', 'coming-soon', 'maintenance',
   // site furniture
   'about(-us)?', 'contact(-us)?', 'home(page)?', 'index', 'blog', 'news', 'articles?', 'posts?',
+  'services?', 'our-services', 'what-we-do', 'service-areas?', 'areas-we-serve', 'locations?',
+  'privacy-?(and|&)?-?terms', 'terms-?(and|&)?-?privacy', 'legal', 'policies', 'refund-policy',
   'privacy(-policy)?', 'terms(-of-service|-and-conditions)?', 'cookies?(-policy)?', 'disclaimer',
   'accessibility', 'sitemap', 'search', 'cart', 'checkout', 'my-account', 'account', 'login',
   'thank(s|-you)?', 'careers?', 'jobs?', 'faqs?', 'reviews?', 'testimonials?', 'gallery',
@@ -528,6 +532,22 @@ const STOP_SLUG = new Set(['the', 'and', 'for', 'our', 'your', 'with', 'in', 'of
 
 /* NOT "our work" -- that is a portfolio, and reading it as a services menu
  * put six project case studies in the services column on a real site. */
+/* TEST THE NAME, NOT JUST THE SLUG. The blocklist above only ever looked at
+ * URLs, so "Privacy & Terms" was offered as a service because its slug was not
+ * on the list -- and "Services", the hub page, because nothing said a hub is
+ * not one of the things it lists. Both read as nonsense to anyone looking at
+ * the screen, which is the test that was missing: the slug is what we parse,
+ * the NAME is what a person sees, and only one of them was being checked. */
+const NOT_A_SERVICE_NAME = new RegExp('^\s*(' + [
+  'services?', 'our services', 'all services', 'what we do', 'service areas?', 'areas we serve',
+  'privacy', 'privacy policy', 'terms', 'terms of service', 'terms (and|&) conditions',
+  'privacy (and|&) terms', 'terms (and|&) privacy', 'legal', 'cookie policy', 'cookies',
+  'disclaimer', 'accessibility', 'sitemap', 'site map', 'home', 'about', 'about us', 'contact',
+  'contact us', 'blog', 'news', 'gallery', 'portfolio', 'projects', 'our work', 'reviews',
+  'testimonials', 'careers', 'faqs?', 'book a call', 'get a quote', 'request a quote', 'financing',
+  'login', 'client login', 'my account', 'cart', 'checkout', 'search',
+].join('|') + ')\s*$', 'i');
+
 const NAV_SERVICE_LABEL = /\b(services?|what\s+we\s+do)\b/i;
 const NAV_AREA_LABEL = /\b(service\s*areas?|areas?\s*(we\s*)?(served?)?|locations?|where\s+we\s+(work|serve)|cities|towns)\b/i;
 
@@ -599,6 +619,45 @@ function navGroups(html) {
   return { services, areas };
 }
 
+/* -- signal 2a: OPEN THE SERVICES PAGE AND READ IT -------------------------
+ * This replaces a fallback that read the top menu and offered whatever was not
+ * obviously furniture. On a real site that returned two "services": "Services"
+ * -- the hub page itself -- and "Privacy & Terms". Both were in the menu, and
+ * neither is a service, and no amount of widening the blocklist makes guessing
+ * from a menu into reading.
+ *
+ * What a person does when a menu says "Services" is click it. So does this. It
+ * costs one subrequest and it is the only signal here that looks at the page a
+ * site wrote specifically to list what it sells.
+ */
+const HUB_PATH = /^\/(services?|our-services|what-we-do|services-we-offer)\/?$/i;
+
+function hubServices(html) {
+  const out = new Map();
+  if (!html) return out;
+  // The hub's own content, with the furniture taken out -- a nav link inside
+  // the services page is still a nav link.
+  const clean = strip(html)
+    .replace(/<(header|nav|footer|aside)\b[\s\S]*?<\/\1>/gi, ' ');
+  const main = clean.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i);
+  const body = main ? main[1] : clean;
+
+  for (const m of body.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    const text = decode(m[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+    if (/^(tel|mailto|javascript|#)/i.test(m[1])) continue;
+    let seg;
+    try { seg = slugOf(new URL(m[1], 'https://x.invalid').pathname); } catch { continue; }
+    if (!seg.length) continue;
+    const key = seg[seg.length - 1];
+    if (!key || key.length < 3) continue;
+    if (!text || text.length > 48) continue;
+    if (/^(read|learn|see|view|more|details|get|book|call|contact|back|next|previous)\b/i.test(text)) continue;
+    out.set(key, text);
+    if (out.size >= 16) break;
+  }
+  return out;
+}
+
 /* -- signal 2b: THE HOMEPAGE, WHICH IS WHERE A HUMAN LOOKS ------------------
  * Reported on a real site: "we could not find any services section", when
  * anyone opening that site would name the services in three seconds. They were
@@ -651,30 +710,6 @@ function homepageServices(html) {
     if (!key || key.length < 3) continue;
     if (!text || text.length > 48) continue;
     if (/^(read more|learn more|more|view|see more|details|get a quote|contact)/i.test(text)) continue;
-    out.set(key, text);
-    if (out.size >= 14) break;
-  }
-  return out;
-}
-
-/** The top menu with the furniture taken out. What is left of
- *  "Home | Roofing | Siding | About | Contact" is the services. */
-function navLeftovers(html) {
-  const out = new Map();
-  if (!html) return out;
-  const chrome = [...strip(html).matchAll(/<(nav|header)\b[\s\S]*?<\/\1>/gi)].map((m) => m[0]).join('\n');
-  if (!chrome) return out;
-
-  for (const m of chrome.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
-    const text = decode(m[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
-    let u;
-    try { u = new URL(m[1], 'https://x.invalid'); } catch { continue; }
-    if (/^(tel|mailto|javascript):/i.test(m[1])) continue;
-    const seg = slugOf(u.pathname);
-    if (seg.length !== 1) continue;             // top level only
-    const key = seg[0];
-    if (!key || key.length < 3) continue;
-    if (!text || text.length > 48 || /\d{3}/.test(text)) continue;   // not a phone number
     out.set(key, text);
     if (out.size >= 14) break;
   }
@@ -814,17 +849,19 @@ function residueAreas(urls) {
   return out;
 }
 
-function detectGrid(pages, homeHtml, sitemapPaths) {
+function detectGrid(pages, homeHtml, sitemapPaths, hubHtml) {
   const byUrl = new Map(pages.map((p) => [p.url, p]));
 
   const services = new Map();   // slug -> {name, from}
   const areas = new Map();
   const addSvc = (slug, name, from) => {
     if (!slug || NOT_A_SERVICE.test(slug)) return;
+    if (name && NOT_A_SERVICE_NAME.test(name)) return;
     if (!services.has(slug) && !areas.has(slug)) services.set(slug, { name: name || titleise(slug), from });
   };
   const addArea = (slug, name, from) => {
     if (!slug || NOT_A_SERVICE.test(slug)) return;
+    if (name && NOT_A_SERVICE_NAME.test(name)) return;
     if (!areas.has(slug) && !services.has(slug)) areas.set(slug, { name: name || titleise(slug), from });
   };
 
@@ -844,10 +881,10 @@ function detectGrid(pages, homeHtml, sitemapPaths) {
    * know have come back with less than a list. A site with a /services/ tree
    * does not need its menu guessed at. */
   if (services.size < 2) {
-    for (const [slug, text] of homepageServices(homeHtml)) addSvc(slug, text, 'your services section');
+    for (const [slug, text] of hubServices(hubHtml)) addSvc(slug, text, 'your services page');
   }
   if (services.size < 2) {
-    for (const [slug, text] of navLeftovers(homeHtml)) addSvc(slug, text, 'your menu');
+    for (const [slug, text] of homepageServices(homeHtml)) addSvc(slug, text, 'your services section');
   }
 
   // 3 and 4 run on the flat pages only. Anything a tree or the nav already
