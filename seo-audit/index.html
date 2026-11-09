@@ -585,9 +585,24 @@
     var cells = services.length * areas.length;
     var built = 0;
     var unread = 0;
+    /* A page for the thing on its own: /roofing/ and /barrie/, not
+     * /roofing-barrie/. Same evidence as any other cell -- it is in the
+     * sitemap or it is not -- but it must NOT match a grid cell by accident,
+     * so a URL that also covers an area is not the service's own page. */
+    var ownPage = function (slug, others) {
+      var url = sitemap.find(function (u) {
+        return covers(u, slug) && !others.some(function (o) { return covers(u, o.slug); });
+      });
+      if (!url) return { state: 0 };
+      var read = pages.find(function (p) { return p.url === url; });
+      if (!read) return { state: 3, url: url };
+      return { state: read.filled >= 8 ? 2 : 1, url: url };
+    };
+
     var gridRows = services.map(function (s) {
       return {
         name: s.name,
+        own: ownPage(s.slug, areas),
         cells: areas.map(function (a) {
           var url = sitemap.find(function (u) { return covers(u, s.slug) && covers(u, a.slug); });
           if (!url) return { state: 0 };
@@ -598,6 +613,10 @@
         })
       };
     });
+
+    var areaOwn = areas.map(function (a) { return ownPage(a.slug, services); });
+    var ownS = gridRows.filter(function (r) { return r.own.state > 0; }).length;
+    var ownA = areaOwn.filter(function (c) { return c.state > 0; }).length;
 
     var slotsFilled = money.reduce(function (n, p) { return n + p.filled; }, 0);
     var slotsTotal = money.reduce(function (n, p) { return n + p.applicable; }, 0);
@@ -620,11 +639,18 @@
     ];
     var score = Math.round(bands.reduce(function (n, b) { return n + b.pct * b.weight; }, 0));
 
-    results.innerHTML = reportHtml(score, bands, gridRows, areas, money, built, cells, services.length, unread);
+    results.innerHTML = reportHtml(score, bands, gridRows, areas, money, built, cells, services.length, unread, areaOwn, ownS, ownA);
     results.scrollIntoView({ block: 'start' });
   }
 
-  function reportHtml(score, bands, rows, areas, money, built, cells, nServices, unread) {
+  function reportHtml(score, bands, rows, areas, money, built, cells, nServices, unread, areaOwn, ownS, ownA) {
+    // One cell, one renderer -- the grid, the service column and the area row
+    // all mean the same four things and must not drift apart.
+    var cellHtml = function (c) {
+      var cls = c.state === 3 ? 'sa-c-unread' : c.state === 2 ? 'sa-c-full' : c.state === 1 ? 'sa-c-part' : 'sa-c-none';
+      var lab = c.state === 3 ? 'built, not checked' : c.state === 2 ? 'built and optimised' : c.state === 1 ? 'built, needs work' : 'missing';
+      return '<i class="sa-c ' + cls + '" aria-label="' + lab + '"></i>';
+    };
     var h = '';
     /* SAY IT BEFORE THE SCORE, NOT IN A FOOTNOTE. The crawl stops at 20 pages,
        and on a trades site the service-area pages are usually the ones past
@@ -672,20 +698,31 @@
       + (unread ? '<span><i class="sa-k sa-k-unread"></i>Built, not checked</span>' : '')
       + '<span><i class="sa-k sa-k-none"></i>Missing</span></p>'
       + '<div class="sa-gridwrap"><table class="sa-grid">'
-      + '<caption class="sr-only">Service pages by area</caption><thead><tr><th scope="col">Service / Area</th>'
+      /* THE PAGE ITSELF IS A CELL TOO. A grid of service x area alone cannot
+         answer "do I have a page for Roofing?" or "do I have one for Barrie?",
+         and those are the two pages a trade is most likely to have and most
+         likely to be missing. They sit in their own column and their own row,
+         separated by a rule, so the cross-product is still readable as a block
+         and the two singles are not mistaken for part of it. */
+      + '<caption class="sr-only">Service pages by area, with each service page and area page on its own</caption>'
+      + '<thead><tr><th scope="col">Service / Area</th>'
+      + '<th scope="col" class="sa-own">The service page</th>'
       + areas.map(function (a) { return '<th scope="col">' + esc(a.name) + '</th>'; }).join('')
       + '</tr></thead><tbody>'
       + rows.map(function (r) {
         return '<tr><th scope="row">' + esc(r.name) + '</th>'
-          + r.cells.map(function (c) {
-            // State 3: the page exists and we did not read it. It is neither
-            // "missing" nor gradeable, and saying either would be a guess.
-            var cls = c.state === 3 ? 'sa-c-unread' : c.state === 2 ? 'sa-c-full' : c.state === 1 ? 'sa-c-part' : 'sa-c-none';
-            var lab = c.state === 3 ? 'built, not checked' : c.state === 2 ? 'built and optimised' : c.state === 1 ? 'built, needs work' : 'missing';
-            return '<td><i class="sa-c ' + cls + '" aria-label="' + lab + '"></i></td>';
-          }).join('') + '</tr>';
+          + '<td class="sa-own">' + cellHtml(r.own) + '</td>'
+          + r.cells.map(function (c) { return '<td>' + cellHtml(c) + '</td>'; }).join('')
+          + '</tr>';
       }).join('')
+      + '<tr class="sa-ownrow"><th scope="row">The area page</th><td class="sa-own"></td>'
+      + areaOwn.map(function (c) { return '<td>' + cellHtml(c) + '</td>'; }).join('')
+      + '</tr>'
       + '</tbody></table></div>'
+      + '<p class="sa-gridnote"><strong>' + ownS + ' of ' + rows.length + '</strong> services have a page of '
+      + 'their own, and <strong>' + ownA + ' of ' + areas.length + '</strong> areas do. '
+      + 'A service with no page of its own cannot rank for the service on its own, '
+      + 'whatever the town pages do.</p>'
       + '<p class="sa-gridnote"><strong>' + built + ' built · ' + (cells - built) + ' missing.</strong> '
       + 'Each missing cell is a search somebody in that town is running that you cannot appear for.</p>';
 
