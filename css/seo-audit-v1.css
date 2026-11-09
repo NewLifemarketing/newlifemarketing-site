@@ -17,23 +17,36 @@
   border:1px solid var(--line);border-radius:999px;padding:.4rem .85rem;margin:0 0 1.1rem;
   font-size:.8125rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--blue-hot)}
 
-.sa-form{display:grid;gap:.9rem 1rem;max-width:760px;margin:2rem 0 0;
-  grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
-.sa-field-wide{grid-column:1/-1}
-.sa-field label{display:block;margin:0 0 .35rem;font-size:.8125rem;font-weight:600;
-  letter-spacing:.02em;color:var(--muted)}
-.sa-field input{width:100%;min-height:52px;background:var(--surface);
-  border:1px solid var(--line);border-radius:12px;padding:0 1rem;
-  /* color is set explicitly, NOT from --white. In the light theme --white is
-     near-black, which is right; but if this page is ever dropped outside
-     .svc-page the token flips to #FFFFFF and the typed text goes white on a
-     white field -- invisible, with no error. That happened. */
-  color:#0D0D14;font:inherit;font-size:1.0625rem}
+/* The hero is centred like the home page's, so the form is too. */
+.sa-form{max-width:620px;margin:1.9rem auto 0;text-align:left}
+
+/* Step one: one field and one button, on one line. */
+.sa-step1{display:flex;flex-wrap:wrap;gap:.7rem}
+.sa-step1 input{flex:999 1 260px;min-width:0;min-height:58px;background:#FFFFFF;
+  border:1px solid var(--line);border-radius:12px;padding:0 1.1rem;
+  /* Explicit, never var(--white): that token is #FFFFFF outside .svc-page and
+     the typed text went white-on-white with no error. */
+  color:#0D0D14;font:inherit;font-size:1.0625rem;
+  box-shadow:0 1px 3px rgba(13,13,20,.06)}
+.sa-step1 input::placeholder{color:var(--dim);opacity:1}
+.sa-step1 input:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-color:var(--blue)}
+.sa-step1 .btn{flex:0 0 auto;min-height:58px}
+.sa-step1.is-done{opacity:.72}
+
+/* Step two: revealed once a site is in. */
+.sa-step2{margin-top:1.1rem;padding-top:1.2rem;border-top:1px solid var(--line)}
+.sa-step2-head{margin:0 0 .9rem;font-family:var(--font-display);font-size:1.05rem;
+  font-weight:700;letter-spacing:-.01em;text-align:center}
+.sa-fields{display:grid;gap:.8rem .9rem;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.sa-field label{display:block;margin:0 0 .3rem;font-size:.8125rem;font-weight:600;color:var(--muted)}
+.sa-field input{width:100%;min-height:50px;background:#FFFFFF;border:1px solid var(--line);
+  border-radius:11px;padding:0 .9rem;color:#0D0D14;font:inherit;font-size:1rem}
 .sa-field input::placeholder{color:var(--dim);opacity:1}
 .sa-field input:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-color:var(--blue)}
-.sa-submit{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.9rem 1.4rem;align-items:center;margin-top:.3rem}
-.sa-submit .btn{flex:0 0 auto;min-height:52px}
-.sa-submit .sa-note{flex:999 1 300px;min-width:0;margin:0}
+.sa-submit{display:flex;flex-wrap:wrap;gap:.8rem 1.2rem;align-items:center;margin-top:1rem}
+.sa-submit .btn{flex:0 0 auto;min-height:50px}
+.sa-submit .sa-note{flex:999 1 260px;min-width:0;margin:0;text-align:left}
+.sa-note{flex:999 1 300px;min-width:0;margin:0}
 .sa-note{margin:1rem 0 0;font-size:.875rem;color:var(--dim)}
 
 /* ---- shared bits --------------------------------------------------------- */

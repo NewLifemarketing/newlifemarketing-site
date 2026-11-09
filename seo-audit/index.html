@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,700;1,700;1,800;1,900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.min.css?v=0dd1f3fa">
-<link rel="stylesheet" href="/css/seo-audit-v1.css?v=5992af67">
+<link rel="stylesheet" href="/css/seo-audit-v1.css?v=4ef1f00c">
 <link rel="icon" type="image/png" href="/assets/brand/favicon.png"><link rel="apple-touch-icon" href="/assets/brand/favicon.png">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": ["LocalBusiness", "MarketingAgency"], "name": "NewLife Marketing", "url": "https://newlifemarketing.ca", "email": "contact@newlifemarketing.ca", "telephone": "+1-705-302-1097", "foundingDate": "2022", "slogan": "Disruptive Ads. Relentless ROI.", "description": "NewLife Marketing is a full-service digital marketing agency based in Barrie, Ontario, working with clients worldwide, paid ads (Meta & Google), SEO, social media, in-house video production and CRM builds.", "address": {"@type": "PostalAddress", "streetAddress": "70 Bearberry Rd", "addressLocality": "Minesing", "addressRegion": "ON", "postalCode": "L9X 2E1", "addressCountry": "CA"}, "areaServed": "Worldwide", "sameAs": ["https://www.facebook.com/profile.php?id=61556647865792", "https://www.instagram.com/newlifemarketing_/", "https://youtube.com/@newlifemarketing7", "https://www.tiktok.com/@newlifemarket1ng"], "aggregateRating": {"@type": "AggregateRating", "ratingValue": "5.0", "reviewCount": "4"}, "review": [{"@type": "Review", "author": {"@type": "Person", "name": "Brandi Gordon"}, "reviewRating": {"@type": "Rating", "ratingValue": "5"}}, {"@type": "Review", "author": {"@type": "Person", "name": "Darren Johnson"}, "reviewRating": {"@type": "Rating", "ratingValue": "5"}}, {"@type": "Review", "author": {"@type": "Person", "name": "Kanto Legend"}, "reviewRating": {"@type": "Rating", "ratingValue": "5"}}], "image": "https://newlifemarketing.ca/assets/office/office-drone.jpg"}</script>
 <script defer src="/js/tracking.min.js?v=13aa8726"></script>
@@ -31,63 +31,63 @@
 <main id="main">
 <div class="svc-page">
 
-<section class="hero short sa-hero">
+<section class="hero hero-centred hero-light sa-hero">
+  <div class="hero-bg"></div>
   <div class="wrap">
-    <p class="sa-flag">Free &middot; Report on screen in 90 seconds</p>
+    <p class="review-strip"><span class="star-glyphs" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</span><img class="rs-g" src="/assets/brand/logos/google.svg" alt="Google" width="18" height="18" loading="eager"><span class="rs-text"><strong>5.0</strong> Google rating</span></p>
+
     <h1 class="kicker">Free SEO Audit For Service Businesses</h1>
-    <p class="hero-title">Find the pages you never built.</p>
-    <p class="lead">Most audits score the one page you give them. This one maps every service you sell against every town you serve, then tells you which of those pages exist, which are optimised, and which you are simply missing.</p>
+    <p class="hero-title">Find the pages<br>you never built.</p>
+    <p class="lead">Put your website in. We'll show you every page you have, every page you're missing, and what to fix first.</p>
 
     <form class="sa-form" id="sa-form" method="post" action="/api/seo-audit" novalidate>
-      <div class="sa-field sa-field-wide">
-        <label for="sa-site">Your website</label>
-        <input id="sa-site" name="website" type="url" inputmode="url" autocomplete="url" placeholder="yourcompany.ca" required>
-      </div>
-      <div class="sa-field">
-        <label for="sa-company">Company name</label>
-        <input id="sa-company" name="company" type="text" autocomplete="organization" placeholder="Example Builders Ltd." required>
-      </div>
-      <div class="sa-field">
-        <label for="sa-name">Your name</label>
-        <input id="sa-name" name="name" type="text" autocomplete="name" placeholder="Sam Taylor" required>
-      </div>
-      <div class="sa-field">
-        <label for="sa-email">Email</label>
-        <input id="sa-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="sam@yourcompany.ca" required>
-      </div>
-      <div class="sa-field">
-        <label for="sa-phone">Phone</label>
-        <input id="sa-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="705 555 0199" required>
-      </div>
-      <div class="sa-submit">
-        <button class="btn" type="submit">Run my audit</button>
-        <p class="sa-note">We email you the report as well, so you have it when you want to act on it. No list, no sequence &mdash; see the <a href="/privacy/">privacy policy</a>.</p>
-      </div>
-    </form>
-  </div>
-</section>
 
-<section class="band tight">
-  <div class="wrap">
-    <div class="grid cols-3 sa-three">
-      <div>
-        <p class="sa-step">01 &mdash; The grid</p>
-        <h2>Which pages should exist</h2>
-        <p>We read your services and your service areas off your own site, then multiply them. Six services across nine towns is fifty-four pages. Most sites we audit have built four.</p>
+      <div class="sa-step1" id="sa-step1">
+        <label class="sr-only" for="sa-site">Your website</label>
+        <input id="sa-site" name="website" type="url" inputmode="url" autocomplete="url" placeholder="yourcompany.ca" required>
+        <button class="btn" type="button" id="sa-next">Run my audit</button>
       </div>
-      <div>
-        <p class="sa-step">02 &mdash; The pages</p>
-        <h2>Eleven checks on each one</h2>
-        <p>Title, slug, H1, meta description, first sentence, H2s, an H3, image alt, body copy, FAQ, and the name, address and phone in your footer. Pass or fail, per page, with the fix.</p>
+
+      <div class="sa-step2" id="sa-step2" hidden>
+        <p class="sa-step2-head">Where should we send it?</p>
+        <div class="sa-fields">
+          <div class="sa-field">
+            <label for="sa-company">Company name</label>
+            <input id="sa-company" name="company" type="text" autocomplete="organization" placeholder="Example Builders Ltd.">
+          </div>
+          <div class="sa-field">
+            <label for="sa-name">Your name</label>
+            <input id="sa-name" name="name" type="text" autocomplete="name" placeholder="Sam Taylor">
+          </div>
+          <div class="sa-field">
+            <label for="sa-email">Email</label>
+            <input id="sa-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="sam@yourcompany.ca">
+          </div>
+          <div class="sa-field">
+            <label for="sa-phone">Phone</label>
+            <input id="sa-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="705 555 0199">
+          </div>
+        </div>
+        <div class="sa-submit">
+          <button class="btn" type="submit">See my report</button>
+          <p class="sa-note">We email you a copy so you have it when you want to act on it. No list, no sequence &mdash; see the <a href="/privacy/">privacy policy</a>.</p>
+        </div>
       </div>
-      <div>
-        <p class="sa-step">03 &mdash; The order</p>
-        <h2>What to do first</h2>
-        <p>Ranked by what it costs against what it returns. Fixing a title tag takes a minute; building eleven area pages takes a month. The report says which order.</p>
+
+    </form>
+
+    <div class="trust-band trust-in-hero">
+      <div class="wrap">
+        <span class="t-item"><strong>Free</strong>, and the whole report</span>
+        <span class="t-item"><strong>Up to 300 pages</strong> crawled</span>
+        <span class="t-item"><strong>About 90 seconds</strong></span>
+        <span class="risk-reversal">Built for service businesses: trades, contractors, clinics and professional services.</span>
       </div>
     </div>
   </div>
 </section>
+
+
 
 <section class="band">
   <div class="wrap">
@@ -273,6 +273,41 @@
 </section>
 
 </div>
+
+<script>
+/* Two steps, because one field is a lower bar to clear than five. The contact
+   fields are only revealed once a site is in, and they are NOT `required` in
+   the markup -- a required field inside a `hidden` container blocks submit with
+   a validation message the browser cannot show, which looks like a dead button.
+   They are required here instead, once they are on screen. */
+(function () {
+  var form = document.getElementById('sa-form');
+  if (!form) return;
+  var site = document.getElementById('sa-site');
+  var next = document.getElementById('sa-next');
+  var step1 = document.getElementById('sa-step1');
+  var step2 = document.getElementById('sa-step2');
+  var later = ['sa-company', 'sa-name', 'sa-email', 'sa-phone'];
+
+  next.addEventListener('click', function () {
+    if (!site.value.trim()) { site.focus(); return; }
+    // A bare domain is what people type. Make it a URL so type="url" passes.
+    if (!/^https?:\/\//i.test(site.value.trim())) site.value = 'https://' + site.value.trim();
+    if (!site.checkValidity()) { site.reportValidity(); return; }
+
+    step2.hidden = false;
+    step1.classList.add('is-done');
+    later.forEach(function (id) { document.getElementById(id).required = true; });
+    document.getElementById('sa-company').focus();
+  });
+
+  // Enter in the website field advances rather than submitting a half-empty form.
+  site.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); next.click(); }
+  });
+})();
+</script>
+
 </main>
 <!-- BEGIN SITE FOOTER - managed by scripts/sync-chrome.mjs; edit partials/footer.html, not here --><footer class="site-footer"><div class="wrap"><div class="grid cols-4"><div><h4>NewLife Marketing</h4><ul class="foot-contact"><li><span class="fc-ico fc-pin" aria-hidden="true"></span><a href="https://www.google.com/maps/search/?api=1&amp;query=70%20Bearberry%20Rd%2C%20Minesing%2C%20ON%20L9X%202E1" target="_blank" rel="noopener">70 Bearberry Rd, Minesing, ON L9X 2E1</a><span class="fc-sub">Serving Barrie, Simcoe County & Ontario</span></li><li><span class="fc-ico fc-phone" aria-hidden="true"></span><a href="tel:+17053021097">705-302-1097</a></li><li><span class="fc-ico fc-mail" aria-hidden="true"></span><a href="mailto:contact@newlifemarketing.ca">contact@newlifemarketing.ca</a></li><li><span class="fc-ico fc-mail" aria-hidden="true"></span><a href="mailto:sales@newlifemarketing.ca">sales@newlifemarketing.ca</a></li></ul></div><div><h4>Services</h4><h5 class="foot-sub">Expertise</h5><ul><li><a href="/services/meta-ads/">Meta Ads</a></li><li><a href="/services/google-ads/">Google Ads</a></li><li><a href="/services/linkedin-ads/">LinkedIn Ads</a></li><li><a href="/services/seo/">Search Engine Optimization</a></li><li><a href="/services/social-media/">Social Media Marketing</a></li><li><a href="/services/creative-production/">Creative Production</a></li><li><a href="/services/websites-portals-platforms/">Websites &amp; Portals</a></li><li><a href="/services/software-platforms/">Software &amp; Platforms</a></li><li><a href="/services/crm-buildout/">CRM Systems</a></li></ul><h5 class="foot-sub">Proven Systems</h5><ul><li><a href="/services/growth-partner-system/">Growth Partner System</a></li><li><a href="/services/starter-system/">Starter System</a></li><li><a href="/services/trades-growth-system/">Trades Growth System</a></li></ul></div><div><h4>Company</h4><h5 class="foot-sub">The agency</h5><ul><li><a href="/about/office/">Our Office</a></li><li><a href="/about/">About Us</a></li><li><a href="/about/leadership/">Leadership</a></li><li><a href="/about/awards/">Awards & Recognition</a></li><li><a href="/about/partners/">Partners & Certifications</a></li><li><a href="/careers/">Careers - We're Hiring</a></li><li><a href="/ugc/">UGC Creators & Clippers</a></li><li><a href="/services/software/">Software Solutions</a></li><li><a href="/contact/">Contact Us</a></li></ul><h5 class="foot-sub">Our work</h5><ul><li><a href="/clients/">Clients</a></li><li><a href="/case-studies/">Case Studies</a></li><li><a href="/portfolio/">Portfolio</a></li><li><a href="/portfolio/website-builds/">Website Builds</a></li><li><a href="/portfolio/sales-pipelines/">Sales Pipelines</a></li><li><a href="/projects/">Travel Projects</a></li></ul></div><div><h4>Resources</h4><ul><li><a href="/blog/">Our Blog</a></li><li><a href="/articles/">Articles</a></li><li><a href="/community/">NewLife Community</a></li><li><a href="/academy/">NewLife Academy</a></li><li><a href="/podcast/">The NewLife Podcast</a></li><li><a href="/youtube/">NewLife on YouTube</a></li><li><a href="/trades/free-website/">Free Website for Trades</a></li><li><a href="/editor/">Free Video Editor</a></li><li><a href="/portal/">Client Login</a></li><li><a href="/book/">Book a Strategy Call</a></li></ul><h5 class="foot-sub">Free guides</h5><ul><li><a href="/services/account-based-marketing/">Account-Based Marketing</a></li><li><a href="/services/go-to-market-strategy/">Go-To-Market Strategy</a></li><li><a href="/services/demand-generation/">Demand Generation</a></li><li><a href="/services/intent-signal-marketing/">Intent & Signal Marketing</a></li></ul><h5 class="foot-sub">Follow the crew</h5><ul><li><a href="https://www.facebook.com/profile.php?id=61556647865792" target="_blank" rel="noopener">Facebook</a></li><li><a href="https://www.instagram.com/newlifemarketing_/" target="_blank" rel="noopener">Instagram</a></li><li><a href="https://youtube.com/@newlifemarketing7" target="_blank" rel="noopener">YouTube</a></li><li><a href="https://www.tiktok.com/@newlifemarket1ng" target="_blank" rel="noopener">TikTok</a></li></ul><h4 style="margin-top:1.5rem">Subscribe to our Newsletter</h4><form class="newsletter"><input type="email" placeholder="you@business.ca" aria-label="Email address" required><button class="btn sm" type="submit">Join</button></form></div></div><div class="footer-bottom"><span>© 2022–2026 NewLife Marketing · Founded in Barrie, Ontario</span><span class="platform-logos" aria-label="The platforms we run on"><span class="pl-chip"><img height="24" width="24" src="/assets/brand/logos/facebook.svg" alt="Facebook" loading="lazy"></span><span class="pl-chip"><img height="48" width="48" src="/assets/brand/logos/google.svg" alt="Google" loading="lazy"></span><span class="pl-chip"><img height="24" width="24" src="/assets/brand/logos/semrush-mark.svg" alt="Semrush" loading="lazy"></span><span class="pl-chip"><img height="512" width="512" src="/assets/brand/logos/adobe.svg" alt="Adobe" loading="lazy"></span><span class="pl-chip"><img height="26" width="32" src="/assets/brand/logos/gohighlevel.png" alt="GoHighLevel" loading="lazy"></span><span class="pl-chip"><img height="240" width="192" src="/assets/brand/logos/sprout-social.png" alt="Sprout Social" loading="lazy"></span></span><span><a href="/privacy/">Privacy Policy</a> · <a href="/terms/">Terms of Service</a> · <a href="/image-credits/">Image Credits</a> · <a href="/service-areas/">Service Areas</a> · <a href="/sitemap/">Site Map</a></span></div></div></footer>
 <!-- END SITE FOOTER --><div class="mobile-cta"><a class="btn ghost" href="tel:+17053021097">Call 705-302-1097</a><a class="btn" href="/book/" >Book a Call</a></div>
