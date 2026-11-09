@@ -17,35 +17,69 @@
   border:1px solid var(--line);border-radius:999px;padding:.4rem .85rem;margin:0 0 1.1rem;
   font-size:.8125rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--blue-hot)}
 
-/* The hero is centred like the home page's, so the form is too. */
-.sa-form{max-width:620px;margin:1.9rem auto 0;text-align:left}
-
-/* Step one: one field and one button, on one line. */
-.sa-step1{display:flex;flex-wrap:wrap;gap:.7rem}
-.sa-step1 input{flex:999 1 260px;min-width:0;min-height:58px;background:#FFFFFF;
+/* The hero is centred like the home page's, so the form is too. One field. */
+.sa-form{display:flex;flex-wrap:wrap;gap:.7rem;max-width:560px;margin:1.9rem auto 0}
+.sa-form input{flex:999 1 240px;min-width:0;min-height:58px;background:#FFFFFF;
   border:1px solid var(--line);border-radius:12px;padding:0 1.1rem;
   /* Explicit, never var(--white): that token is #FFFFFF outside .svc-page and
      the typed text went white-on-white with no error. */
-  color:#0D0D14;font:inherit;font-size:1.0625rem;
-  box-shadow:0 1px 3px rgba(13,13,20,.06)}
-.sa-step1 input::placeholder{color:var(--dim);opacity:1}
-.sa-step1 input:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-color:var(--blue)}
-.sa-step1 .btn{flex:0 0 auto;min-height:58px}
-.sa-step1.is-done{opacity:.72}
+  color:#0D0D14;font:inherit;font-size:1.0625rem;box-shadow:0 1px 3px rgba(13,13,20,.06)}
+.sa-form input::placeholder{color:var(--dim);opacity:1}
+.sa-form input:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-color:var(--blue)}
+.sa-form .btn{flex:0 0 auto;min-height:58px}
 
-/* Step two: revealed once a site is in. */
-.sa-step2{margin-top:1.1rem;padding-top:1.2rem;border-top:1px solid var(--line)}
-.sa-step2-head{margin:0 0 .9rem;font-family:var(--font-display);font-size:1.05rem;
-  font-weight:700;letter-spacing:-.01em;text-align:center}
-.sa-fields{display:grid;gap:.8rem .9rem;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+/* ---- the card ------------------------------------------------------------ */
+/* The modal lives outside .svc-page -- it has to, so the overlay can cover the
+   whole viewport -- which means --surface is the DARK token again and the card
+   rendered near-black on a light page. Rather than move the markup and hope
+   nobody moves it back, the card carries the light tokens itself. Third time
+   this trap has bitten on this page: the input text, the report surfaces, and
+   now the card. */
+.sa-modal{--surface:#FFFFFF;--surface-2:#F5F6F8;--line:#E4E7EC;--white:#0D0D14;
+  --muted:#4B4B57;--dim:#6C6C7A;background:#FFFFFF;color:#0D0D14}
+.sa-modal h3{margin:0 0 1rem;font-family:var(--font-display);font-size:1.5rem;
+  font-weight:800;letter-spacing:-.02em;padding-right:2rem}
+.sa-confirm-site{margin:0 0 1rem;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:12px;padding:.85rem 1rem;font-family:var(--font-display);
+  font-size:1.0625rem;font-weight:700;word-break:break-all;text-align:center}
+.sa-yesno{display:flex;gap:.7rem;margin:0 0 .4rem}
+.sa-yn{flex:1 1 0;min-height:52px;background:#FFFFFF;border:1px solid var(--line);
+  border-radius:12px;color:#0D0D14;font-family:var(--font-display);font-size:1.0625rem;
+  font-weight:700;cursor:pointer;transition:border-color .15s ease,background .15s ease}
+.sa-yn:hover{border-color:var(--blue)}
+.sa-yn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+/* aria-pressed is the state, so the style keys off it -- no second class to
+   keep in step with the attribute a screen reader actually reads. */
+.sa-yn[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#FFFFFF}
+.sa-modal-sub{margin:0 0 1.2rem;font-size:.9375rem;color:var(--muted)}
+.sa-modal-err{margin:0 0 .8rem;font-size:.9375rem;color:#B3261E;font-weight:600}
+.sa-modal .sa-field{margin:0 0 .8rem}
+.sa-modal .btn{width:100%;justify-content:center;min-height:52px;margin-top:.4rem}
+.sa-modal .sa-note{margin:.8rem 0 0;text-align:center}
+
 .sa-field label{display:block;margin:0 0 .3rem;font-size:.8125rem;font-weight:600;color:var(--muted)}
 .sa-field input{width:100%;min-height:50px;background:#FFFFFF;border:1px solid var(--line);
   border-radius:11px;padding:0 .9rem;color:#0D0D14;font:inherit;font-size:1rem}
 .sa-field input::placeholder{color:var(--dim);opacity:1}
 .sa-field input:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-color:var(--blue)}
-.sa-submit{display:flex;flex-wrap:wrap;gap:.8rem 1.2rem;align-items:center;margin-top:1rem}
-.sa-submit .btn{flex:0 0 auto;min-height:50px}
-.sa-submit .sa-note{flex:999 1 260px;min-width:0;margin:0;text-align:left}
+
+/* ---- the run ------------------------------------------------------------- */
+.sa-status{display:flex;align-items:center;gap:.9rem;justify-content:center;
+  padding:2.2rem 1rem;font-size:1.0625rem;color:var(--muted)}
+/* `display:flex` on a class BEATS the browser's own [hidden]{display:none},
+   so setting .hidden = true in script did nothing and the spinner sat above
+   the finished report still saying "checking eleven slots". The JS reported
+   hidden:true and it was -- the attribute was set and the element still
+   showed. Only looking at it found this. */
+.sa-status[hidden]{display:none}
+.sa-spinner{width:22px;height:22px;flex:0 0 22px;border:2px solid var(--line);
+  border-top-color:var(--blue);border-radius:50%;animation:sa-spin .8s linear infinite}
+@keyframes sa-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.sa-spinner{animation-duration:2.4s}}
+.sa-preview-note{background:var(--blue-dim);border:1px solid var(--blue);border-radius:12px;
+  padding:1rem 1.1rem;margin:0 0 1.4rem;font-size:.9375rem;color:#0D0D14}
+.sa-run .sa-report{margin-top:0}
+.sa-note{flex:999 1 260px;min-width:0;margin:0;text-align:left}
 .sa-note{flex:999 1 300px;min-width:0;margin:0}
 .sa-note{margin:1rem 0 0;font-size:.875rem;color:var(--dim)}
 

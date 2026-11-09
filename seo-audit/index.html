@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,700;1,700;1,800;1,900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.min.css?v=0dd1f3fa">
-<link rel="stylesheet" href="/css/seo-audit-v1.css?v=4ef1f00c">
+<link rel="stylesheet" href="/css/seo-audit-v1.css?v=b64bedd1">
 <link rel="icon" type="image/png" href="/assets/brand/favicon.png"><link rel="apple-touch-icon" href="/assets/brand/favicon.png">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": ["LocalBusiness", "MarketingAgency"], "name": "NewLife Marketing", "url": "https://newlifemarketing.ca", "email": "contact@newlifemarketing.ca", "telephone": "+1-705-302-1097", "foundingDate": "2022", "slogan": "Disruptive Ads. Relentless ROI.", "description": "NewLife Marketing is a full-service digital marketing agency based in Barrie, Ontario, working with clients worldwide, paid ads (Meta & Google), SEO, social media, in-house video production and CRM builds.", "address": {"@type": "PostalAddress", "streetAddress": "70 Bearberry Rd", "addressLocality": "Minesing", "addressRegion": "ON", "postalCode": "L9X 2E1", "addressCountry": "CA"}, "areaServed": "Worldwide", "sameAs": ["https://www.facebook.com/profile.php?id=61556647865792", "https://www.instagram.com/newlifemarketing_/", "https://youtube.com/@newlifemarketing7", "https://www.tiktok.com/@newlifemarket1ng"], "aggregateRating": {"@type": "AggregateRating", "ratingValue": "5.0", "reviewCount": "4"}, "review": [{"@type": "Review", "author": {"@type": "Person", "name": "Brandi Gordon"}, "reviewRating": {"@type": "Rating", "ratingValue": "5"}}, {"@type": "Review", "author": {"@type": "Person", "name": "Darren Johnson"}, "reviewRating": {"@type": "Rating", "ratingValue": "5"}}, {"@type": "Review", "author": {"@type": "Person", "name": "Kanto Legend"}, "reviewRating": {"@type": "Rating", "ratingValue": "5"}}], "image": "https://newlifemarketing.ca/assets/office/office-drone.jpg"}</script>
 <script defer src="/js/tracking.min.js?v=13aa8726"></script>
@@ -40,40 +40,10 @@
     <p class="hero-title">See what your site<br>is missing.</p>
     <p class="lead">Put your website in. You get every page you have, every page you should have, and what to fix first.</p>
 
-    <form class="sa-form" id="sa-form" method="post" action="/api/seo-audit" novalidate>
-
-      <div class="sa-step1" id="sa-step1">
-        <label class="sr-only" for="sa-site">Your website</label>
-        <input id="sa-site" name="website" type="url" inputmode="url" autocomplete="url" placeholder="yourcompany.ca" required>
-        <button class="btn" type="button" id="sa-next">Run my audit</button>
-      </div>
-
-      <div class="sa-step2" id="sa-step2" hidden>
-        <p class="sa-step2-head">Where should we send it?</p>
-        <div class="sa-fields">
-          <div class="sa-field">
-            <label for="sa-company">Company name</label>
-            <input id="sa-company" name="company" type="text" autocomplete="organization" placeholder="Example Builders Ltd.">
-          </div>
-          <div class="sa-field">
-            <label for="sa-name">Your name</label>
-            <input id="sa-name" name="name" type="text" autocomplete="name" placeholder="Sam Taylor">
-          </div>
-          <div class="sa-field">
-            <label for="sa-email">Email</label>
-            <input id="sa-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="sam@yourcompany.ca">
-          </div>
-          <div class="sa-field">
-            <label for="sa-phone">Phone</label>
-            <input id="sa-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="705 555 0199">
-          </div>
-        </div>
-        <div class="sa-submit">
-          <button class="btn" type="submit">See my report</button>
-          <p class="sa-note">We email you a copy so you have it when you want to act on it. No list, no sequence &mdash; see the <a href="/privacy/">privacy policy</a>.</p>
-        </div>
-      </div>
-
+    <form class="sa-form" id="sa-form" novalidate>
+      <label class="sr-only" for="sa-site">Your website</label>
+      <input id="sa-site" name="website" type="url" inputmode="url" autocomplete="url" placeholder="yourcompany.ca" required>
+      <button class="btn" type="submit" id="sa-next">Run my audit</button>
     </form>
 
     <div class="trust-band trust-in-hero">
@@ -84,6 +54,19 @@
         <span class="risk-reversal">Built for trades: builders, contractors, electricians, plumbers, roofers, landscapers.</span>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- The run happens here: a status line, then the report in place. Both are
+     empty until something runs, so the page is unchanged for a visitor who
+     never submits. aria-live means a screen reader is told it finished. -->
+<section class="band tight sa-run" id="sa-run" hidden>
+  <div class="wrap">
+    <div class="sa-status" id="sa-status" role="status" aria-live="polite">
+      <span class="sa-spinner" aria-hidden="true"></span>
+      <span class="sa-status-text" id="sa-status-text">Starting&hellip;</span>
+    </div>
+    <div id="sa-results"></div>
   </div>
 </section>
 
@@ -274,37 +257,200 @@
 
 </div>
 
+<!-- The site's own overlay/modal/close-x pattern from style.min.css, not a
+     second one invented for this page. -->
+<div class="overlay" id="sa-modal" role="dialog" aria-modal="true" aria-labelledby="sa-modal-h">
+  <div class="modal sa-modal">
+    <button class="close-x" type="button" id="sa-modal-close" aria-label="Close">&#10005;</button>
+    <h3 id="sa-modal-h">Is this your website?</h3>
+
+    <!-- The confirm comes first, and the ANSWER IS THE POINT. Yes means a
+         business auditing itself -- a prospect. No means somebody checking a
+         site they do not own: a competitor, an agency, or a curious visitor.
+         Both are welcome and they are not the same lead, so the answer is
+         recorded rather than used only to branch. -->
+    <p class="sa-confirm-site" id="sa-modal-site">yourcompany.ca</p>
+
+    <div class="sa-yesno" id="sa-yesno">
+      <button class="sa-yn" type="button" data-owner="yes">Yes</button>
+      <button class="sa-yn" type="button" data-owner="no">No</button>
+    </div>
+
+    <form id="sa-details" hidden novalidate>
+      <input type="hidden" name="is_owner" id="sa-owner" value="">
+      <p class="sa-modal-sub" id="sa-modal-sub">We&rsquo;ll crawl it and show the report on this page. Where should we send a copy?</p>
+      <div class="sa-field">
+        <label for="sa-company">Company name</label>
+        <input id="sa-company" name="company" type="text" autocomplete="organization" placeholder="Example Builders Ltd." required>
+      </div>
+      <div class="sa-field">
+        <label for="sa-name">Your name</label>
+        <input id="sa-name" name="name" type="text" autocomplete="name" placeholder="Sam Taylor" required>
+      </div>
+      <div class="sa-field">
+        <label for="sa-email">Email</label>
+        <input id="sa-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="sam@yourcompany.ca" required>
+      </div>
+      <div class="sa-field">
+        <label for="sa-phone">Phone</label>
+        <input id="sa-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="705 555 0199" required>
+      </div>
+      <p class="sa-modal-err" id="sa-modal-err" role="alert" hidden></p>
+      <button class="btn" type="submit" id="sa-go">Get my report</button>
+      <p class="sa-note">No list, no sequence &mdash; see the <a href="/privacy/">privacy policy</a>.</p>
+    </form>
+  </div>
+</div>
+
 <script>
-/* Two steps, because one field is a lower bar to clear than five. The contact
-   fields are only revealed once a site is in, and they are NOT `required` in
-   the markup -- a required field inside a `hidden` container blocks submit with
-   a validation message the browser cannot show, which looks like a dead button.
-   They are required here instead, once they are on screen. */
+/* The audit, front end only. No endpoint exists yet: SA_DEMO below is the
+   worked example already printed further down this page, and `run()` is where
+   fetch('/api/seo-audit') goes once there is something to call.
+   Deliberately NOT faked as a network call -- a demo that pretends to be live
+   is the thing somebody later mistakes for working software. */
 (function () {
   var form = document.getElementById('sa-form');
   if (!form) return;
+
   var site = document.getElementById('sa-site');
-  var next = document.getElementById('sa-next');
-  var step1 = document.getElementById('sa-step1');
-  var step2 = document.getElementById('sa-step2');
-  var later = ['sa-company', 'sa-name', 'sa-email', 'sa-phone'];
+  var modal = document.getElementById('sa-modal');
+  var modalSite = document.getElementById('sa-modal-site');
+  var details = document.getElementById('sa-details');
+  var err = document.getElementById('sa-modal-err');
+  var closeBtn = document.getElementById('sa-modal-close');
+  var run = document.getElementById('sa-run');
+  var statusText = document.getElementById('sa-status-text');
+  var statusBox = document.getElementById('sa-status');
+  var results = document.getElementById('sa-results');
+  var lastFocus = null;
 
-  next.addEventListener('click', function () {
-    if (!site.value.trim()) { site.focus(); return; }
-    // A bare domain is what people type. Make it a URL so type="url" passes.
-    if (!/^https?:\/\//i.test(site.value.trim())) site.value = 'https://' + site.value.trim();
+  function normalise(v) {
+    v = String(v || '').trim();
+    if (!v) return '';
+    // A bare domain is what people type, and it fails type="url". Without this
+    // the button does nothing for the commonest possible input.
+    if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+    return v;
+  }
+
+  function openModal() {
+    lastFocus = document.activeElement;
+    modal.classList.add('open');
+    err.hidden = true;
+    // Reset: a second run must ask again rather than inherit the first answer.
+    details.hidden = true;
+    owner.value = '';
+    [].forEach.call(yesno.querySelectorAll('.sa-yn'), function (x) { x.setAttribute('aria-pressed', 'false'); });
+    modalSite.textContent = site.value.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+    yesno.querySelector('.sa-yn').focus();
+    document.addEventListener('keydown', onEsc);
+  }
+  function closeModal() {
+    modal.classList.remove('open');
+    document.removeEventListener('keydown', onEsc);
+    if (lastFocus) lastFocus.focus();
+  }
+  function onEsc(e) { if (e.key === 'Escape') closeModal(); }
+
+  // Step 1: the website, then the card.
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    site.value = normalise(site.value);
+    if (!site.value) { site.focus(); return; }
     if (!site.checkValidity()) { site.reportValidity(); return; }
-
-    step2.hidden = false;
-    step1.classList.add('is-done');
-    later.forEach(function (id) { document.getElementById(id).required = true; });
-    document.getElementById('sa-company').focus();
+    openModal();
   });
 
-  // Enter in the website field advances rather than submitting a half-empty form.
-  site.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') { e.preventDefault(); next.click(); }
+  closeBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+
+  // Yes / No. Either answer opens the fields; which one was given is kept.
+  var owner = document.getElementById('sa-owner');
+  var yesno = document.getElementById('sa-yesno');
+  var sub = document.getElementById('sa-modal-sub');
+  [].forEach.call(yesno.querySelectorAll('.sa-yn'), function (b) {
+    b.addEventListener('click', function () {
+      var isOwner = b.dataset.owner === 'yes';
+      owner.value = b.dataset.owner;
+      [].forEach.call(yesno.querySelectorAll('.sa-yn'), function (x) {
+        x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+      });
+      // The copy follows the answer -- promising to email "your report" to
+      // somebody auditing a site they do not own would read as a mistake.
+      sub.textContent = isOwner
+        ? 'We’ll crawl it and show the report on this page. Where should we send a copy?'
+        : 'Fine — we’ll audit it anyway and show the report here. Where should we send a copy?';
+      details.hidden = false;
+      document.getElementById('sa-company').focus();
+    });
   });
+
+  // Step 2: the details, then the run.
+  details.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!details.checkValidity()) { details.reportValidity(); return; }
+    closeModal();
+    start({
+      website: site.value,
+      company: document.getElementById('sa-company').value.trim(),
+      name: document.getElementById('sa-name').value.trim(),
+      email: document.getElementById('sa-email').value.trim(),
+      phone: document.getElementById('sa-phone').value.trim(),
+      is_owner: owner.value
+    });
+  });
+
+  // The stages are the real ones the crawler will go through, in order, so the
+  // wait tells somebody what is happening rather than spinning at them.
+  var STAGES = [
+    ['Fetching ' + 'your sitemap', 900],
+    ['Crawling your pages', 2200],
+    ['Working out your services and service areas', 1500],
+    ['Building your grid', 1100],
+    ['Checking eleven slots on every page', 1800]
+  ];
+
+  function start(payload) {
+    run.hidden = false;
+    results.innerHTML = '';
+    statusBox.hidden = false;
+    run.scrollIntoView({ block: 'start' });
+
+    var i = 0;
+    (function step() {
+      if (i >= STAGES.length) return finish(payload);
+      statusText.textContent = STAGES[i][0].replace('your sitemap',
+        payload.website.replace(/^https?:\/\//i, '').replace(/\/$/, '') + '/sitemap.xml');
+      var wait = STAGES[i][1];
+      i++;
+      setTimeout(step, wait);
+    })();
+  }
+
+  function finish(payload) {
+    statusBox.hidden = true;
+    results.innerHTML = renderReport(payload);
+    results.scrollIntoView({ block: 'start' });
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  /* Until /api/seo-audit exists, the report shown is this page's own worked
+     example with the visitor's own domain and company written in, and it says
+     so at the top. It is not presented as their real result. */
+  function renderReport(p) {
+    var host = esc(p.website.replace(/^https?:\/\//i, '').replace(/\/$/, ''));
+    var sample = document.querySelector('.sa-report');
+    return ''
+      + '<div class="sa-preview-note" role="note"><strong>Preview.</strong> The crawler is not connected yet, '
+      + 'so what follows is the worked example from this page with <strong>' + host + '</strong> written in. '
+      + 'Your real report will replace it, and we have your details for ' + esc(p.email) + '.</div>'
+      + '<div class="sa-report">' + sample.innerHTML.split('examplebuilders.ca').join(host) + '</div>';
+  }
 })();
 </script>
 
