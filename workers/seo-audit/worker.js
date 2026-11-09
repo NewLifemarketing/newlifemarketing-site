@@ -619,100 +619,84 @@ function navGroups(html) {
   return { services, areas };
 }
 
-/* -- signal 2a: OPEN THE SERVICES PAGE AND READ IT -------------------------
- * This replaces a fallback that read the top menu and offered whatever was not
- * obviously furniture. On a real site that returned two "services": "Services"
- * -- the hub page itself -- and "Privacy & Terms". Both were in the menu, and
- * neither is a service, and no amount of widening the blocklist makes guessing
- * from a menu into reading.
- *
- * What a person does when a menu says "Services" is click it. So does this. It
- * costs one subrequest and it is the only signal here that looks at the page a
- * site wrote specifically to list what it sells.
- */
 const HUB_PATH = /^\/(services?|our-services|what-we-do|services-we-offer)\/?$/i;
 
-function hubServices(html) {
+/* -- signal 2: READ THE PAGE THE WAY A PERSON READS IT ----------------------
+ * Three times now a site came back with no services while anyone opening it
+ * could name them instantly. Reproduced on a real one, and the services were
+ * sitting in plain sight:
+ *
+ *     /services/   <strong>Lot Clearing</strong> then a sentence about it
+ *     /            <li class="has-large-font-size">Lot Clearing</li>
+ *
+ * Tree Removal & Pruning, Lot Clearing, Wood Chips, Firewood Delivery -- four
+ * services, no <h2>, no <a>, nothing to click. Every reader in here looked only
+ * at headings and links, so it found nothing and said so, on a page whose whole
+ * purpose is to list what the business sells.
+ *
+ * A PERSON DOES NOT READ TAGS. They read short bold phrases followed by a
+ * sentence, and bulleted lists. So this takes candidates from all four shapes
+ * -- links, headings, bold runs and list items -- in that order, because that
+ * is the order of how much each one usually means. Anything 1-5 words that is
+ * not furniture is a candidate, and candidates are confirmed by the owner.
+ *
+ * A candidate with no URL still counts. A business that sells four services off
+ * one page HAS four services and nought pages for them, and that is the finding
+ * -- reporting "no services" instead both insults them and buries the thing we
+ * are there to sell.
+ */
+const NOT_A_LABEL = /^(read|learn|see|view|more|details?|get|book|call|contact|back|next|prev(ious)?|home|menu|skip|close|toggle|submit|send|click)\b/i;
+
+function contentServices(html, scope) {
   const out = new Map();
   if (!html) return out;
-  // The hub's own content, with the furniture taken out -- a nav link inside
-  // the services page is still a nav link.
-  const clean = strip(html)
-    .replace(/<(header|nav|footer|aside)\b[\s\S]*?<\/\1>/gi, ' ');
+
+  let clean = strip(html).replace(/<(header|nav|footer|aside|form)\b[\s\S]*?<\/\1>/gi, ' ');
   const main = clean.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i);
-  const body = main ? main[1] : clean;
+  let body = main ? main[1] : clean;
 
-  for (const m of body.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
-    const text = decode(m[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
-    if (/^(tel|mailto|javascript|#)/i.test(m[1])) continue;
-    let seg;
-    try { seg = slugOf(new URL(m[1], 'https://x.invalid').pathname); } catch { continue; }
-    if (!seg.length) continue;
-    const key = seg[seg.length - 1];
-    if (!key || key.length < 3) continue;
-    if (!text || text.length > 48) continue;
-    if (/^(read|learn|see|view|more|details|get|book|call|contact|back|next|previous)\b/i.test(text)) continue;
-    out.set(key, text);
-    if (out.size >= 16) break;
+  /* `scope` narrows to a services section on a page that is not itself the
+   * services page -- a homepage's "What we do" block. Without it the whole
+   * homepage is fair game, which is right only as a last resort. */
+  if (scope) {
+    const heads = [...body.matchAll(/<h([1-4])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].map((m) => ({
+      at: m.index, lvl: Number(m[1]),
+      text: decode(m[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim(),
+    }));
+    const a = heads.find((h) => /\b(our\s+)?services\b|what\s+we\s+(do|offer)|how\s+we\s+help|our\s+expertise/i.test(h.text));
+    if (!a) return out;
+    const n = heads.find((h) => h.at > a.at && h.lvl <= a.lvl);
+    body = body.slice(a.at, n ? n.at : Math.min(body.length, a.at + 14000));
   }
-  return out;
-}
 
-/* -- signal 2b: THE HOMEPAGE, WHICH IS WHERE A HUMAN LOOKS ------------------
- * Reported on a real site: "we could not find any services section", when
- * anyone opening that site would name the services in three seconds. They were
- * right, and the reason is that none of the signals above read the page. The
- * trees are URL structure. The nav group needs a menu item literally labelled
- * "Services". The slug passes need a grid. A site whose top menu reads
- *
- *     Home | Roofing | Siding | Eavestrough | About | Contact
- *
- * has no services tree, no "Services" label to hang a dropdown off, and no grid
- * to factorise -- and its services are the four words in the middle of that
- * menu, which is exactly what a person sees.
- *
- * So two more reads, both of the homepage, both only used when the stronger
- * signals came back with less than a list:
- *
- *   2b  a heading that announces services, and what follows it
- *   2c  the top menu with the furniture taken out
- *
- * 2c is the blunt one and it is deliberately blunt: "the menu items that are
- * not About, Contact or Blog" is how a human reads a trades site, and the
- * blocklist already knows what the furniture is called. Some of what it offers
- * will be wrong. The owner is being asked, and being asked about four plausible
- * things beats being told we found nothing about a site that says what it does
- * at the top of every page. */
-function homepageServices(html) {
-  const out = new Map();
-  if (!html) return out;
-  const clean = strip(html);
+  const take = (raw, href) => {
+    const text = decode(String(raw).replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+    if (!text || text.length > 48) return;
+    if (text.split(' ').length > 5) return;
+    if (NOT_A_LABEL.test(text) || NOT_A_SERVICE_NAME.test(text)) return;
+    if (!/[a-z]/i.test(text)) return;
 
-  const heads = [...clean.matchAll(/<h([1-4])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].map((m) => ({
-    at: m.index,
-    lvl: Number(m[1]),
-    text: decode(m[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim(),
-  }));
+    let slug = null;
+    if (href && !/^(tel:|mailto:|javascript:|#)/i.test(href)) {
+      try {
+        const seg = slugOf(new URL(href, 'https://x.invalid').pathname);
+        if (seg.length) slug = seg[seg.length - 1];
+      } catch { /* fall through to the name */ }
+    }
+    // No URL is not a disqualification. A service listed on one page is still a
+    // service; it simply has no page, which is the point of the report.
+    if (!slug) {
+      slug = text.toLowerCase().replace(/&/g, ' and ')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+    if (!slug || slug.length < 3 || NOT_A_SERVICE.test(slug)) return;
+    if (!out.has(slug) && out.size < 16) out.set(slug, text);
+  };
 
-  const anchor = heads.find((h) => /\b(our\s+)?services\b|what\s+we\s+(do|offer)|how\s+we\s+help|our\s+expertise/i.test(h.text));
-  if (!anchor) return out;
-
-  // The section runs to the next heading at the same level or higher.
-  const next = heads.find((h) => h.at > anchor.at && h.lvl <= anchor.lvl);
-  const section = clean.slice(anchor.at, next ? next.at : Math.min(clean.length, anchor.at + 12000));
-
-  for (const m of section.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
-    const text = decode(m[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
-    let seg;
-    try { seg = slugOf(new URL(m[1], 'https://x.invalid').pathname); } catch { continue; }
-    if (!seg.length) continue;
-    const key = seg[seg.length - 1];
-    if (!key || key.length < 3) continue;
-    if (!text || text.length > 48) continue;
-    if (/^(read more|learn more|more|view|see more|details|get a quote|contact)/i.test(text)) continue;
-    out.set(key, text);
-    if (out.size >= 14) break;
-  }
+  for (const m of body.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) take(m[2], m[1]);
+  for (const m of body.matchAll(/<h([2-4])\b[^>]*>([\s\S]*?)<\/h\1>/gi)) take(m[2]);
+  for (const m of body.matchAll(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi)) take(m[2]);
+  for (const m of body.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)) take(m[1]);
   return out;
 }
 
@@ -880,11 +864,19 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml) {
   /* 2b and 2c: READ THE HOMEPAGE, but only once the signals that actually
    * know have come back with less than a list. A site with a /services/ tree
    * does not need its menu guessed at. */
+  /* Three reads, widening only when the one before came back with less than a
+   * list: the services page, then a services section on the homepage, then the
+   * homepage entire. Widening last is deliberate -- the whole homepage will
+   * offer some rubbish, and that is still better than telling a business we
+   * could not find services it lists on its front page. */
   if (services.size < 2) {
-    for (const [slug, text] of hubServices(hubHtml)) addSvc(slug, text, 'your services page');
+    for (const [slug, text] of contentServices(hubHtml)) addSvc(slug, text, 'your services page');
   }
   if (services.size < 2) {
-    for (const [slug, text] of homepageServices(homeHtml)) addSvc(slug, text, 'your services section');
+    for (const [slug, text] of contentServices(homeHtml, true)) addSvc(slug, text, 'your services section');
+  }
+  if (services.size < 2) {
+    for (const [slug, text] of contentServices(homeHtml)) addSvc(slug, text, 'your home page');
   }
 
   // 3 and 4 run on the flat pages only. Anything a tree or the nav already
