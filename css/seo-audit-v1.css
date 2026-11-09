@@ -255,3 +255,9 @@
 .sa-add:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-color:var(--blue)}
 .sa-q-btns{margin-top:1.1rem}
 .sa-q-btns .btn{min-height:52px}
+
+/* The per-page worklist. Compact, because a page missing six slots should read
+   as six short jobs rather than a paragraph of bad news. */
+.sa-missing{margin:0;padding-left:1.1em;list-style:disc}
+.sa-missing li{margin:.15rem 0;font-size:.88rem;line-height:1.35}
+.sa-pages td{vertical-align:top}

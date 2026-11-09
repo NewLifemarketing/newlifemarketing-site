@@ -91,9 +91,12 @@ export default {
      * internet asks it to crawl. Rate limiting belongs here before it is
      * public -- see README. Refusing our own site and obvious non-sites is the
      * floor, not the whole answer. */
-    if (/(^|\.)newlifemarketing\.ca$/i.test(target.hostname)) {
-      return json({ error: 'That is our site.' }, 400, origin);
-    }
+    /* Our own site used to be refused here, and that was wrong twice over: it
+     * is the one site we are plainly entitled to crawl, and it is the obvious
+     * thing to type when checking whether the tool works at all. The refusal
+     * was meant to stop the crawler being aimed at us, which is not something
+     * we need protecting from -- the private-host and loopback refusals above
+     * are the ones doing real work. */
 
     try {
       const result = await audit(target, env);
@@ -285,6 +288,11 @@ async function audit(target, env) {
     subrequests: SUBREQ,
     unreadable: pages.filter((p) => p.error).map((p) => ({ url: p.url, status: p.status, why: p.why })),
     footer_nap: good.some((p) => p.footer_nap),
+    nap: {
+      name: good.some((p) => p.nap && p.nap.name),
+      address: good.some((p) => p.nap && p.nap.address),
+      phone: good.some((p) => p.nap && p.nap.phone),
+    },
     services: grid.services,
     areas: grid.areas,
     pages: good,
@@ -410,6 +418,17 @@ function assess(p, html) {
   const hasPostal = /\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/i.test(footer)
     || /\b\d{1,6}\s+[A-Za-z][A-Za-z.\- ]{2,40}\s(st|street|rd|road|ave|avenue|dr|drive|blvd|way|hwy|highway|cres|crescent|lane|ln|court|ct)\b/i.test(footer);
 
+  /* NAME, ADDRESS, PHONE: THREE FACTS, SCORED SEPARATELY. One boolean for all
+   * three said "Yes" to a footer carrying a phone and no address, and "No" to
+   * one missing only the business name -- and either way the owner cannot tell
+   * from the report which of the three to go and fix. Google reads them
+   * separately and so should this.
+   *
+   * The name is taken from the title tag's brand clause, because that is the
+   * name the site gives itself; a title written "Service | Brand" puts it last. */
+  const brand = (String(title).split(/[|–—·]/).pop() || '').trim();
+  const hasName = brand.length > 2 && footer.toLowerCase().includes(brand.toLowerCase());
+
   const faq = /<details\b/i.test(clean)
     || /"@type"\s*:\s*"FAQPage"/i.test(html)
     || /\b(frequently asked|faqs?)\b/i.test([...h2, ...h3].join(' '));
@@ -429,7 +448,7 @@ function assess(p, html) {
     image_alt: alts.some((a) => a && kIn(a)) && !alts.some((a) => a === ''),
     body: kIn(body),
     faq: faq,
-    footer_nap: hasPhone && hasPostal,
+    footer_nap: hasName && hasPhone && hasPostal,
   };
   const applicable = Object.values(slots).filter((v) => v !== null).length;
   const filled = Object.values(slots).filter((v) => v === true).length;
@@ -449,6 +468,8 @@ function assess(p, html) {
     occurrences,
     slots, filled, applicable,
     footer_nap: slots.footer_nap,
+    // The three parts on their own, so the report can say WHICH is missing.
+    nap: { name: hasName, address: hasPostal, phone: hasPhone },
   };
 }
 
@@ -1143,6 +1164,61 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml, read, pre) {
     for (const u of flat) {
       if (tokensOf(u).length < 2) continue;
       addSvc(lastSeg(u), pageName(byUrl.get(u)), 'a page of yours');
+    }
+  }
+
+  /* STRIP THE TRADE OUT OF THE TOWN.
+   *
+   * An agency site came back serving "Online Marketing Aurora", "Internet
+   * Marketing Guelph", "Digital Marketing Oshawa" and "Advertising Agency
+   * Orillia" -- those are its own page TITLES, and the model handed them back
+   * as places because that is what they look like in a menu. The town is in
+   * each one; the trade words around it are the noise.
+   *
+   * A word that recurs across many area names cannot be the thing that makes
+   * them different places, so it is not part of any of their names. Aurora,
+   * Guelph, Oshawa and Orillia differ; "marketing" does not. Same for any word
+   * already in a service name -- it was a service before it was a town.
+   *
+   * Deterministic on purpose. The model is better at reading than at being
+   * consistent, and this is arithmetic over its answer rather than a second
+   * question for it. */
+  {
+    const tok = (n) => String(n).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    const freq = new Map();
+    for (const v of areas.values()) for (const t of new Set(tok(v.name))) freq.set(t, (freq.get(t) || 0) + 1);
+    const inServices = new Set();
+    for (const v of services.values()) for (const t of tok(v.name)) inServices.add(t);
+
+    /* Always noise, however rarely it appears. Frequency alone left "Call",
+     * "Agencies", "Agency Toronto" and "Digital Ottawa" standing on a site
+     * where each occurred once or twice. These are words about a business, not
+     * about a place, in any town in the country. */
+    const TRADE_WORDS = new Set(['call', 'agency', 'agencies', 'digital', 'online', 'internet',
+      'advertising', 'marketing', 'seo', 'web', 'website', 'websites', 'consulting', 'consultant',
+      'consultants', 'company', 'companies', 'enterprise', 'enterprises', 'group', 'service',
+      'services', 'contracting', 'contractor', 'contractors', 'excavation', 'construction',
+      'builder', 'builders', 'design', 'build', 'solutions', 'media', 'studio', 'studios',
+      'professional', 'professionals', 'experts', 'expert', 'specialists', 'specialist',
+      'near', 'best', 'top', 'local', 'free', 'quote', 'quotes', 'book', 'now', 'today']);
+
+    const filler = new Set(TRADE_WORDS);
+    for (const [t, n] of freq) {
+      // A word in 3+ area names, or in a service name, and never a name entire.
+      const isWholeName = [...areas.values()].some((v) => tok(v.name).length === 1 && tok(v.name)[0] === t);
+      if (!isWholeName && (n >= 3 || inServices.has(t))) filler.add(t);
+    }
+
+    for (const [slug, v] of [...areas.entries()]) {
+      const kept = tok(v.name).filter((t) => !filler.has(t) && !/\d/.test(t) && t.length > 2);
+      // Nothing left once the trade is removed: it was never a place.
+      if (!kept.length || kept.length > 3) { areas.delete(slug); continue; }
+      const name = kept.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      if (name.toLowerCase() !== String(v.name).toLowerCase()) {
+        areas.delete(slug);
+        const k = kept.join('-');
+        if (!areas.has(k) && !services.has(k)) areas.set(k, { name, from: v.from });
+      }
     }
   }
 
