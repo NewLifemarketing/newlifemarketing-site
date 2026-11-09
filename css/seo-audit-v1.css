@@ -29,33 +29,50 @@
 .sa-form .btn{flex:0 0 auto;min-height:58px}
 
 /* ---- the card ------------------------------------------------------------ */
-/* The modal lives outside .svc-page -- it has to, so the overlay can cover the
-   whole viewport -- which means --surface is the DARK token again and the card
-   rendered near-black on a light page. Rather than move the markup and hope
-   nobody moves it back, the card carries the light tokens itself. Third time
-   this trap has bitten on this page: the input text, the report surfaces, and
-   now the card. */
-.sa-modal{--surface:#FFFFFF;--surface-2:#F5F6F8;--line:#E4E7EC;--white:#0D0D14;
-  --muted:#4B4B57;--dim:#6C6C7A;background:#FFFFFF;color:#0D0D14}
-.sa-modal h3{margin:0 0 1rem;font-family:var(--font-display);font-size:1.5rem;
-  font-weight:800;letter-spacing:-.02em;padding-right:2rem}
-.sa-confirm-site{margin:0 0 1rem;background:var(--surface-2);border:1px solid var(--line);
-  border-radius:12px;padding:.85rem 1rem;font-family:var(--font-display);
-  font-size:1.0625rem;font-weight:700;word-break:break-all;text-align:center}
-.sa-yesno{display:flex;gap:.7rem;margin:0 0 .4rem}
-.sa-yn{flex:1 1 0;min-height:52px;background:#FFFFFF;border:1px solid var(--line);
-  border-radius:12px;color:#0D0D14;font-family:var(--font-display);font-size:1.0625rem;
+/* The card carries its OWN overlay and close button rather than the site's
+   .overlay/.modal/.close-x, because main.min.js binds a backdrop-close handler
+   to every .overlay it finds. A form with four required fields must not close
+   on a stray click.
+   It also carries the light tokens itself: it sits outside .svc-page -- it has
+   to, so the overlay covers the viewport -- so --surface is the DARK token
+   here. Third time that trap has bitten this page: the input text, the report
+   surfaces, and this card. */
+.sa-overlay{position:fixed;inset:0;z-index:100;background:rgba(6,6,10,.88);
+  display:none;align-items:center;justify-content:center;padding:var(--pad)}
+.sa-overlay.open{display:flex}
+.sa-card{--surface:#FFFFFF;--surface-2:#F5F6F8;--line:#E4E7EC;--white:#0D0D14;
+  --muted:#4B4B57;--dim:#6C6C7A;
+  position:relative;background:#FFFFFF;color:#0D0D14;border:1px solid #E4E7EC;
+  border-radius:14px;max-width:34rem;width:100%;padding:2rem;
+  max-height:90vh;overflow-y:auto}
+.sa-close{position:absolute;top:.75rem;right:.9rem;background:none;border:0;
+  color:var(--dim);font-size:1.3rem;line-height:1;cursor:pointer;
+  width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+.sa-close:hover{color:#0D0D14}
+.sa-close:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
+
+.sa-card h3{margin:0 0 1.1rem;font-family:var(--font-display);font-size:1.5rem;
+  font-weight:800;letter-spacing:-.02em;padding-right:2.4rem}
+
+.sa-ownerq{border:1px solid var(--line);border-radius:12px;padding:.9rem 1rem 1rem;
+  margin:0 0 1.1rem;background:var(--surface-2)}
+.sa-ownerq legend{padding:0 .4rem;font-size:.9375rem;font-weight:600;color:var(--muted)}
+.sa-ownerq legend strong{color:#0D0D14;word-break:break-all}
+.sa-yesno{display:flex;gap:.6rem}
+.sa-yn{flex:1 1 0;min-height:48px;background:#FFFFFF;border:1px solid var(--line);
+  border-radius:11px;color:#0D0D14;font-family:var(--font-display);font-size:1rem;
   font-weight:700;cursor:pointer;transition:border-color .15s ease,background .15s ease}
 .sa-yn:hover{border-color:var(--blue)}
 .sa-yn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 /* aria-pressed is the state, so the style keys off it -- no second class to
-   keep in step with the attribute a screen reader actually reads. */
+   keep in step with what a screen reader actually reads. */
 .sa-yn[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#FFFFFF}
+
 .sa-modal-sub{margin:0 0 1.2rem;font-size:.9375rem;color:var(--muted)}
 .sa-modal-err{margin:0 0 .8rem;font-size:.9375rem;color:#B3261E;font-weight:600}
-.sa-modal .sa-field{margin:0 0 .8rem}
-.sa-modal .btn{width:100%;justify-content:center;min-height:52px;margin-top:.4rem}
-.sa-modal .sa-note{margin:.8rem 0 0;text-align:center}
+.sa-card .sa-field{margin:0 0 .8rem}
+.sa-card .btn{width:100%;justify-content:center;min-height:52px;margin-top:.4rem}
+.sa-card .sa-note{margin:.8rem 0 0;text-align:center}
 
 .sa-field label{display:block;margin:0 0 .3rem;font-size:.8125rem;font-weight:600;color:var(--muted)}
 .sa-field input{width:100%;min-height:50px;background:#FFFFFF;border:1px solid var(--line);

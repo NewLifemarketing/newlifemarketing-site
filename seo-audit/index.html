@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,700;1,700;1,800;1,900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.min.css?v=0dd1f3fa">
-<link rel="stylesheet" href="/css/seo-audit-v1.css?v=b64bedd1">
+<link rel="stylesheet" href="/css/seo-audit-v1.css?v=6e64c488">
 <link rel="icon" type="image/png" href="/assets/brand/favicon.png"><link rel="apple-touch-icon" href="/assets/brand/favicon.png">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": ["LocalBusiness", "MarketingAgency"], "name": "NewLife Marketing", "url": "https://newlifemarketing.ca", "email": "contact@newlifemarketing.ca", "telephone": "+1-705-302-1097", "foundingDate": "2022", "slogan": "Disruptive Ads. Relentless ROI.", "description": "NewLife Marketing is a full-service digital marketing agency based in Barrie, Ontario, working with clients worldwide, paid ads (Meta & Google), SEO, social media, in-house video production and CRM builds.", "address": {"@type": "PostalAddress", "streetAddress": "70 Bearberry Rd", "addressLocality": "Minesing", "addressRegion": "ON", "postalCode": "L9X 2E1", "addressCountry": "CA"}, "areaServed": "Worldwide", "sameAs": ["https://www.facebook.com/profile.php?id=61556647865792", "https://www.instagram.com/newlifemarketing_/", "https://youtube.com/@newlifemarketing7", "https://www.tiktok.com/@newlifemarket1ng"], "aggregateRating": {"@type": "AggregateRating", "ratingValue": "5.0", "reviewCount": "4"}, "review": [{"@type": "Review", "author": {"@type": "Person", "name": "Brandi Gordon"}, "reviewRating": {"@type": "Rating", "ratingValue": "5"}}, {"@type": "Review", "author": {"@type": "Person", "name": "Darren Johnson"}, "reviewRating": {"@type": "Rating", "ratingValue": "5"}}, {"@type": "Review", "author": {"@type": "Person", "name": "Kanto Legend"}, "reviewRating": {"@type": "Rating", "ratingValue": "5"}}], "image": "https://newlifemarketing.ca/assets/office/office-drone.jpg"}</script>
 <script defer src="/js/tracking.min.js?v=13aa8726"></script>
@@ -259,25 +259,35 @@
 
 <!-- The site's own overlay/modal/close-x pattern from style.min.css, not a
      second one invented for this page. -->
-<div class="overlay" id="sa-modal" role="dialog" aria-modal="true" aria-labelledby="sa-modal-h">
-  <div class="modal sa-modal">
-    <button class="close-x" type="button" id="sa-modal-close" aria-label="Close">&#10005;</button>
-    <h3 id="sa-modal-h">Is this your website?</h3>
+<!-- NOT class="overlay": main.min.js binds a backdrop-close handler to every
+     .overlay on the page, so a click the browser resolves to the backdrop --
+     an autofill dropdown dismissing, a drag that ends outside the card --
+     closed a form with four required fields in it. This card closes on the X
+     and on Escape, and on nothing else. -->
+<div class="sa-overlay" id="sa-modal" role="dialog" aria-modal="true" aria-labelledby="sa-modal-h">
+  <div class="sa-card">
+    <button class="sa-close" type="button" id="sa-modal-close" aria-label="Close">&#10005;</button>
+    <h3 id="sa-modal-h">Get your report</h3>
 
     <!-- The confirm comes first, and the ANSWER IS THE POINT. Yes means a
          business auditing itself -- a prospect. No means somebody checking a
          site they do not own: a competitor, an agency, or a curious visitor.
          Both are welcome and they are not the same lead, so the answer is
          recorded rather than used only to branch. -->
-    <p class="sa-confirm-site" id="sa-modal-site">yourcompany.ca</p>
-
-    <div class="sa-yesno" id="sa-yesno">
-      <button class="sa-yn" type="button" data-owner="yes">Yes</button>
-      <button class="sa-yn" type="button" data-owner="no">No</button>
-    </div>
-
-    <form id="sa-details" hidden novalidate>
+    <form id="sa-details" novalidate>
       <input type="hidden" name="is_owner" id="sa-owner" value="">
+
+      <!-- Everything in one card. The question was a gated step of its own and
+           read as a separate screen; the fields are now visible from the start
+           and the answer is still required before the report runs. -->
+      <fieldset class="sa-ownerq">
+        <legend>Is <strong id="sa-modal-site">yourcompany.ca</strong> your website?</legend>
+        <div class="sa-yesno" id="sa-yesno">
+          <button class="sa-yn" type="button" data-owner="yes" aria-pressed="false">Yes</button>
+          <button class="sa-yn" type="button" data-owner="no" aria-pressed="false">No</button>
+        </div>
+      </fieldset>
+
       <p class="sa-modal-sub" id="sa-modal-sub">We&rsquo;ll crawl it and show the report on this page. Where should we send a copy?</p>
       <div class="sa-field">
         <label for="sa-company">Company name</label>
@@ -338,7 +348,6 @@
     modal.classList.add('open');
     err.hidden = true;
     // Reset: a second run must ask again rather than inherit the first answer.
-    details.hidden = true;
     owner.value = '';
     [].forEach.call(yesno.querySelectorAll('.sa-yn'), function (x) { x.setAttribute('aria-pressed', 'false'); });
     modalSite.textContent = site.value.replace(/^https?:\/\//i, '').replace(/\/$/, '');
@@ -362,7 +371,7 @@
   });
 
   closeBtn.addEventListener('click', closeModal);
-  modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+  // No backdrop-close. See the comment on the card's markup.
 
   // Yes / No. Either answer opens the fields; which one was given is kept.
   var owner = document.getElementById('sa-owner');
@@ -380,14 +389,20 @@
       sub.textContent = isOwner
         ? 'We’ll crawl it and show the report on this page. Where should we send a copy?'
         : 'Fine — we’ll audit it anyway and show the report here. Where should we send a copy?';
-      details.hidden = false;
-      document.getElementById('sa-company').focus();
+      err.hidden = true;
     });
   });
 
   // Step 2: the details, then the run.
   details.addEventListener('submit', function (e) {
     e.preventDefault();
+    // The question is not a field, so checkValidity cannot see it.
+    if (!owner.value) {
+      err.textContent = 'Let us know whether this is your website first.';
+      err.hidden = false;
+      yesno.querySelector('.sa-yn').focus();
+      return;
+    }
     if (!details.checkValidity()) { details.reportValidity(); return; }
     closeModal();
     start({
