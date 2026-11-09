@@ -34,7 +34,19 @@
  * anybody changing one changes the other, and README.md says so.
  */
 
-const MAX_PAGES = 40;          // see the subrequest ceiling above
+/* 20, measured, not chosen. The free plan allows 50 subrequests per
+ * invocation and EVERY FETCH COSTS TWO, so the real ceiling is 25: on a live
+ * run 22 pages succeeded, robots + sitemap + homepage made 25, and the next 18
+ * threw "Too many subrequests". None of that reproduces in `wrangler dev
+ * --local`, which has no ceiling at all.
+ *
+ * 20 leaves room for the three overhead fetches and a second sitemap. It is
+ * also too few to see a whole grid -- DMT has 22 towns -- so `capped` is in the
+ * response and the report must say so. A truncated crawl reports pages as never
+ * built when we simply never looked, which is the one error that flatters us.
+ *
+ * Workers Paid raises the limit to 1000, i.e. ~500 pages. That is the fix. */
+const MAX_PAGES = 20;          // see the subrequest ceiling above
 const CONCURRENCY = 6;
 const FETCH_TIMEOUT_MS = 6000;
 const UA = 'NewLifeSEOAudit/1.0 (+https://newlifemarketing.ca/seo-audit/)';
@@ -128,7 +140,9 @@ function normaliseTarget(raw) {
   return u;
 }
 
+let SUBREQ = 0;
 async function get(url, accept) {
+  SUBREQ++;
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -139,14 +153,43 @@ async function get(url, accept) {
     });
     const text = res.ok ? await res.text() : '';
     return { ok: res.ok, status: res.status, url: res.url, text };
-  } catch {
-    return { ok: false, status: 0, url, text: '' };
+  } catch (e) {
+    return { ok: false, status: 0, url, text: '', why: String(e && e.message || e).slice(0, 120) };
   } finally { clearTimeout(t); }
 }
 
 // ------------------------------------------------------------------ crawl --
 async function audit(target) {
-  const origin = target.origin;
+  SUBREQ = 0;
+  /* RESOLVE THE CANONICAL ORIGIN FIRST, AND SPEND ONE SUBREQUEST DOING IT.
+   *
+   * Measured on the first live run: a visitor types dmtbuilding.ca, every page
+   * on that host 301s to www.dmtbuilding.ca, and a redirect is a SECOND
+   * subrequest. 40 pages became 80 against the free plan's ceiling of 50, so
+   * 17 of 40 fetches failed -- and the failures were silent, because failed
+   * pages are dropped from the report. The areas went from 18 to 9 and the
+   * report would have told a builder they had never built nine towns we simply
+   * never looked at. A crawl that flatters us by losing pages is the worst
+   * failure this tool has.
+   *
+   * Locally none of this showed: there is no subrequest ceiling in `wrangler
+   * dev --local`. The ceiling only exists in production, which is the whole
+   * reason "it works on my machine" is not a test of a Worker.
+   *
+   * So: follow the homepage once, adopt wherever it lands, crawl there. Every
+   * later fetch then costs one subrequest instead of two, and the report names
+   * the origin it actually audited rather than the one that was typed. */
+  const first = await get(target.origin + '/');
+  let origin = target.origin;
+  if (first.ok && first.url) {
+    try {
+      const landed = new URL(first.url);
+      if (sameSite(landed.href, target.origin) || landed.hostname.replace(/^www\./, '') === target.hostname.replace(/^www\./, '')) {
+        origin = landed.origin;
+      }
+    } catch { /* keep what was typed */ }
+  }
+
   let urls = await fromSitemaps(origin);
   let source = 'sitemap';
 
@@ -182,10 +225,13 @@ async function audit(target) {
   /* The homepage HTML is kept, not just assessed. The nav is the one place a
    * site states which pages are services and which are areas in its owner's
    * own words, and a parsed page summary has thrown that away. */
-  let homeHtml = '';
+  let homeHtml = first.ok ? first.text : '';
   const pages = await mapLimit(urls, CONCURRENCY, async (u) => {
+    // The homepage is already in hand from the origin resolution above. Fetching
+    // it twice would spend a subrequest to learn nothing.
+    if (path(u) === '/' && homeHtml) return assess('/', homeHtml);
     const res = await get(u);
-    if (!res.ok || !res.text) return { url: path(u), status: res.status, error: true };
+    if (!res.ok || !res.text) return { url: path(u), status: res.status, error: true, why: res.why };
     if (path(u) === '/') homeHtml = res.text;
     return assess(path(u), res.text);
   });
@@ -199,6 +245,10 @@ async function audit(target) {
     failed: pages.length - good.length,
     capped,
     cap: MAX_PAGES,
+    /* The pages that could not be read, with their status. Silent drops are
+     * what let 17 failed fetches read as "nine towns you never built". */
+    subrequests: SUBREQ,
+    unreadable: pages.filter((p) => p.error).map((p) => ({ url: p.url, status: p.status, why: p.why })),
     footer_nap: good.some((p) => p.footer_nap),
     services: grid.services,
     areas: grid.areas,
