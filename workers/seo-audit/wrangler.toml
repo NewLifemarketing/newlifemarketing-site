@@ -15,3 +15,6 @@ compatibility_date = "2026-11-09"
 # Without the binding the worker still runs and still returns the audit; it
 # simply does not keep the lead. That is deliberate -- the visitor's report
 # must not depend on our CRM.
+
+[ai]
+binding = "AI"

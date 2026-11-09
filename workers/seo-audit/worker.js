@@ -96,7 +96,7 @@ export default {
     }
 
     try {
-      const result = await audit(target);
+      const result = await audit(target, env);
       // The lead is worth keeping whatever the crawl found.
       if (env && env.AUDIT_LEADS) {
         await env.AUDIT_LEADS.put(
@@ -159,7 +159,7 @@ async function get(url, accept) {
 }
 
 // ------------------------------------------------------------------ crawl --
-async function audit(target) {
+async function audit(target, env) {
   SUBREQ = 0;
   /* RESOLVE THE CANONICAL ORIGIN FIRST, AND SPEND ONE SUBREQUEST DOING IT.
    *
@@ -255,7 +255,21 @@ async function audit(target) {
   });
 
   const good = pages.filter((p) => !p.error);
-  const grid = detectGrid(good, homeHtml, sitemap, hubHtml);
+  /* THE RULES PROPOSE, THE MODEL DISPOSES.
+   *
+   * Suppressing the URL passes whenever the model answered was an overcorrection
+   * and it cost real data: DMT's 34 service-area pages -- 34 towns with 34 real
+   * pages behind them -- collapsed to the two its homepage happens to name. A
+   * URL is evidence. /home-additions-barrie/ existing IS a Barrie page, whether
+   * or not a sentence anywhere says Barrie.
+   *
+   * The junk was never the URLs either; it was blog slugs read as towns, and
+   * telling a place from a blog topic is a reading job. So the rules run first
+   * and hand their candidates over, and the model keeps the real places, drops
+   * "Mulch", and adds whatever the prose names that no URL did. */
+  const pre = detectGrid(good, homeHtml, sitemap, hubHtml, null);
+  const read = await readWithModel(env, homeHtml, hubHtml, origin, pre.areas.map((a) => a.name));
+  const grid = detectGrid(good, homeHtml, sitemap, hubHtml, read, pre);
   return {
     origin,
     discovered_by: source,
@@ -265,6 +279,7 @@ async function audit(target) {
     cap: MAX_PAGES,
     discovered,
     sitemap,
+    read_by: read ? 'model' : 'markup rules',
     /* The pages that could not be read, with their status. Silent drops are
      * what let 17 failed fetches read as "nine towns you never built". */
     subrequests: SUBREQ,
@@ -621,6 +636,157 @@ function navGroups(html) {
 
 const HUB_PATH = /^\/(services?|our-services|what-we-do|services-we-offer)\/?$/i;
 
+/* ---------------------------------------------------------------- read --
+ * A MODEL READS THE PAGE. Everything below it is a fallback.
+ *
+ * Four rounds of this were fixed by hand and each one failed the same way: a
+ * business's services and towns were plainly on screen and the parser could not
+ * see them, because every rule here was written about MARKUP. The services were
+ * in <strong> and the rule looked at <h2>. The towns were in the first sentence
+ * of the hero -- "Locally Serving Collingwood, Blue Mountain, Creemore, Stayner,
+ * Mansfield" -- and the rule only ever looked at URL slugs. There was no rule
+ * for prose at all, so no site that writes its coverage as a sentence, which is
+ * most of them, could ever be read.
+ *
+ * Widening the rules cannot fix that. The next site puts it in a <span>, or an
+ * image caption, or a line of italics under the phone number. The thing being
+ * asked for -- "what does this business sell and where" -- is a reading
+ * comprehension question, and it should be answered by something that reads.
+ *
+ * So: the page text goes to a model, and the markup rules stay as the backstop
+ * for when the model is unavailable, over quota, or returns nothing usable.
+ * They are not deleted, because an audit that fails when a binding is missing
+ * is worse than one that falls back to being a bit thick.
+ *
+ * THE MODEL IS NOT TRUSTED, IT IS ASKED. What it returns is a candidate list
+ * shown to the owner for confirmation, exactly like every other signal here --
+ * which is the same reason it is safe to let it read a stranger's website at
+ * all: nothing it says reaches the report without a human ticking it.
+ */
+/* Named exactly, and checked against the catalogue: llama-3.1-8b-instruct was
+ * deprecated on 2026-05-30 and the first deploy failed silently against it --
+ * silently, because readWithModel swallows its own errors so a dead model
+ * cannot take the audit down. That is right, and it is why the reason is
+ * reported in the response: a fallback nobody can see runs for months. */
+const AI_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+
+/** Visible text, collapsed, with the furniture left in -- a nav tells a reader
+ *  what a business does too, and the model can tell a menu from a service. */
+function visibleText(html, max) {
+  if (!html) return '';
+  return decode(strip(html).replace(/<[^>]+>/g, ' '))
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max || 4000);
+}
+
+async function readWithModel(env, homeHtml, hubHtml, origin, candidateAreas) {
+  if (!env || !env.AI) return null;
+
+  const text = [
+    'HOME PAGE:\n' + visibleText(homeHtml, 14000),
+    hubHtml ? '\nSERVICES PAGE:\n' + visibleText(hubHtml, 6000) : '',
+  ].join('\n');
+  if (text.replace(/\s/g, '').length < 200) return null;
+
+  const prompt = [
+    'You are reading the website of a trades or home-service business.',
+    /* ASK FOR THE REJECTS, NOT THE LIST.
+     *
+     * Asking it to echo back every real place cost DMT 24 of its 34 towns: 34
+     * names plus the services does not fit a sane token budget, and a model
+     * asked for a long list it cannot finish returns a short one instead. The
+     * answer looked clean and was quietly two-thirds short, which is the worst
+     * shape of wrong this tool can produce.
+     *
+     * The rejects are the short list. "Mulch, Fertilizer, Watering Tips" is
+     * three names where the keepers are thirty, so asking which ones are NOT
+     * places is both the cheaper question and the one it can finish. Candidates
+     * are then kept unless named, which also means a truncated answer loses
+     * nothing: it keeps too much, and the owner unticks. */
+    'Return ONLY a JSON object, no prose, in exactly this shape:',
+    '{"services":["..."],"areas":["..."],"not_places":["..."]}',
+    '',
+    'services: the things this business is hired to do, in their own words.',
+    '  Not "Services", not "About", not "Contact", not "Privacy" - those are',
+    '  pages, not services. Not slogans. Usually between 3 and 10 of them.',
+    'areas: the towns, cities, counties or regions it serves, as the TEXT says',
+    '  them. Often one sentence or paragraph, e.g. "proudly serving X, Y and Z",',
+    '  and often near the bottom of the page. Place names only - drop "and',
+    '  surrounding area" and "and more".',
+    (candidateAreas && candidateAreas.length
+      ? 'not_places: the list below was taken from this site\'s own page URLs,'
+        + ' and most of them are towns. Return ONLY the entries that are NOT'
+        + ' real places - products, materials, blog topics, fragments of a'
+        + ' sentence. A place is somewhere a person could live and that you'
+        + ' could put on a map. "Mulch", "Fertilizer", "Watering Tips" and'
+        + ' "What Clippings" are not places. Do not repeat the good ones. If'
+        + ' they are all places, return []. The list: ' + candidateAreas.join(', ')
+      : 'not_places: return [].'),
+    'Use [] for any of the three if the page genuinely does not say.',
+    '',
+    'WEBSITE (' + origin + '):',
+    text,
+  ].join('\n');
+
+  let raw;
+  try {
+    const res = await env.AI.run(AI_MODEL, {
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 700,
+      temperature: 0,
+    });
+    /* THE SHAPE IS NOT PROMISED, SO TAKE THE FIRST CANDIDATE THAT IS A STRING.
+     * Guessed wrong three times running, each one deployed before being looked
+     * at: `response` on the deprecated model, then OpenAI's
+     * choices[0].message.content, then `response` again -- which on this model
+     * EXISTS and is an OBJECT, so a `||` chain took it and stringified it to
+     * the literal "[object Object]", 15 characters, no JSON in it. The model
+     * had answered correctly every single time.
+     *
+     * A truthiness test cannot tell a string from an object. A type check can,
+     * and it keeps working when the next model answers in a third shape. */
+    const c = res && res.choices && res.choices[0];
+    raw = [
+      res,
+      res && res.response,
+      res && res.response && res.response.content,
+      c && c.message && c.message.content,
+      c && c.text,
+      res && res.result,
+      res && res.result && res.result.response,
+    ].find((x) => typeof x === 'string' && x.trim()) || '';
+  } catch {
+    return null;   // over quota, not enabled, model gone: fall back, never fail
+  }
+
+  // The model is told to return only JSON and sometimes wraps it anyway.
+  const m = String(raw).match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  let parsed;
+  try { parsed = JSON.parse(m[0]); } catch { return null; }
+
+  const clean = (arr) => (Array.isArray(arr) ? arr : [])
+    .map((x) => String(x == null ? '' : x).replace(/\s+/g, ' ').trim())
+    .filter((x) => x && x.length <= 48 && x.split(' ').length <= 6 && /[a-z]/i.test(x))
+    .filter((x) => !NOT_A_SERVICE_NAME.test(x))
+    .slice(0, 24);
+
+  const services = clean(parsed.services);
+  const areas = clean(parsed.areas);
+  const notPlaces = new Set(clean(parsed.not_places).map((x) => x.toLowerCase()));
+  if (!services.length && !areas.length && !notPlaces.size) return null;
+  return { services, areas, notPlaces };
+}
+
+/** A name with no URL behind it still needs a key, and the key is what the grid
+ *  matches against the sitemap. Derived from the name, so a service that has no
+ *  page simply matches nothing -- which is the finding, not an error. */
+const keyOf = (name) => String(name).toLowerCase()
+  .replace(/&/g, ' and ')
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '');
+
 /* -- signal 2: READ THE PAGE THE WAY A PERSON READS IT ----------------------
  * Three times now a site came back with no services while anyone opening it
  * could name them instantly. Reproduced on a real one, and the services were
@@ -833,21 +999,57 @@ function residueAreas(urls) {
   return out;
 }
 
-function detectGrid(pages, homeHtml, sitemapPaths, hubHtml) {
+function detectGrid(pages, homeHtml, sitemapPaths, hubHtml, read, pre) {
   const byUrl = new Map(pages.map((p) => [p.url, p]));
 
   const services = new Map();   // slug -> {name, from}
   const areas = new Map();
+  /* Keyed on the NAME as well as the slug. The model calls it "Multi-Storey
+   * Construction" and derives the slug from that; the /services/ tree calls it
+   * the same thing with the slug "multi-storey". Two keys, one service, and it
+   * appeared twice on screen. */
+  const seenNames = new Set();
+  const nameKey = (n) => String(n).toLowerCase().replace(/[^a-z0-9]+/g, '');
+
   const addSvc = (slug, name, from) => {
     if (!slug || NOT_A_SERVICE.test(slug)) return;
     if (name && NOT_A_SERVICE_NAME.test(name)) return;
+    if (name && seenNames.has(nameKey(name))) return;
+    if (name) seenNames.add(nameKey(name));
     if (!services.has(slug) && !areas.has(slug)) services.set(slug, { name: name || titleise(slug), from });
   };
   const addArea = (slug, name, from) => {
     if (!slug || NOT_A_SERVICE.test(slug)) return;
     if (name && NOT_A_SERVICE_NAME.test(name)) return;
+    if (name && seenNames.has(nameKey(name))) return;
+    if (name) seenNames.add(nameKey(name));
     if (!areas.has(slug) && !services.has(slug)) areas.set(slug, { name: name || titleise(slug), from });
   };
+
+  /* 0. WHAT THE MODEL READ. First, because it is the only signal here that
+   * reads PROSE. A site whose coverage is one sentence in the hero -- "Locally
+   * Serving Collingwood, Blue Mountain, Creemore, Stayner, Mansfield" -- has
+   * nothing for any rule below to find, because every one of them reads markup
+   * or URLs and none of them reads a sentence. */
+  if (read) {
+    /* A name the model kept that came from a URL keeps THAT URL's slug. The
+     * slug is what the grid matches against the sitemap, so deriving a new one
+     * from the name would throw away the page it was found on. */
+    const nk = (n) => String(n).toLowerCase().replace(/[^a-z0-9]+/g, '');
+    const preSlug = new Map();
+    for (const x of (pre ? pre.areas.concat(pre.services) : [])) preSlug.set(nk(x.name), x.slug);
+    const slugFor = (n) => preSlug.get(nk(n)) || keyOf(n);
+
+    for (const name of read.services) addSvc(slugFor(name), name, 'read off your site');
+    for (const name of read.areas) addArea(slugFor(name), name, 'read off your site');
+
+    /* Every candidate the model did NOT name as a non-place is kept. This is
+     * the half that makes a truncated answer harmless -- it keeps too much, and
+     * a wrong chip costs one click while a missing town costs a page. */
+    for (const a of (pre ? pre.areas : [])) {
+      if (!read.notPlaces.has(String(a.name).toLowerCase())) addArea(a.slug, a.name, a.from);
+    }
+  }
 
   // 1. the trees -- certain
   for (const p of pages) {
@@ -869,13 +1071,13 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml) {
    * homepage entire. Widening last is deliberate -- the whole homepage will
    * offer some rubbish, and that is still better than telling a business we
    * could not find services it lists on its front page. */
-  if (services.size < 2) {
+  if (!read && services.size < 2) {
     for (const [slug, text] of contentServices(hubHtml)) addSvc(slug, text, 'your services page');
   }
-  if (services.size < 2) {
+  if (!read && services.size < 2) {
     for (const [slug, text] of contentServices(homeHtml, true)) addSvc(slug, text, 'your services section');
   }
-  if (services.size < 2) {
+  if (!read && services.size < 2) {
     for (const [slug, text] of contentServices(homeHtml)) addSvc(slug, text, 'your home page');
   }
 
@@ -908,7 +1110,7 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml) {
    * them is not extra information, it is noise over an answer we already had.
    * So the families are only offered as services where the site named too few
    * to go on -- below, they are still used to find the areas. */
-  if (services.size < 2) {
+  if (!read && services.size < 2) {
     for (const f of families) {
       const slug = f.gram.replace(/\s+/g, '-');
       let name = titleise(f.gram);
@@ -917,12 +1119,27 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml) {
     }
   }
 
-  for (const [slug, name] of residueAreas(flat)) addArea(slug, name, 'your URLs name it');
+  /* THE GUESSWORK ONLY RUNS WHEN THE READING DID NOT.
+   *
+   * This is what "no common sense" meant, exactly. A lawn-care site was read
+   * correctly -- Simcoe County, the GTA -- and then this line unioned slug
+   * arithmetic over blog posts on top of it and offered the owner the towns of
+   * "Mulch", "Fertilizer", "Watering Tips", "When Aerate" and "What Clippings".
+   * /how-to-get-rid-of-grubs/ became "Rid".
+   *
+   * The fault was not the arithmetic. It was running the dumb system ALONGSIDE
+   * the one that can read and merging the two, which can only ever make the
+   * better answer worse. A fallback that runs when the primary succeeded is not
+   * a fallback. So where the model read the page, nothing below guesses at
+   * areas; where it could not, the arithmetic is still better than nothing. */
+  if (!read) {
+    for (const [slug, name] of residueAreas(flat)) addArea(slug, name, 'your URLs name it');
+  }
 
   /* The flat-site fallback: no family recurs 4+ times and no tree or menu said
    * anything, so there is no grid to read. Each page with a multi-word slug is
    * offered as its own service, named by its own H1. */
-  if (!families.length && services.size < 2) {
+  if (!read && !families.length && services.size < 2) {
     for (const u of flat) {
       if (tokensOf(u).length < 2) continue;
       addSvc(lastSeg(u), pageName(byUrl.get(u)), 'a page of yours');
