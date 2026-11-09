@@ -1986,6 +1986,10 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 .svc-banner p { color: rgba(255, 255, 255, 0.92); max-width: 44rem; margin-inline: auto; }
 .svc-banner .btn { background: #fff; color: var(--blue); border-color: #fff; }
 .svc-banner .btn:hover { background: #F0F4F8; border-color: #F0F4F8; }
+/* the outline button stays white-on-blue (.svc-page .btn.ghost would otherwise
+   paint it blue on the blue banner, which made it invisible) */
+.svc-page .svc-banner .btn.ghost, .svc-banner .btn.ghost { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.75); }
+.svc-page .svc-banner .btn.ghost:hover, .svc-banner .btn.ghost:hover { background: rgba(255, 255, 255, 0.16); border-color: #fff; color: #fff; }
 
 /* --- paired CTA row under modules --- */
 .svc-ctas { display: flex; flex-wrap: wrap; gap: 0.9rem; align-items: center; margin-top: 1.4rem; }
