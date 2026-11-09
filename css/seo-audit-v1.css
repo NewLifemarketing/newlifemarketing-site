@@ -1,0 +1,140 @@
+/* seo-audit-v1.css — /seo-audit/ only.
+   Built on the tokens in style.css (--ink, --surface, --line, --blue, --muted,
+   --dim). Nothing here redefines a token: a page that invents its own palette
+   stops looking like the site. */
+
+/* ---- hero ---------------------------------------------------------------- */
+.sa-flag{display:inline-flex;align-items:center;gap:.6rem;background:var(--blue-dim);
+  border:1px solid var(--line);border-radius:999px;padding:.4rem .85rem;margin:0 0 1.1rem;
+  font-size:.8125rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--blue-hot)}
+
+.sa-form{display:flex;flex-wrap:wrap;gap:.75rem;max-width:760px;margin:2.2rem 0 0}
+.sa-form input{flex:999 1 320px;min-width:0;min-height:56px;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;padding:0 1.1rem;color:var(--white);
+  font:inherit;font-size:1.0625rem}
+.sa-form input::placeholder{color:var(--dim)}
+.sa-form input:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-color:var(--blue)}
+.sa-form .btn{flex:1 1 190px;min-height:56px;justify-content:center}
+.sa-note{margin:1rem 0 0;font-size:.875rem;color:var(--dim)}
+
+/* ---- shared bits --------------------------------------------------------- */
+.sa-step{margin:0 0 .7rem;font-family:var(--font-display);font-size:.8125rem;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--blue)}
+.sa-h2{margin:0 0 .5rem;font-family:var(--font-display);font-size:clamp(1.75rem,3.4vw,2.125rem);
+  font-weight:800;letter-spacing:-.02em}
+.sa-h3{margin:2.6rem 0 .5rem;font-family:var(--font-display);font-size:1.4rem;font-weight:700;letter-spacing:-.015em}
+.sa-sub{margin:0 0 1.6rem;color:var(--muted);max-width:72ch}
+.sa-three h2{margin:0 0 .5rem;font-family:var(--font-display);font-size:1.4rem;font-weight:700;letter-spacing:-.015em}
+.sa-three p{margin:0;color:var(--muted)}
+
+/* ---- the eleven checks --------------------------------------------------- */
+.sa-checks{list-style:none;margin:0;padding:0;display:grid;gap:.85rem;
+  grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+.sa-checks li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1.05rem 1rem}
+.sa-checks strong{display:block;font-family:var(--font-display);font-size:1rem;font-weight:700;margin-bottom:.3rem}
+.sa-checks span{display:block;font-size:.875rem;color:var(--dim);line-height:1.5}
+
+/* ---- the sample report --------------------------------------------------- */
+.sa-sample{background:var(--surface)}
+.sa-report{background:var(--ink);border:1px solid var(--line);border-radius:18px;
+  padding:clamp(1.5rem,3.5vw,2.6rem);margin-top:1.8rem}
+
+.sa-scorerow{display:flex;flex-wrap:wrap;gap:2rem;align-items:center}
+.sa-score{flex:0 0 220px;background:var(--surface);border:1px solid var(--line);
+  border-radius:16px;padding:1.6rem;text-align:center}
+.sa-score-label{margin:0 0 .2rem;font-size:.8125rem;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim)}
+.sa-score-n{margin:0;font-family:var(--font-display);font-size:4.75rem;line-height:1;
+  font-weight:800;letter-spacing:-.04em;color:var(--blue)}
+.sa-score-of{margin:.1rem 0 0;font-size:.9375rem;color:var(--muted)}
+.sa-score-note{margin:.8rem 0 0;font-size:.875rem;color:var(--dim);line-height:1.45}
+.sa-scoretext{flex:999 1 400px;min-width:0}
+.sa-big{margin:0 0 .8rem;font-family:var(--font-display);font-size:clamp(1.75rem,3.6vw,2.5rem);
+  line-height:1.1;font-weight:800;letter-spacing:-.025em}
+.sa-scoretext p:last-child{margin:0;color:var(--muted);font-size:1.0625rem;max-width:60ch}
+
+.sa-bands{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-top:1.8rem}
+.sa-bandcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1.1rem}
+.sa-bandlabel{margin:0 0 .45rem;font-size:.8125rem;font-weight:600;color:var(--muted)}
+.sa-bandval{margin:0 0 .6rem;font-family:var(--font-display);font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+.sa-meter{height:6px;background:var(--line);border-radius:999px;overflow:hidden}
+.sa-meter i{display:block;height:6px;border-radius:999px;background:var(--blue)}
+.sa-bandnote{margin:.6rem 0 0;font-size:.8125rem;color:var(--dim);line-height:1.45}
+
+/* ---- the grid map -------------------------------------------------------- */
+.sa-legend{display:flex;flex-wrap:wrap;gap:1.2rem;margin:0 0 1.1rem;font-size:.875rem;color:var(--muted)}
+.sa-legend span{display:inline-flex;align-items:center;gap:.5rem}
+.sa-k{width:14px;height:14px;border-radius:4px;display:inline-block}
+.sa-k-full{background:var(--blue)}
+.sa-k-part{background:rgba(33,150,243,.34)}
+.sa-k-none{background:var(--surface-2);border:1px solid var(--line)}
+
+/* A wide table scrolls in a box rather than breaking the page at phone width. */
+.sa-gridwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.sa-grid{border-collapse:separate;border-spacing:5px;min-width:720px}
+.sa-grid th[scope=col]{font-size:.75rem;font-weight:600;color:var(--muted);padding:0 0 .35rem;width:76px}
+.sa-grid th[scope=col]:first-child{text-align:left;font-size:.8125rem;color:var(--dim);padding-right:.6rem;width:auto}
+.sa-grid th[scope=row]{text-align:left;font-size:.875rem;font-weight:600;padding-right:.9rem;white-space:nowrap}
+.sa-grid td{padding:0}
+.sa-c{display:block;height:34px;border-radius:7px}
+.sa-c-full{background:var(--blue)}
+.sa-c-part{background:rgba(33,150,243,.34)}
+.sa-c-none{background:var(--surface-2);border:1px solid var(--line)}
+.sa-gridnote{margin:1.3rem 0 0;color:var(--muted)}
+
+/* ---- per-page table ------------------------------------------------------ */
+.sa-pages{width:100%;min-width:760px;border-collapse:collapse;font-size:.9375rem}
+.sa-pages thead th{text-align:left;padding:.6rem .7rem .6rem 0;font-size:.8125rem;
+  font-weight:600;color:var(--dim);border-bottom:1px solid var(--line)}
+.sa-pages tbody tr{border-bottom:1px solid var(--surface-2)}
+.sa-pages th[scope=row]{text-align:left;padding:.85rem .7rem .85rem 0;vertical-align:top;font-weight:400}
+.sa-pages td{padding:.85rem .7rem;vertical-align:top;color:var(--muted)}
+.sa-url{display:block;font-weight:600;color:var(--white)}
+.sa-kind{display:block;font-size:.8125rem;color:var(--dim)}
+.sa-ok{font-family:var(--font-display);font-size:1.0625rem;font-weight:800;color:var(--blue)}
+.sa-mid{font-family:var(--font-display);font-size:1.0625rem;font-weight:800;color:var(--muted)}
+.sa-dim{color:var(--dim)}
+
+/* ---- the ranked actions -------------------------------------------------- */
+.sa-actions{list-style:none;counter-reset:sa;margin:0;padding:0}
+.sa-actions li{counter-increment:sa;display:flex;flex-wrap:wrap;gap:1.4rem;
+  padding:1.4rem 0;border-top:1px solid var(--line)}
+.sa-actions li::before{content:counter(sa);flex:0 0 44px;font-family:var(--font-display);
+  font-size:1.6rem;font-weight:800;color:var(--blue);line-height:1.2}
+.sa-actions li>div{flex:999 1 400px;min-width:0}
+.sa-actions h4{margin:0 0 .35rem;font-family:var(--font-display);font-size:1.25rem;
+  font-weight:700;letter-spacing:-.015em}
+.sa-actions p{margin:0;color:var(--muted)}
+.sa-effort{flex:0 0 140px;text-align:right;font-size:.875rem;color:var(--dim)}
+
+/* ---- the two things a checker cannot see --------------------------------- */
+.sa-cantsee{margin-top:2.6rem;padding-top:.4rem}
+.sa-cs{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.5rem}
+.sa-cs p:last-child{margin:0;color:var(--muted)}
+
+/* ---- who it is not for, and the CTA -------------------------------------- */
+.sa-notfor{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--blue);
+  border-radius:12px;padding:1.6rem 1.7rem;max-width:860px}
+.sa-notfor h2{margin:0 0 .45rem;font-family:var(--font-display);font-size:1.25rem;font-weight:700}
+.sa-notfor p{margin:0;color:var(--muted)}
+
+.sa-cta{background:var(--surface);border:1px solid var(--line);border-radius:18px;
+  padding:clamp(1.6rem,3vw,2.6rem);display:flex;flex-wrap:wrap;gap:1.8rem;align-items:center}
+.sa-cta>div{flex:999 1 430px;min-width:0}
+.sa-cta h2{margin:0 0 .5rem;font-family:var(--font-display);font-size:1.75rem;
+  font-weight:800;letter-spacing:-.02em}
+.sa-cta p{margin:0;color:var(--muted)}
+.sa-cta .btn{flex:0 0 auto}
+
+/* The report is dense. On a phone it reads as a document, not a dashboard. */
+@media (max-width:640px){
+  .sa-score{flex:1 1 100%}
+  .sa-actions .sa-effort{flex:1 1 100%;text-align:left;padding-left:calc(44px + 1.4rem)}
+}
+
+/* .sr-only is not defined anywhere in style.css -- checked, not assumed. The
+   form's label was rendering beside the input until this was added. A label is
+   required for the input to be announced at all, so hiding it visually is the
+   only correct way to leave it out of the design. */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
