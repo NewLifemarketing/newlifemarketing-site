@@ -476,15 +476,26 @@
   function askServices() {
     confirmBox.hidden = false;
     var found = audit.services || [];
+    /* ONE CANDIDATE IS NOT AN ANSWER. A real site returned exactly one --
+       "Block Content Examples", a page its theme ships with -- and because the
+       list was non-empty the page asked "Are these your services?" over it.
+       That is a question about our bug wearing the clothes of a question about
+       their business, and a trade reading it concludes the tool is broken,
+       which at that moment it is. No trade sells one service, so below two we
+       say we could not work it out and ask. */
+    var sure = found.length >= 2;
     confirmBox.innerHTML = '<div class="sa-q">'
       + '<p class="sa-q-step">Step 1 of 2</p>'
-      + '<h3>' + (found.length ? 'Are these your services?' : 'What services do you sell?') + '</h3>'
-      + '<p class="sa-q-sub">' + (found.length
+      + '<h3>' + (sure ? 'Are these your services?' : 'What services do you sell?') + '</h3>'
+      + '<p class="sa-q-sub">' + (sure
         ? 'Read off your own pages. Untick anything that is not a service, and add what we missed.'
-        : 'We could not find a services section, so tell us what you sell.') + '</p>'
+        : (found.length
+          ? 'We could not work this out from your pages — all we found was ' + esc(found[0].name)
+            + ', and that may not be right. Tell us what you sell.'
+          : 'We could not find a services section, so tell us what you sell.')) + '</p>'
       + chipList('services', found, 'Anything missing?')
       + '<div class="sa-q-btns">'
-      + '<button class="btn" type="button" data-q="yes">' + (found.length ? 'Yes, that’s right' : 'Next') + '</button>'
+      + '<button class="btn" type="button" data-q="yes">' + (sure ? 'Yes, that’s right' : 'Next') + '</button>'
       + '</div></div>';
     wireQ(function () {
       audit.services = readChips('services', audit.services);
@@ -495,12 +506,17 @@
 
   function askAreas() {
     var found = audit.areas || [];
+    // Same rule as the services step: one town is not a list of towns.
+    var sure = found.length >= 2;
     confirmBox.innerHTML = '<div class="sa-q">'
       + '<p class="sa-q-step">Step 2 of 2</p>'
-      + '<h3>' + (found.length ? 'Are these the areas you serve?' : 'Which areas do you serve?') + '</h3>'
-      + '<p class="sa-q-sub">' + (found.length
+      + '<h3>' + (sure ? 'Are these the areas you serve?' : 'Which areas do you serve?') + '</h3>'
+      + '<p class="sa-q-sub">' + (sure
         ? 'Untick anywhere you do not work, and add the towns we missed.'
-        : 'We found no service-area pages, which is itself a finding. Name the towns you work in.') + '</p>'
+        : (found.length
+          ? 'Only ' + esc(found[0].name) + ' came off your pages, so this one is on you — '
+            + 'name the towns you work in.'
+          : 'We found no service-area pages, which is itself a finding. Name the towns you work in.')) + '</p>'
       + chipList('areas', found, 'Towns we missed?')
       + '<div class="sa-q-btns">'
       + '<button class="btn" type="button" data-q="yes">See my report</button>'

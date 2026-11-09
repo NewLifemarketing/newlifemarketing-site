@@ -211,7 +211,7 @@ async function audit(target) {
     if (/^services?$/i.test(seg[0])) return seg.length > 1 ? 1 : 2;    // service pages
     if (AREA_WORDS.test(seg[0])) return seg.length > 1 ? 1 : 2;        // area pages
     if (/^(blog|news|article|articles|post|posts|tag|tags|category|categories|author)$/i.test(seg[0])) return 9;
-    if (/^(about|contact|privacy|terms|careers|sitemap|thank|thanks|cart|checkout|account)/i.test(seg[0])) return 7;
+    if (NOT_A_SERVICE.test(seg[0])) return 7;   // furniture and theme demos, last
     return 3 + Math.min(seg.length - 1, 3);                            // money-ish, shallow first
   };
   urls.sort((a, b) => rank(a) - rank(b) || a.length - b.length);
@@ -436,6 +436,31 @@ function inferKeyword(p, title, h1) {
   if (h1 && String(h1).split(' ').length >= 2) return String(h1).toLowerCase();
   return slugWords || '';
 }
+
+/* BOILERPLATE IS NOT A SERVICE, and nothing stopped it being offered as one.
+ * A real site came back with exactly one candidate service: "Block Content
+ * Examples" -- a page the WordPress theme ships with. It is worse than finding
+ * nothing. Finding nothing asks the owner what they sell; finding one wrong
+ * thing asks them to confirm it, which is a question about our bug dressed up
+ * as a question about their business.
+ *
+ * Two jobs, and the first is the one that was costing most: these pages sit at
+ * the ROOT, so the crawl ranked them as money pages and spent the 20-page
+ * budget on them ahead of real services. */
+const NOT_A_SERVICE = new RegExp('^(' + [
+  // what a theme ships with
+  'block-content-examples?', 'sample-page', 'hello-world', 'elementor(-.*)?', 'typography',
+  'shortcodes?', 'style-?guide', 'kitchen-sink', 'patterns?', 'blocks?', 'elements?', 'widgets?',
+  'icons?', 'buttons?', 'demo(-.*)?', 'test(-page)?', 'lorem-ipsum', 'coming-soon', 'maintenance',
+  // site furniture
+  'about(-us)?', 'contact(-us)?', 'home(page)?', 'index', 'blog', 'news', 'articles?', 'posts?',
+  'privacy(-policy)?', 'terms(-of-service|-and-conditions)?', 'cookies?(-policy)?', 'disclaimer',
+  'accessibility', 'sitemap', 'search', 'cart', 'checkout', 'my-account', 'account', 'login',
+  'thank(s|-you)?', 'careers?', 'jobs?', 'faqs?', 'reviews?', 'testimonials?', 'gallery',
+  'portfolio', 'projects?', 'our-work', 'book(-a-call)?', 'quote', 'request-a-quote', 'estimate',
+  'financing', 'warranty', 'team', 'our-team', 'staff', 'process', 'how-we-build', 'packages?',
+  'free-plans?', 'home-plans?', 'promotions?', 'pricing', 'subscribe', 'newsletter',
+].join('|') + ')$', 'i');
 
 const AREA_WORDS = /\b(service[- ]areas?|areas?[- ]served|locations?|where[- ]we[- ]work)\b/i;
 
@@ -672,10 +697,12 @@ function detectGrid(pages, homeHtml) {
   const services = new Map();   // slug -> {name, from}
   const areas = new Map();
   const addSvc = (slug, name, from) => {
-    if (slug && !services.has(slug) && !areas.has(slug)) services.set(slug, { name: name || titleise(slug), from });
+    if (!slug || NOT_A_SERVICE.test(slug)) return;
+    if (!services.has(slug) && !areas.has(slug)) services.set(slug, { name: name || titleise(slug), from });
   };
   const addArea = (slug, name, from) => {
-    if (slug && !areas.has(slug) && !services.has(slug)) areas.set(slug, { name: name || titleise(slug), from });
+    if (!slug || NOT_A_SERVICE.test(slug)) return;
+    if (!areas.has(slug) && !services.has(slug)) areas.set(slug, { name: name || titleise(slug), from });
   };
 
   // 1. the trees -- certain
