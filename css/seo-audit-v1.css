@@ -1,4 +1,13 @@
 /* seo-audit-v1.css — /seo-audit/ only.
+   THE SITE IS LIGHT. style.css's :root is dark and style.min.css carries the
+   same dark tokens, but `body:not(.home-light)` paints white and `.svc-page`
+   redefines every token for a light page: --surface #FFFFFF, --surface-2
+   #F5F6F8, --line #E4E7EC, --white #0D0D14. The page body is wrapped in
+   .svc-page, which is how all 397 light pages do it.
+   The first version of this file was built against the dark tokens in the
+   READABLE stylesheet, which no page loads. on-page/CLAUDE.md already warns
+   that the minified copy ships beside the source with no build step; the same
+   desync, read the other way round.
    Built on the tokens in style.css (--ink, --surface, --line, --blue, --muted,
    --dim). Nothing here redefines a token: a page that invents its own palette
    stops looking like the site. */
@@ -8,13 +17,23 @@
   border:1px solid var(--line);border-radius:999px;padding:.4rem .85rem;margin:0 0 1.1rem;
   font-size:.8125rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--blue-hot)}
 
-.sa-form{display:flex;flex-wrap:wrap;gap:.75rem;max-width:760px;margin:2.2rem 0 0}
-.sa-form input{flex:999 1 320px;min-width:0;min-height:56px;background:var(--surface);
-  border:1px solid var(--line);border-radius:12px;padding:0 1.1rem;color:var(--white);
-  font:inherit;font-size:1.0625rem}
-.sa-form input::placeholder{color:var(--dim)}
-.sa-form input:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-color:var(--blue)}
-.sa-form .btn{flex:1 1 190px;min-height:56px;justify-content:center}
+.sa-form{display:grid;gap:.9rem 1rem;max-width:760px;margin:2rem 0 0;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.sa-field-wide{grid-column:1/-1}
+.sa-field label{display:block;margin:0 0 .35rem;font-size:.8125rem;font-weight:600;
+  letter-spacing:.02em;color:var(--muted)}
+.sa-field input{width:100%;min-height:52px;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;padding:0 1rem;
+  /* color is set explicitly, NOT from --white. In the light theme --white is
+     near-black, which is right; but if this page is ever dropped outside
+     .svc-page the token flips to #FFFFFF and the typed text goes white on a
+     white field -- invisible, with no error. That happened. */
+  color:#0D0D14;font:inherit;font-size:1.0625rem}
+.sa-field input::placeholder{color:var(--dim);opacity:1}
+.sa-field input:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-color:var(--blue)}
+.sa-submit{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.9rem 1.4rem;align-items:center;margin-top:.3rem}
+.sa-submit .btn{flex:0 0 auto;min-height:52px}
+.sa-submit .sa-note{flex:999 1 300px;min-width:0;margin:0}
 .sa-note{margin:1rem 0 0;font-size:.875rem;color:var(--dim)}
 
 /* ---- shared bits --------------------------------------------------------- */
@@ -30,17 +49,17 @@
 /* ---- the eleven checks --------------------------------------------------- */
 .sa-checks{list-style:none;margin:0;padding:0;display:grid;gap:.85rem;
   grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
-.sa-checks li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1.05rem 1rem}
+.sa-checks li{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:1.05rem 1rem}
 .sa-checks strong{display:block;font-family:var(--font-display);font-size:1rem;font-weight:700;margin-bottom:.3rem}
 .sa-checks span{display:block;font-size:.875rem;color:var(--dim);line-height:1.5}
 
 /* ---- the sample report --------------------------------------------------- */
-.sa-sample{background:var(--surface)}
-.sa-report{background:var(--ink);border:1px solid var(--line);border-radius:18px;
+.sa-sample{background:var(--surface-2)}
+.sa-report{background:var(--surface);border:1px solid var(--line);border-radius:18px;
   padding:clamp(1.5rem,3.5vw,2.6rem);margin-top:1.8rem}
 
 .sa-scorerow{display:flex;flex-wrap:wrap;gap:2rem;align-items:center}
-.sa-score{flex:0 0 220px;background:var(--surface);border:1px solid var(--line);
+.sa-score{flex:0 0 220px;background:var(--surface-2);border:1px solid var(--line);
   border-radius:16px;padding:1.6rem;text-align:center}
 .sa-score-label{margin:0 0 .2rem;font-size:.8125rem;font-weight:700;letter-spacing:.12em;
   text-transform:uppercase;color:var(--dim)}
@@ -54,7 +73,7 @@
 .sa-scoretext p:last-child{margin:0;color:var(--muted);font-size:1.0625rem;max-width:60ch}
 
 .sa-bands{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-top:1.8rem}
-.sa-bandcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1.1rem}
+.sa-bandcard{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:1.1rem}
 .sa-bandlabel{margin:0 0 .45rem;font-size:.8125rem;font-weight:600;color:var(--muted)}
 .sa-bandval{margin:0 0 .6rem;font-family:var(--font-display);font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
 .sa-meter{height:6px;background:var(--line);border-radius:999px;overflow:hidden}
@@ -67,7 +86,7 @@
 .sa-k{width:14px;height:14px;border-radius:4px;display:inline-block}
 .sa-k-full{background:var(--blue)}
 .sa-k-part{background:rgba(33,150,243,.34)}
-.sa-k-none{background:var(--surface-2);border:1px solid var(--line)}
+.sa-k-none{background:#EEF0F4;border:1px solid var(--line)}
 
 /* A wide table scrolls in a box rather than breaking the page at phone width. */
 .sa-gridwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -79,14 +98,14 @@
 .sa-c{display:block;height:34px;border-radius:7px}
 .sa-c-full{background:var(--blue)}
 .sa-c-part{background:rgba(33,150,243,.34)}
-.sa-c-none{background:var(--surface-2);border:1px solid var(--line)}
+.sa-c-none{background:#EEF0F4;border:1px solid var(--line)}
 .sa-gridnote{margin:1.3rem 0 0;color:var(--muted)}
 
 /* ---- per-page table ------------------------------------------------------ */
 .sa-pages{width:100%;min-width:760px;border-collapse:collapse;font-size:.9375rem}
 .sa-pages thead th{text-align:left;padding:.6rem .7rem .6rem 0;font-size:.8125rem;
   font-weight:600;color:var(--dim);border-bottom:1px solid var(--line)}
-.sa-pages tbody tr{border-bottom:1px solid var(--surface-2)}
+.sa-pages tbody tr{border-bottom:1px solid var(--line)}
 .sa-pages th[scope=row]{text-align:left;padding:.85rem .7rem .85rem 0;vertical-align:top;font-weight:400}
 .sa-pages td{padding:.85rem .7rem;vertical-align:top;color:var(--muted)}
 .sa-url{display:block;font-weight:600;color:var(--white)}
@@ -109,16 +128,16 @@
 
 /* ---- the two things a checker cannot see --------------------------------- */
 .sa-cantsee{margin-top:2.6rem;padding-top:.4rem}
-.sa-cs{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.5rem}
+.sa-cs{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:1.5rem}
 .sa-cs p:last-child{margin:0;color:var(--muted)}
 
 /* ---- who it is not for, and the CTA -------------------------------------- */
-.sa-notfor{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--blue);
+.sa-notfor{background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--blue);
   border-radius:12px;padding:1.6rem 1.7rem;max-width:860px}
 .sa-notfor h2{margin:0 0 .45rem;font-family:var(--font-display);font-size:1.25rem;font-weight:700}
 .sa-notfor p{margin:0;color:var(--muted)}
 
-.sa-cta{background:var(--surface);border:1px solid var(--line);border-radius:18px;
+.sa-cta{background:var(--surface-2);border:1px solid var(--line);border-radius:18px;
   padding:clamp(1.6rem,3vw,2.6rem);display:flex;flex-wrap:wrap;gap:1.8rem;align-items:center}
 .sa-cta>div{flex:999 1 430px;min-width:0}
 .sa-cta h2{margin:0 0 .5rem;font-family:var(--font-display);font-size:1.75rem;
