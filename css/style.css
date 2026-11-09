@@ -2649,7 +2649,7 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
 }
 /* Service heroes rebuilt in the homepage style: the blue sub-headline under
    the title stays a supporting line, not a second headline. */
-.hero-light .svc-mod-copy .svc-subhead { font-size: clamp(0.95rem, 1.3vw, 1.1rem); line-height: 1.35; margin-top: 0.9rem; }
+.hero-light .svc-subhead { font-size: clamp(0.95rem, 1.3vw, 1.1rem); line-height: 1.35; margin-top: 0.9rem; }
 
 /* ---- Spec rows: dense label/value blocks --------------------------------
    Replaces stacked cards for reference-style content. Cards give every row a
