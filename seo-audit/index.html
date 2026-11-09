@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,700;1,700;1,800;1,900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.min.css?v=0dd1f3fa">
-<link rel="stylesheet" href="/css/seo-audit-v1.css?v=6e64c488">
+<link rel="stylesheet" href="/css/seo-audit-v1.css?v=bfcd4f71">
 <link rel="icon" type="image/png" href="/assets/brand/favicon.png"><link rel="apple-touch-icon" href="/assets/brand/favicon.png">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": ["LocalBusiness", "MarketingAgency"], "name": "NewLife Marketing", "url": "https://newlifemarketing.ca", "email": "contact@newlifemarketing.ca", "telephone": "+1-705-302-1097", "foundingDate": "2022", "slogan": "Disruptive Ads. Relentless ROI.", "description": "NewLife Marketing is a full-service digital marketing agency based in Barrie, Ontario, working with clients worldwide, paid ads (Meta & Google), SEO, social media, in-house video production and CRM builds.", "address": {"@type": "PostalAddress", "streetAddress": "70 Bearberry Rd", "addressLocality": "Minesing", "addressRegion": "ON", "postalCode": "L9X 2E1", "addressCountry": "CA"}, "areaServed": "Worldwide", "sameAs": ["https://www.facebook.com/profile.php?id=61556647865792", "https://www.instagram.com/newlifemarketing_/", "https://youtube.com/@newlifemarketing7", "https://www.tiktok.com/@newlifemarket1ng"], "aggregateRating": {"@type": "AggregateRating", "ratingValue": "5.0", "reviewCount": "4"}, "review": [{"@type": "Review", "author": {"@type": "Person", "name": "Brandi Gordon"}, "reviewRating": {"@type": "Rating", "ratingValue": "5"}}, {"@type": "Review", "author": {"@type": "Person", "name": "Darren Johnson"}, "reviewRating": {"@type": "Rating", "ratingValue": "5"}}, {"@type": "Review", "author": {"@type": "Person", "name": "Kanto Legend"}, "reviewRating": {"@type": "Rating", "ratingValue": "5"}}], "image": "https://newlifemarketing.ca/assets/office/office-drone.jpg"}</script>
 <script defer src="/js/tracking.min.js?v=13aa8726"></script>
@@ -66,6 +66,7 @@
       <span class="sa-spinner" aria-hidden="true"></span>
       <span class="sa-status-text" id="sa-status-text">Starting&hellip;</span>
     </div>
+    <div id="sa-confirm-step" hidden></div>
     <div id="sa-results"></div>
   </div>
 </section>
@@ -104,8 +105,7 @@
       <div class="sa-scorerow">
         <div class="sa-score">
           <p class="sa-score-label">Your score</p>
-          <p class="sa-score-n">38</p>
-          <p class="sa-score-of">out of 100</p>
+          <p class="sa-score-n">38<span class="sa-pc">%</span></p>
           <p class="sa-score-note">Typical for a trade site that has never had a grid built</p>
         </div>
         <div class="sa-scoretext">
@@ -313,12 +313,15 @@
 </div>
 
 <script>
-/* The audit, front end only. No endpoint exists yet: SA_DEMO below is the
-   worked example already printed further down this page, and `run()` is where
-   fetch('/api/seo-audit') goes once there is something to call.
-   Deliberately NOT faked as a network call -- a demo that pretends to be live
-   is the thing somebody later mistakes for working software. */
+/* /seo-audit/ — the run.
+ *
+ * SA_ENDPOINT is the Cloudflare Worker in workers/seo-audit/. Until it is set,
+ * the page says PREVIEW on screen and renders this page's own worked example.
+ * It is never faked as a live result: a demo that pretends to be real is what
+ * somebody later mistakes for working software. */
 (function () {
+  var SA_ENDPOINT = '';   // <- paste the worker URL after `wrangler deploy`
+
   var form = document.getElementById('sa-form');
   if (!form) return;
 
@@ -328,29 +331,40 @@
   var details = document.getElementById('sa-details');
   var err = document.getElementById('sa-modal-err');
   var closeBtn = document.getElementById('sa-modal-close');
-  var run = document.getElementById('sa-run');
-  var statusText = document.getElementById('sa-status-text');
-  var statusBox = document.getElementById('sa-status');
-  var results = document.getElementById('sa-results');
-  var lastFocus = null;
+  var owner = document.getElementById('sa-owner');
+  var yesno = document.getElementById('sa-yesno');
+  var sub = document.getElementById('sa-modal-sub');
 
+  var run = document.getElementById('sa-run');
+  var statusBox = document.getElementById('sa-status');
+  var statusText = document.getElementById('sa-status-text');
+  var results = document.getElementById('sa-results');
+  var confirmBox = document.getElementById('sa-confirm-step');
+  var lastFocus = null;
+  var audit = null;
+  var lead = null;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  var host = function (u) { return String(u).replace(/^https?:\/\//i, '').replace(/\/$/, ''); };
+
+  // ------------------------------------------------------------- the card --
   function normalise(v) {
     v = String(v || '').trim();
     if (!v) return '';
-    // A bare domain is what people type, and it fails type="url". Without this
-    // the button does nothing for the commonest possible input.
     if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
     return v;
   }
-
   function openModal() {
     lastFocus = document.activeElement;
     modal.classList.add('open');
     err.hidden = true;
-    // Reset: a second run must ask again rather than inherit the first answer.
     owner.value = '';
     [].forEach.call(yesno.querySelectorAll('.sa-yn'), function (x) { x.setAttribute('aria-pressed', 'false'); });
-    modalSite.textContent = site.value.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+    modalSite.textContent = host(site.value);
     yesno.querySelector('.sa-yn').focus();
     document.addEventListener('keydown', onEsc);
   }
@@ -361,7 +375,6 @@
   }
   function onEsc(e) { if (e.key === 'Escape') closeModal(); }
 
-  // Step 1: the website, then the card.
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     site.value = normalise(site.value);
@@ -369,34 +382,24 @@
     if (!site.checkValidity()) { site.reportValidity(); return; }
     openModal();
   });
-
   closeBtn.addEventListener('click', closeModal);
-  // No backdrop-close. See the comment on the card's markup.
+  // No backdrop close: this card holds four required fields.
 
-  // Yes / No. Either answer opens the fields; which one was given is kept.
-  var owner = document.getElementById('sa-owner');
-  var yesno = document.getElementById('sa-yesno');
-  var sub = document.getElementById('sa-modal-sub');
   [].forEach.call(yesno.querySelectorAll('.sa-yn'), function (b) {
     b.addEventListener('click', function () {
-      var isOwner = b.dataset.owner === 'yes';
       owner.value = b.dataset.owner;
       [].forEach.call(yesno.querySelectorAll('.sa-yn'), function (x) {
         x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
       });
-      // The copy follows the answer -- promising to email "your report" to
-      // somebody auditing a site they do not own would read as a mistake.
-      sub.textContent = isOwner
+      sub.textContent = b.dataset.owner === 'yes'
         ? 'We’ll crawl it and show the report on this page. Where should we send a copy?'
         : 'Fine — we’ll audit it anyway and show the report here. Where should we send a copy?';
       err.hidden = true;
     });
   });
 
-  // Step 2: the details, then the run.
   details.addEventListener('submit', function (e) {
     e.preventDefault();
-    // The question is not a field, so checkValidity cannot see it.
     if (!owner.value) {
       err.textContent = 'Let us know whether this is your website first.';
       err.hidden = false;
@@ -404,67 +407,354 @@
       return;
     }
     if (!details.checkValidity()) { details.reportValidity(); return; }
-    closeModal();
-    start({
+    lead = {
       website: site.value,
       company: document.getElementById('sa-company').value.trim(),
       name: document.getElementById('sa-name').value.trim(),
       email: document.getElementById('sa-email').value.trim(),
       phone: document.getElementById('sa-phone').value.trim(),
       is_owner: owner.value
-    });
+    };
+    closeModal();
+    start();
   });
 
-  // The stages are the real ones the crawler will go through, in order, so the
-  // wait tells somebody what is happening rather than spinning at them.
-  var STAGES = [
-    ['Fetching ' + 'your sitemap', 900],
-    ['Crawling your pages', 2200],
-    ['Working out your services and service areas', 1500],
-    ['Building your grid', 1100],
-    ['Checking eleven slots on every page', 1800]
-  ];
+  // -------------------------------------------------------------- the run --
+  function say(t) { statusText.textContent = t; }
+  function show(el) { el.hidden = false; }
 
-  function start(payload) {
-    run.hidden = false;
+  function start() {
+    show(run);
     results.innerHTML = '';
+    confirmBox.innerHTML = '';
+    confirmBox.hidden = true;
     statusBox.hidden = false;
-    run.scrollIntoView({ block: 'start' });
+    // No scroll here. The run section sits directly under the hero and the
+    // status line is the only thing in it, so moving the page would shift the
+    // ground under somebody who has not asked to go anywhere. The report
+    // scrolls into view when it is READY, which is the moment worth moving for.
 
-    var i = 0;
-    (function step() {
-      if (i >= STAGES.length) return finish(payload);
-      statusText.textContent = STAGES[i][0].replace('your sitemap',
-        payload.website.replace(/^https?:\/\//i, '').replace(/\/$/, '') + '/sitemap.xml');
-      var wait = STAGES[i][1];
-      i++;
-      setTimeout(step, wait);
-    })();
+    if (!SA_ENDPOINT) return previewRun();
+
+    say('Reading ' + esc(host(site.value)) + '/robots.txt');
+    fetch(SA_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lead)
+    })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        if (!x.ok) throw new Error(x.j && x.j.error || 'The crawl failed.');
+        audit = x.j;
+        statusBox.hidden = true;
+        askServices();
+      })
+      .catch(function (e) {
+        statusBox.hidden = true;
+        results.innerHTML = '<div class="sa-preview-note" role="alert"><strong>That did not work.</strong> '
+          + esc(e.message) + ' Try again, or <a href="/book/">book a call</a> and we will look at it with you.</div>';
+      });
   }
 
-  function finish(payload) {
-    statusBox.hidden = true;
-    results.innerHTML = renderReport(payload);
+  /* ---- confirmation, which is the whole reason the grid is trustworthy ----
+   * A crawler can see a /services/ tree and a /service-areas/ tree. It cannot
+   * tell a place from a product from a URL -- lib/page-kind.mjs says so
+   * plainly, and reads the cluster a page owns instead, which does not exist
+   * for somebody else's site. So the grid is not computed until the owner has
+   * said what their services and their areas actually are. */
+  function chipList(kind, items, extra) {
+    return '<div class="sa-chips" data-kind="' + kind + '">'
+      + items.map(function (it, i) {
+        return '<label class="sa-chip"><input type="checkbox" checked data-i="' + i + '"> '
+          + esc(it.name) + '</label>';
+      }).join('')
+      + '</div>'
+      + '<label class="sa-addlabel" for="sa-add-' + kind + '">' + extra + '</label>'
+      + '<input class="sa-add" id="sa-add-' + kind + '" type="text" placeholder="One per line or comma separated">';
+  }
+
+  function askServices() {
+    confirmBox.hidden = false;
+    var found = audit.services || [];
+    confirmBox.innerHTML = '<div class="sa-q">'
+      + '<p class="sa-q-step">Step 1 of 2</p>'
+      + '<h3>' + (found.length ? 'Are these your services?' : 'What services do you sell?') + '</h3>'
+      + '<p class="sa-q-sub">' + (found.length
+        ? 'Read off your own pages. Untick anything that is not a service, and add what we missed.'
+        : 'We could not find a services section, so tell us what you sell.') + '</p>'
+      + chipList('services', found, 'Anything missing?')
+      + '<div class="sa-q-btns">'
+      + '<button class="btn" type="button" data-q="yes">' + (found.length ? 'Yes, that’s right' : 'Next') + '</button>'
+      + '</div></div>';
+    wireQ(function () {
+      audit.services = readChips('services', audit.services);
+      askAreas();
+    });
+    confirmBox.scrollIntoView({ block: 'center' });
+  }
+
+  function askAreas() {
+    var found = audit.areas || [];
+    confirmBox.innerHTML = '<div class="sa-q">'
+      + '<p class="sa-q-step">Step 2 of 2</p>'
+      + '<h3>' + (found.length ? 'Are these the areas you serve?' : 'Which areas do you serve?') + '</h3>'
+      + '<p class="sa-q-sub">' + (found.length
+        ? 'Untick anywhere you do not work, and add the towns we missed.'
+        : 'We found no service-area pages, which is itself a finding. Name the towns you work in.') + '</p>'
+      + chipList('areas', found, 'Towns we missed?')
+      + '<div class="sa-q-btns">'
+      + '<button class="btn" type="button" data-q="yes">See my report</button>'
+      + '</div></div>';
+    wireQ(function () {
+      audit.areas = readChips('areas', audit.areas);
+      confirmBox.hidden = true;
+      confirmBox.innerHTML = '';
+      render();
+    });
+    confirmBox.scrollIntoView({ block: 'center' });
+  }
+
+  function wireQ(done) {
+    confirmBox.querySelector('[data-q="yes"]').addEventListener('click', done);
+    var add = confirmBox.querySelector('.sa-add');
+    add.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); done(); } });
+  }
+
+  function readChips(kind, original) {
+    var box = confirmBox.querySelector('.sa-chips[data-kind="' + kind + '"]');
+    var kept = [];
+    [].forEach.call(box.querySelectorAll('input[type=checkbox]'), function (cb) {
+      if (cb.checked) kept.push(original[Number(cb.dataset.i)]);
+    });
+    var added = confirmBox.querySelector('.sa-add').value
+      .split(/[\n,]+/).map(function (s) { return s.trim(); }).filter(Boolean)
+      .map(function (n) { return { slug: n.toLowerCase().replace(/[^a-z0-9]+/g, '-'), name: n, added: true }; });
+    return kept.concat(added);
+  }
+
+  // ----------------------------------------------------------- the report --
+  function render() {
+    var services = audit.services || [];
+    var areas = audit.areas || [];
+    var pages = audit.pages || [];
+    var money = pages.filter(function (p) { return p.kind !== 'content' && p.kind !== 'no-keyword'; });
+
+    var cells = services.length * areas.length;
+    var built = 0;
+    var gridRows = services.map(function (s) {
+      return {
+        name: s.name,
+        cells: areas.map(function (a) {
+          var hit = pages.find(function (p) {
+            var u = p.url.toLowerCase();
+            return u.indexOf(s.slug) > -1 && u.indexOf(a.slug) > -1;
+          });
+          if (!hit) return { state: 0 };
+          built++;
+          return { state: hit.filled >= 8 ? 2 : 1, url: hit.url };
+        })
+      };
+    });
+
+    var slotsFilled = money.reduce(function (n, p) { return n + p.filled; }, 0);
+    var slotsTotal = money.reduce(function (n, p) { return n + p.applicable; }, 0);
+    var areaPages = pages.filter(function (p) { return p.kind === 'area'; }).length;
+
+    // Four bands, weighted. THESE WEIGHTS ARE A JUDGEMENT, not a measurement:
+    // grid coverage carries most because it is usually the biggest gap and the
+    // one worth money. Worth checking the first twenty reports against what a
+    // person would say by eye.
+    var pct = function (a, b) { return b > 0 ? Math.round((a / b) * 100) : 0; };
+    var bands = [
+      { label: 'Grid coverage', value: built + ' / ' + cells, pct: pct(built, cells), weight: 0.40,
+        note: 'Service × area pages that exist' },
+      { label: 'On-page slots', value: pct(slotsFilled, slotsTotal) + '%', pct: pct(slotsFilled, slotsTotal), weight: 0.30,
+        note: slotsFilled + ' of ' + slotsTotal + ' filled across ' + money.length + ' pages' },
+      { label: 'Area pages', value: areaPages + ' / ' + areas.length, pct: pct(areaPages, areas.length), weight: 0.20,
+        note: areaPages ? 'Towns with a page of their own' : 'No town has a page of its own' },
+      { label: 'Foundations', value: audit.footer_nap ? 'Yes' : 'No', pct: audit.footer_nap ? 100 : 0, weight: 0.10,
+        note: audit.footer_nap ? 'Name, address and phone in the footer' : 'No address or phone in the footer' }
+    ];
+    var score = Math.round(bands.reduce(function (n, b) { return n + b.pct * b.weight; }, 0));
+
+    results.innerHTML = reportHtml(score, bands, gridRows, areas, money, built, cells, services.length);
     results.scrollIntoView({ block: 'start' });
   }
 
-  function esc(s) {
-    return String(s).replace(/[&<>"]/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
-    });
+  function reportHtml(score, bands, rows, areas, money, built, cells, nServices) {
+    var h = '';
+    if (!SA_ENDPOINT) {
+      h += '<div class="sa-preview-note" role="note"><strong>Preview.</strong> The crawler is not deployed yet, '
+        + 'so these figures are the worked example from this page with <strong>' + esc(host(site.value))
+        + '</strong> written in. Your real report replaces it.</div>';
+    }
+    h += '<div class="sa-report">'
+      + '<div class="sa-scorerow">'
+      + '<div class="sa-score"><p class="sa-score-label">Your score</p>'
+      + '<p class="sa-score-n">' + score + '<span class="sa-pc">%</span></p>'
+      + '<p class="sa-score-note">' + esc(verdict(score)) + '</p></div>'
+      + '<div class="sa-scoretext"><p class="sa-step">SEO audit — ' + esc(host(site.value)) + '</p>'
+      + '<p class="sa-big">You have ' + built + ' of a possible ' + cells + ' pages.</p>'
+      + '<p>' + nServices + ' services, ' + areas.length + ' service areas, ' + money.length
+      + ' money pages crawled. The ' + cells + ' pages that would catch <em>service in town</em> searches '
+      + '— the ones with buying intent — are ' + (built === 0 ? 'entirely unbuilt' : 'mostly unbuilt') + '.</p></div></div>';
+
+    h += '<div class="sa-bands">' + bands.map(function (b) {
+      return '<div class="sa-bandcard"><p class="sa-bandlabel">' + esc(b.label) + '</p>'
+        + '<p class="sa-bandval">' + esc(b.value) + '</p>'
+        + '<div class="sa-meter"><i style="width:' + b.pct + '%"></i></div>'
+        + '<p class="sa-bandnote">' + esc(b.note) + '</p></div>';
+    }).join('') + '</div>';
+
+    h += '<h3 class="sa-h3">Your grid</h3>'
+      + '<p class="sa-sub">Every service you confirmed, against every area you confirmed.</p>'
+      + '<p class="sa-legend"><span><i class="sa-k sa-k-full"></i>Built and optimised</span>'
+      + '<span><i class="sa-k sa-k-part"></i>Built, needs work</span>'
+      + '<span><i class="sa-k sa-k-none"></i>Missing</span></p>'
+      + '<div class="sa-gridwrap"><table class="sa-grid">'
+      + '<caption class="sr-only">Service pages by area</caption><thead><tr><th scope="col">Service / Area</th>'
+      + areas.map(function (a) { return '<th scope="col">' + esc(a.name) + '</th>'; }).join('')
+      + '</tr></thead><tbody>'
+      + rows.map(function (r) {
+        return '<tr><th scope="row">' + esc(r.name) + '</th>'
+          + r.cells.map(function (c) {
+            var cls = c.state === 2 ? 'sa-c-full' : c.state === 1 ? 'sa-c-part' : 'sa-c-none';
+            var lab = c.state === 2 ? 'built and optimised' : c.state === 1 ? 'built, needs work' : 'missing';
+            return '<td><i class="sa-c ' + cls + '" aria-label="' + lab + '"></i></td>';
+          }).join('') + '</tr>';
+      }).join('')
+      + '</tbody></table></div>'
+      + '<p class="sa-gridnote"><strong>' + built + ' built · ' + (cells - built) + ' missing.</strong> '
+      + 'Each missing cell is a search somebody in that town is running that you cannot appear for.</p>';
+
+    h += '<h3 class="sa-h3">The pages you do have</h3>'
+      + '<p class="sa-sub">Eleven checks each. The keyword is taken from the page’s own slug, title and H1 '
+      + '— we cannot know what you meant to target, so we score what the page says it is about.</p>'
+      + '<div class="sa-gridwrap"><table class="sa-pages">'
+      + '<caption class="sr-only">Per-page audit results</caption><thead><tr>'
+      + '<th scope="col">Page</th><th scope="col">Reads as</th><th scope="col">Slots</th><th scope="col">Biggest miss</th>'
+      + '</tr></thead><tbody>'
+      + money.slice(0, 40).map(function (p) {
+        var cls = p.filled >= 8 ? 'sa-ok' : p.filled >= 5 ? 'sa-mid' : 'sa-dim';
+        return '<tr><th scope="row"><span class="sa-url">' + esc(p.url) + '</span>'
+          + '<span class="sa-kind">' + esc(kindName(p.kind)) + '</span></th>'
+          + '<td>' + esc(p.keyword || '—') + '</td>'
+          + '<td><strong class="' + cls + '">' + p.filled + '</strong> / ' + p.applicable + '</td>'
+          + '<td>' + esc(biggestMiss(p)) + '</td></tr>';
+      }).join('')
+      + '</tbody></table></div>';
+
+    h += '<h3 class="sa-h3">What to do, in order</h3>'
+      + '<p class="sa-sub">Ranked by return against effort.</p><ol class="sa-actions">'
+      + actions(money, built, cells, areas).map(function (a) {
+        return '<li><div><h4>' + esc(a.title) + '</h4><p>' + esc(a.body) + '</p></div>'
+          + '<p class="sa-effort">' + esc(a.effort) + '</p></li>';
+      }).join('') + '</ol>';
+
+    return h + '</div>';
   }
 
-  /* Until /api/seo-audit exists, the report shown is this page's own worked
-     example with the visitor's own domain and company written in, and it says
-     so at the top. It is not presented as their real result. */
-  function renderReport(p) {
-    var host = esc(p.website.replace(/^https?:\/\//i, '').replace(/\/$/, ''));
-    var sample = document.querySelector('.sa-report');
-    return ''
-      + '<div class="sa-preview-note" role="note"><strong>Preview.</strong> The crawler is not connected yet, '
-      + 'so what follows is the worked example from this page with <strong>' + host + '</strong> written in. '
-      + 'Your real report will replace it, and we have your details for ' + esc(p.email) + '.</div>'
-      + '<div class="sa-report">' + sample.innerHTML.split('examplebuilders.ca').join(host) + '</div>';
+  function verdict(s) {
+    if (s >= 70) return 'Well ahead of most trades sites';
+    if (s >= 45) return 'The foundations are there, the grid is not';
+    if (s >= 25) return 'Typical for a trade site that has never had a grid built';
+    return 'Almost everything is still to build';
+  }
+  function kindName(k) {
+    return { home: 'Home', service: 'Service', area: 'Area', 'services-hub': 'Services hub',
+      'areas-hub': 'Areas hub', other: 'Page' }[k] || 'Page';
+  }
+  function biggestMiss(p) {
+    var s = p.slots || {};
+    if (!s.h1) return p.h1_count === 0 ? 'No H1 at all.' : p.h1_count > 1 ? p.h1_count + ' H1s on one page.' : 'The H1 does not carry the phrase.';
+    if (!s.title) return 'Title tag does not carry the phrase.';
+    if (!s.meta) return 'No meta description, or it does not carry the phrase.';
+    if (!s.faq) return 'No FAQ block.';
+    if (!s.first_sentence) return 'Phrase missing from the first sentence.';
+    if (!s.h2) return 'Phrase in none of the H2s.';
+    if (!s.image_alt) return 'No image alt carries the phrase, or an alt is empty.';
+    if (!s.body) return 'Phrase does not appear in the body copy.';
+    if (!s.footer_nap) return 'No name, address and phone in the footer.';
+    if (s.h3 === false) return 'Phrase in none of the H3s.';
+    if (!s.slug) return 'Slug does not carry the phrase (never rename a live one).';
+    return 'Nothing major — this one is in good shape.';
+  }
+  function actions(money, built, cells, areas) {
+    var out = [];
+    var noFaq = money.filter(function (p) { return p.slots && !p.slots.faq; });
+    if (noFaq.length) out.push({ title: 'Add an FAQ to ' + noFaq.length + ' page' + (noFaq.length > 1 ? 's' : ''),
+      body: 'It is the easiest slot you own: a question is how people type, so the phrase and a natural sentence are the same thing. Take the questions from the People Also Ask box on your own keyword.',
+      effort: 'An afternoon' });
+    var badH1 = money.filter(function (p) { return p.slots && !p.slots.h1; });
+    if (badH1.length) out.push({ title: 'Fix the H1 on ' + badH1.length + ' page' + (badH1.length > 1 ? 's' : ''),
+      body: 'The small line above the headline should be the H1 and should carry the phrase exactly. The big display line beneath it is a paragraph. It is a one-line edit each.',
+      effort: 'An hour' });
+    var missingAreas = areas.length - money.filter(function (p) { return p.kind === 'area'; }).length;
+    if (missingAreas > 0) out.push({ title: 'Build the ' + missingAreas + ' missing area page' + (missingAreas > 1 ? 's' : ''),
+      body: 'An area page is not your service page with the town swapped in — it needs what is actually different about working there, or it reads as the template it is.',
+      effort: 'A month' });
+    if (cells - built > 0) out.push({ title: 'Then the grid, highest-volume cells first',
+      body: (cells - built) + ' cells is not ' + (cells - built) + ' months. Research which combinations people actually search — some towns want one service and nothing else — and build only those. Half the grid is usually all the grid worth having.',
+      effort: 'A quarter' });
+    return out;
+  }
+
+  // ------------------------------------------------------------- preview ---
+  /* No endpoint: walk the same stages, then show this page's worked example
+     with the visitor's domain written in, labelled as a preview. */
+  function previewRun() {
+    var STAGES = [
+      ['Reading ' + host(site.value) + '/robots.txt', 800],
+      ['Crawling your pages', 2000],
+      ['Working out your services and service areas', 1400],
+      ['Checking eleven slots on every page', 1600]
+    ];
+    var i = 0;
+    (function step() {
+      if (i >= STAGES.length) {
+        statusBox.hidden = true;
+        audit = DEMO();
+        askServices();
+        return;
+      }
+      say(STAGES[i][0]);
+      var w = STAGES[i][1]; i++;
+      setTimeout(step, w);
+    })();
+  }
+
+  function DEMO() {
+    var slot = function (o) {
+      return { title: !!o.t, slug: !!o.s, h1: !!o.h, meta: !!o.m, first_sentence: !!o.f,
+        h2: !!o.a, h3: o.k === undefined ? null : !!o.k, image_alt: !!o.i, body: !!o.b,
+        faq: !!o.q, footer_nap: true };
+    };
+    var mk = function (url, kind, kw, o, h1c) {
+      var sl = slot(o);
+      var ap = Object.values(sl).filter(function (v) { return v !== null; }).length;
+      return { url: url, kind: kind, keyword: kw, slots: sl, h1_count: h1c === undefined ? 1 : h1c,
+        filled: Object.values(sl).filter(function (v) { return v === true; }).length, applicable: ap };
+    };
+    return {
+      origin: site.value, crawled: 7, failed: 0, capped: false, footer_nap: true,
+      services: [{ slug: 'custom-homes', name: 'Custom Homes' }, { slug: 'additions', name: 'Additions' },
+        { slug: 'renovations', name: 'Renovations' }, { slug: 'basements', name: 'Basements' },
+        { slug: 'garages', name: 'Garages' }, { slug: 'commercial', name: 'Commercial' }],
+      areas: [{ slug: 'barrie', name: 'Barrie' }, { slug: 'orillia', name: 'Orillia' },
+        { slug: 'innisfil', name: 'Innisfil' }, { slug: 'alliston', name: 'Alliston' },
+        { slug: 'angus', name: 'Angus' }, { slug: 'midland', name: 'Midland' },
+        { slug: 'collingwood', name: 'Collingwood' }, { slug: 'wasaga-beach', name: 'Wasaga Beach' },
+        { slug: 'bradford', name: 'Bradford' }],
+      pages: [
+        mk('/', 'home', 'custom home builder barrie', { t: 1, s: 0, h: 0, m: 1, f: 1, a: 1, k: 1, i: 1, b: 1, q: 0 }),
+        mk('/custom-homes/', 'service', 'custom homes', { t: 1, s: 1, h: 1, m: 1, f: 0, a: 0, k: 1, i: 1, b: 1, q: 0 }),
+        mk('/renovations/', 'service', 'renovations', { t: 1, s: 1, h: 1, m: 1, f: 1, a: 1, k: 1, i: 0, b: 1, q: 0 }),
+        mk('/additions/', 'service', 'additions', { t: 1, s: 1, h: 0, m: 0, f: 0, a: 1, k: 0, i: 0, b: 1, q: 0 }),
+        mk('/garages/', 'service', 'garages', { t: 0, s: 1, h: 0, m: 0, f: 0, a: 0, k: 0, i: 0, b: 1, q: 0 }, 0),
+        mk('/custom-homes-barrie/', 'other', 'custom homes barrie', { t: 1, s: 1, h: 1, m: 1, f: 1, a: 1, k: 1, i: 1, b: 1, q: 0 }),
+        mk('/service-areas/barrie/', 'area', 'barrie', { t: 1, s: 1, h: 1, m: 0, f: 1, a: 1, k: 0, i: 0, b: 1, q: 0 })
+      ]
+    };
   }
 })();
 </script>

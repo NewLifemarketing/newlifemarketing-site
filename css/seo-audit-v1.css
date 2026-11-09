@@ -221,3 +221,34 @@
    only correct way to leave it out of the design. */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
   clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+
+/* ---- the percentage ------------------------------------------------------ */
+.sa-pc{font-size:.46em;font-weight:700;letter-spacing:0;margin-left:.08em;vertical-align:.34em}
+
+/* ---- the confirmation steps ---------------------------------------------- */
+/* The grid is only as good as the services and areas behind it, and a crawler
+   cannot tell a place from a product from a URL -- lib/page-kind.mjs says so
+   and reads the cluster a page owns instead, which does not exist for somebody
+   else's site. So the owner confirms both before any grid is drawn. */
+.sa-q{background:var(--surface-2);border:1px solid var(--line);border-radius:16px;
+  padding:clamp(1.3rem,3vw,2rem);max-width:760px;margin:0 auto}
+.sa-q-step{margin:0 0 .5rem;font-family:var(--font-display);font-size:.8125rem;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--blue)}
+.sa-q h3{margin:0 0 .4rem;font-family:var(--font-display);font-size:1.5rem;
+  font-weight:800;letter-spacing:-.02em}
+.sa-q-sub{margin:0 0 1.1rem;color:var(--muted);font-size:.9375rem}
+.sa-chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 1rem}
+.sa-chip{display:inline-flex;align-items:center;gap:.5rem;background:#FFFFFF;
+  border:1px solid var(--line);border-radius:999px;padding:.45rem .9rem;
+  font-size:.9375rem;cursor:pointer;min-height:44px}
+.sa-chip:hover{border-color:var(--blue)}
+.sa-chip:has(input:checked){background:var(--blue-dim);border-color:var(--blue)}
+.sa-chip input{accent-color:var(--blue);width:17px;height:17px;cursor:pointer}
+.sa-chip:focus-within{outline:2px solid var(--blue);outline-offset:2px}
+.sa-addlabel{display:block;margin:0 0 .35rem;font-size:.8125rem;font-weight:600;color:var(--muted)}
+.sa-add{width:100%;min-height:50px;background:#FFFFFF;border:1px solid var(--line);
+  border-radius:11px;padding:0 .9rem;color:#0D0D14;font:inherit;font-size:1rem}
+.sa-add::placeholder{color:var(--dim);opacity:1}
+.sa-add:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-color:var(--blue)}
+.sa-q-btns{margin-top:1.1rem}
+.sa-q-btns .btn{min-height:52px}
