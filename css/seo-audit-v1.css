@@ -150,6 +150,8 @@
 .sa-k{width:14px;height:14px;border-radius:4px;display:inline-block}
 .sa-k-full{background:var(--blue)}
 .sa-k-part{background:rgba(33,150,243,.34)}
+/* exists, unread: an outline, because it is a page we have not looked inside */
+.sa-k-unread{background:transparent;box-shadow:inset 0 0 0 2px rgba(33,150,243,.55)}
 .sa-k-none{background:#EEF0F4;border:1px solid var(--line)}
 
 /* A wide table scrolls in a box rather than breaking the page at phone width. */
@@ -162,6 +164,7 @@
 .sa-c{display:block;height:34px;border-radius:7px}
 .sa-c-full{background:var(--blue)}
 .sa-c-part{background:rgba(33,150,243,.34)}
+.sa-c-unread{background:transparent;box-shadow:inset 0 0 0 2px rgba(33,150,243,.55)}
 .sa-c-none{background:#EEF0F4;border:1px solid var(--line)}
 .sa-gridnote{margin:1.3rem 0 0;color:var(--muted)}
 

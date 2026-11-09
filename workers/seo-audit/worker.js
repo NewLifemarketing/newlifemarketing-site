@@ -221,6 +221,18 @@ async function audit(target) {
    * between a partial audit and one that looks complete. */
   const discovered = urls.length;
   const capped = urls.length > MAX_PAGES;
+  /* EVERY URL THE SITE HAS, as paths, kept whole. Two different questions are
+   * being answered here and only one of them is expensive:
+   *
+   *   does the page EXIST?   -> is it in this list. Free, complete, uncapped.
+   *   is the page ANY GOOD?  -> needs the HTML. 20 pages, and that is the cap.
+   *
+   * Conflating them is what made the report dishonest. The grid was matched
+   * against the 20 CRAWLED pages, so on a 145-page site a real page we simply
+   * had not fetched came back as "missing" -- and "missing" is the word that
+   * sells the service. Most of DMT's grid was being reported as unbuilt when
+   * it was built and merely unread. */
+  const sitemap = [...new Set(urls.map((u) => { try { return new URL(u).pathname; } catch { return null; } }).filter(Boolean))];
   urls = urls.slice(0, MAX_PAGES);
   // The home page is the one URL that must be in every crawl.
   const homeIn = urls.some((u) => { try { return new URL(u).pathname.replace(/\/+$/, '') === ''; } catch { return false; } });
@@ -241,7 +253,7 @@ async function audit(target) {
   });
 
   const good = pages.filter((p) => !p.error);
-  const grid = detectGrid(good, homeHtml);
+  const grid = detectGrid(good, homeHtml, sitemap);
   return {
     origin,
     discovered_by: source,
@@ -250,6 +262,7 @@ async function audit(target) {
     capped,
     cap: MAX_PAGES,
     discovered,
+    sitemap,
     /* The pages that could not be read, with their status. Silent drops are
      * what let 17 failed fetches read as "nine towns you never built". */
     subrequests: SUBREQ,
@@ -586,6 +599,88 @@ function navGroups(html) {
   return { services, areas };
 }
 
+/* -- signal 2b: THE HOMEPAGE, WHICH IS WHERE A HUMAN LOOKS ------------------
+ * Reported on a real site: "we could not find any services section", when
+ * anyone opening that site would name the services in three seconds. They were
+ * right, and the reason is that none of the signals above read the page. The
+ * trees are URL structure. The nav group needs a menu item literally labelled
+ * "Services". The slug passes need a grid. A site whose top menu reads
+ *
+ *     Home | Roofing | Siding | Eavestrough | About | Contact
+ *
+ * has no services tree, no "Services" label to hang a dropdown off, and no grid
+ * to factorise -- and its services are the four words in the middle of that
+ * menu, which is exactly what a person sees.
+ *
+ * So two more reads, both of the homepage, both only used when the stronger
+ * signals came back with less than a list:
+ *
+ *   2b  a heading that announces services, and what follows it
+ *   2c  the top menu with the furniture taken out
+ *
+ * 2c is the blunt one and it is deliberately blunt: "the menu items that are
+ * not About, Contact or Blog" is how a human reads a trades site, and the
+ * blocklist already knows what the furniture is called. Some of what it offers
+ * will be wrong. The owner is being asked, and being asked about four plausible
+ * things beats being told we found nothing about a site that says what it does
+ * at the top of every page. */
+function homepageServices(html) {
+  const out = new Map();
+  if (!html) return out;
+  const clean = strip(html);
+
+  const heads = [...clean.matchAll(/<h([1-4])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].map((m) => ({
+    at: m.index,
+    lvl: Number(m[1]),
+    text: decode(m[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim(),
+  }));
+
+  const anchor = heads.find((h) => /\b(our\s+)?services\b|what\s+we\s+(do|offer)|how\s+we\s+help|our\s+expertise/i.test(h.text));
+  if (!anchor) return out;
+
+  // The section runs to the next heading at the same level or higher.
+  const next = heads.find((h) => h.at > anchor.at && h.lvl <= anchor.lvl);
+  const section = clean.slice(anchor.at, next ? next.at : Math.min(clean.length, anchor.at + 12000));
+
+  for (const m of section.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    const text = decode(m[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+    let seg;
+    try { seg = slugOf(new URL(m[1], 'https://x.invalid').pathname); } catch { continue; }
+    if (!seg.length) continue;
+    const key = seg[seg.length - 1];
+    if (!key || key.length < 3) continue;
+    if (!text || text.length > 48) continue;
+    if (/^(read more|learn more|more|view|see more|details|get a quote|contact)/i.test(text)) continue;
+    out.set(key, text);
+    if (out.size >= 14) break;
+  }
+  return out;
+}
+
+/** The top menu with the furniture taken out. What is left of
+ *  "Home | Roofing | Siding | About | Contact" is the services. */
+function navLeftovers(html) {
+  const out = new Map();
+  if (!html) return out;
+  const chrome = [...strip(html).matchAll(/<(nav|header)\b[\s\S]*?<\/\1>/gi)].map((m) => m[0]).join('\n');
+  if (!chrome) return out;
+
+  for (const m of chrome.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    const text = decode(m[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+    let u;
+    try { u = new URL(m[1], 'https://x.invalid'); } catch { continue; }
+    if (/^(tel|mailto|javascript):/i.test(m[1])) continue;
+    const seg = slugOf(u.pathname);
+    if (seg.length !== 1) continue;             // top level only
+    const key = seg[0];
+    if (!key || key.length < 3) continue;
+    if (!text || text.length > 48 || /\d{3}/.test(text)) continue;   // not a phone number
+    out.set(key, text);
+    if (out.size >= 14) break;
+  }
+  return out;
+}
+
 /* -- signals 3 and 4: what the flat slugs can and cannot say ---------------
  * Measured on a real builder's site, and the slugs look like this:
  *
@@ -659,39 +754,67 @@ function pickFamilyNames(grams) {
   return out;
 }
 
-/** What is left of each slug once every service family is removed. One or two
- *  tokens, not a stop word, not itself a family: that is a place. */
-function residueAreas(urls, families) {
-  const out = new Map();
+/** What is left of each slug once the service is taken off it.
+ *
+ * STRIPPING FAMILY GRAMS DOES NOT SURVIVE A REAL SITEMAP. On 20 crawled URLs it
+ * worked; over all 145 it produced "Construction Barrie", "Builder Toronto",
+ * "Custom Barrie", "House Addition" and "Builder" as service AREAS, because
+ * with more URLs there are more families, a slug contains several, and removing
+ * only the busiest leaves the others sitting in the answer.
+ *
+ * So no stripping. Each TOKEN is placed by how many slugs it appears in, within
+ * its own slug:
+ *
+ *   home-additions-barrie     home 30, addition 25, barrie 5   -> Barrie
+ *   construction-barrie       construction 10, barrie 5        -> Barrie
+ *   angus-custom-home-builder angus 1, custom 15, builder 20    -> Angus
+ *
+ * A trade sells a few services into many towns, so the service tokens are the
+ * frequent ones in every slug they appear in and the town is the rare one. The
+ * comparison is WITHIN the slug, which is what makes it hold: "construction"
+ * beats "barrie" there while being nowhere near as frequent as "home", and no
+ * global threshold could have separated both cases at once.
+ *
+ * THE NAME COMES FROM THE ORIGINAL TOKENS, NEVER THE STEMS. Matching stems
+ * singular and plural together -- that is the only reason it exists -- and a
+ * stem reaching the screen printed Angus as "Angu".
+ */
+function residueAreas(urls) {
+  const df = new Map();
+  const rows = [];
   for (const u of urls) {
-    const joinedAll = stemsOf(u).join(' ');
-    /* STRIP ONE FAMILY, THE BUSIEST, NOT ALL OF THEM. A hub town sits in
-     * enough cells to clear the 4-slug bar itself -- Barrie was in four on a
-     * real site -- so it is read as a family too, and stripping every family
-     * then removed the town and kept the service: /garden-suites-barrie/ came
-     * back as the area "Garden Suite", and Barrie, their biggest town,
-     * disappeared from the grid altogether. A missing area is the worst of the
-     * possible errors here, because the score IS the share of the grid built,
-     * so a town that is never counted cannot be reported as missing either.
-     *
-     * Between the two the service is the busier: it pairs with every town,
-     * while a town pairs only with the services it was built for. */
-    const present = families.filter((f) => joinedAll.includes(f.gram));
-    if (!present.length) continue;
-    present.sort((a, b) => (b.slugs - a.slugs) || (b.gram.length - a.gram.length));
-    const joined = joinedAll.replace(present[0].gram, ' ');
-    const rest = joined.split(/\s+/).filter(Boolean).filter((w) => !STOP_SLUG.has(w) && w.length > 2);
-    if (!rest.length || rest.length > 2) continue;
-    /* No "is this itself a family?" test here, and that test is what kept
-     * Barrie out. Once the BUSIER gram has been stripped, whatever is left
-     * lost that comparison, and losing it is exactly what makes it the area. */
-    const key = rest.join('-');
-    out.set(key, titleise(rest.join(' ')));
+    const raw = tokensOf(u);
+    if (raw.length < 2) continue;                 // one word cannot split
+    const st = raw.map(stem);
+    rows.push({ raw, st });
+    for (const t of new Set(st)) df.set(t, (df.get(t) || 0) + 1);
+  }
+
+  const out = new Map();
+  for (const { raw, st } of rows) {
+    const counts = st.map((t) => df.get(t) || 0);
+    const top = Math.max(...counts);
+    /* No repeating family in this slug at all: it is a one-off page, not a grid
+     * cell, and guessing an area off it is how "Garden Suite" became a town. */
+    if (top < 3) continue;
+
+    const cut = Math.max(1, Math.floor(top * 0.4));
+    const low = [];
+    for (let i = 0; i < raw.length; i++) {
+      if (counts[i] <= cut && !STOP_SLUG.has(st[i]) && raw[i].length > 2) low.push(raw[i]);
+    }
+    // One or two tokens. Three is a sentence, not a place name.
+    if (!low.length || low.length > 2) continue;
+    // And it has to be genuinely rarer than the service, not merely tied.
+    if (low.every((w) => (df.get(stem(w)) || 0) === top)) continue;
+
+    const name = low.join(' ');
+    out.set(name.toLowerCase().replace(/\s+/g, '-'), titleise(name));
   }
   return out;
 }
 
-function detectGrid(pages, homeHtml) {
+function detectGrid(pages, homeHtml, sitemapPaths) {
   const byUrl = new Map(pages.map((p) => [p.url, p]));
 
   const services = new Map();   // slug -> {name, from}
@@ -717,12 +840,37 @@ function detectGrid(pages, homeHtml) {
   for (const [slug, text] of nav.areas) addArea(slug, text, 'your menu');
   for (const [slug, text] of nav.services) addSvc(slug, text, 'your menu');
 
+  /* 2b and 2c: READ THE HOMEPAGE, but only once the signals that actually
+   * know have come back with less than a list. A site with a /services/ tree
+   * does not need its menu guessed at. */
+  if (services.size < 2) {
+    for (const [slug, text] of homepageServices(homeHtml)) addSvc(slug, text, 'your services section');
+  }
+  if (services.size < 2) {
+    for (const [slug, text] of navLeftovers(homeHtml)) addSvc(slug, text, 'your menu');
+  }
+
   // 3 and 4 run on the flat pages only. Anything a tree or the nav already
   // placed is settled and must not be guessed at a second time.
-  const flat = pages
-    .filter((p) => ['other', 'service', 'area'].includes(p.kind))
-    .map((p) => p.url)
-    .filter((u) => slugOf(u).length >= 1 && !services.has(lastSeg(u)) && !areas.has(lastSeg(u)));
+  /* THE SLUG PASSES RUN OVER THE WHOLE SITEMAP, NOT THE 20 PAGES READ.
+   *
+   * Reading a URL costs nothing -- it is a string we already have -- and
+   * restricting these passes to the crawl made the cap self-fulfilling: areas
+   * were only ever found on pages we had fetched, so the grid could never show
+   * a town past page 20, and looking existence up in the sitemap afterwards
+   * could not help because the town was never a candidate in the first place.
+   * Measured on a 145-page builder: 7 areas from the crawl, and the other 15
+   * towns invisible, each one of them a cell reported as never built.
+   *
+   * Grading still needs the HTML and is still capped at 20. Finding out what
+   * exists does not. */
+  const flat = (sitemapPaths && sitemapPaths.length ? sitemapPaths : pages.map((p) => p.url))
+    .filter((u) => {
+      const seg = slugOf(u);
+      if (!seg.length) return false;
+      if (seg.some((x) => NOT_A_SERVICE.test(x))) return false;
+      return !services.has(lastSeg(u)) && !areas.has(lastSeg(u));
+    });
 
   const families = pickFamilyNames(recurringGrams(flat));
 
@@ -740,7 +888,7 @@ function detectGrid(pages, homeHtml) {
     }
   }
 
-  for (const [slug, name] of residueAreas(flat, families)) addArea(slug, name, 'your URLs name it');
+  for (const [slug, name] of residueAreas(flat)) addArea(slug, name, 'your URLs name it');
 
   /* The flat-site fallback: no family recurs 4+ times and no tree or menu said
    * anything, so there is no grid to read. Each page with a multi-word slug is
@@ -750,6 +898,26 @@ function detectGrid(pages, homeHtml) {
       if (tokensOf(u).length < 2) continue;
       addSvc(lastSeg(u), pageName(byUrl.get(u)), 'a page of yours');
     }
+  }
+
+  /* THE SHORTER NAME IS THE PLACE. Over a whole sitemap the same town arrives
+   * twice -- once clean and once with a service word still attached: "Barrie"
+   * and "Additions Barrie", "Ajax" and "House Ajax", "Muskoka" and "Muskoka
+   * Cottage". Both halves of each pair are the same town, and the longer one is
+   * the one that failed to shed its service. So where one area's words are a
+   * superset of another's, the superset goes.
+   *
+   * Dropping rather than merging is deliberate: a town listed twice is a town
+   * the owner has to untick twice, and every wrong chip costs more trust than
+   * a missing one, because a missing town can be typed into the box underneath. */
+  for (const [slug, v] of [...areas.entries()]) {
+    const mine = new Set(slug.split('-').filter(Boolean));
+    for (const other of areas.keys()) {
+      if (other === slug) continue;
+      const theirs = other.split('-').filter(Boolean);
+      if (theirs.length < mine.size && theirs.every((t) => mine.has(t))) { areas.delete(slug); break; }
+    }
+    void v;
   }
 
   const out = (m) => [...m.entries()].map(([slug, v]) => ({ slug, name: v.name, from: v.from }));

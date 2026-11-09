@@ -555,19 +555,46 @@
     var pages = audit.pages || [];
     var money = pages.filter(function (p) { return p.kind !== 'content' && p.kind !== 'no-keyword'; });
 
+    /* TWO QUESTIONS, AND ONLY ONE OF THEM IS EXPENSIVE.
+     *
+     *   does the page EXIST?  -> the site's whole URL list, free and complete
+     *   is it ANY GOOD?       -> needs the HTML, and that is capped at 20
+     *
+     * This used to match the grid against the 20 crawled pages, so on a
+     * 145-page site a page that was built but not fetched came back as
+     * MISSING -- and missing is the word that sells the service. Most of one
+     * builder's grid was reported unbuilt when it was built and merely unread.
+     *
+     * So existence comes off audit.sitemap and grading off audit.pages, and a
+     * cell that exists without having been read says exactly that rather than
+     * borrowing either answer. */
+    var sitemap = audit.sitemap || pages.map(function (p) { return p.url; });
+
+    // Token match, not substring: "home-addition" has to match
+    // /home-additions-barrie/ through the plural, and "barrie" must not match
+    // a page that merely contains those letters.
+    var stem = function (w) { return w.length > 3 && w.slice(-1) === 's' ? w.slice(0, -1) : w; };
+    var toks = function (str) {
+      return String(str).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).map(stem);
+    };
+    var covers = function (url, slug) {
+      var have = toks(url), want = toks(slug);
+      return want.length > 0 && want.every(function (w) { return have.indexOf(w) > -1; });
+    };
+
     var cells = services.length * areas.length;
     var built = 0;
+    var unread = 0;
     var gridRows = services.map(function (s) {
       return {
         name: s.name,
         cells: areas.map(function (a) {
-          var hit = pages.find(function (p) {
-            var u = p.url.toLowerCase();
-            return u.indexOf(s.slug) > -1 && u.indexOf(a.slug) > -1;
-          });
-          if (!hit) return { state: 0 };
+          var url = sitemap.find(function (u) { return covers(u, s.slug) && covers(u, a.slug); });
+          if (!url) return { state: 0 };
           built++;
-          return { state: hit.filled >= 8 ? 2 : 1, url: hit.url };
+          var read = pages.find(function (p) { return p.url === url; });
+          if (!read) { unread++; return { state: 3, url: url }; }
+          return { state: read.filled >= 8 ? 2 : 1, url: url };
         })
       };
     });
@@ -593,11 +620,11 @@
     ];
     var score = Math.round(bands.reduce(function (n, b) { return n + b.pct * b.weight; }, 0));
 
-    results.innerHTML = reportHtml(score, bands, gridRows, areas, money, built, cells, services.length);
+    results.innerHTML = reportHtml(score, bands, gridRows, areas, money, built, cells, services.length, unread);
     results.scrollIntoView({ block: 'start' });
   }
 
-  function reportHtml(score, bands, rows, areas, money, built, cells, nServices) {
+  function reportHtml(score, bands, rows, areas, money, built, cells, nServices, unread) {
     var h = '';
     /* SAY IT BEFORE THE SCORE, NOT IN A FOOTNOTE. The crawl stops at 20 pages,
        and on a trades site the service-area pages are usually the ones past
@@ -642,6 +669,7 @@
       + '<p class="sa-sub">Every service you confirmed, against every area you confirmed.</p>'
       + '<p class="sa-legend"><span><i class="sa-k sa-k-full"></i>Built and optimised</span>'
       + '<span><i class="sa-k sa-k-part"></i>Built, needs work</span>'
+      + (unread ? '<span><i class="sa-k sa-k-unread"></i>Built, not checked</span>' : '')
       + '<span><i class="sa-k sa-k-none"></i>Missing</span></p>'
       + '<div class="sa-gridwrap"><table class="sa-grid">'
       + '<caption class="sr-only">Service pages by area</caption><thead><tr><th scope="col">Service / Area</th>'
@@ -650,8 +678,10 @@
       + rows.map(function (r) {
         return '<tr><th scope="row">' + esc(r.name) + '</th>'
           + r.cells.map(function (c) {
-            var cls = c.state === 2 ? 'sa-c-full' : c.state === 1 ? 'sa-c-part' : 'sa-c-none';
-            var lab = c.state === 2 ? 'built and optimised' : c.state === 1 ? 'built, needs work' : 'missing';
+            // State 3: the page exists and we did not read it. It is neither
+            // "missing" nor gradeable, and saying either would be a guess.
+            var cls = c.state === 3 ? 'sa-c-unread' : c.state === 2 ? 'sa-c-full' : c.state === 1 ? 'sa-c-part' : 'sa-c-none';
+            var lab = c.state === 3 ? 'built, not checked' : c.state === 2 ? 'built and optimised' : c.state === 1 ? 'built, needs work' : 'missing';
             return '<td><i class="sa-c ' + cls + '" aria-label="' + lab + '"></i></td>';
           }).join('') + '</tr>';
       }).join('')
