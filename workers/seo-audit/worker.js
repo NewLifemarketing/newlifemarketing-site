@@ -270,9 +270,34 @@ async function audit(target, env) {
    * telling a place from a blog topic is a reading job. So the rules run first
    * and hand their candidates over, and the model keeps the real places, drops
    * "Mulch", and adds whatever the prose names that no URL did. */
+  /* ASK THE PAGES WHAT THEY ARE. This is the primary path now; the name-to-slug
+   * machinery below it is the fallback for when there is no model to ask. */
+  const labels = await labelPages(env, good, sitemap, origin);
   const pre = detectGrid(good, homeHtml, sitemap, hubHtml, null);
-  const read = await readWithModel(env, homeHtml, hubHtml, origin, pre.areas.map((a) => a.name));
-  const grid = detectGrid(good, homeHtml, sitemap, hubHtml, read, pre);
+  /* BOTH READS, AND THEY ANSWER DIFFERENT QUESTIONS.
+   *
+   * Labelling the pages says what EXISTS. It cannot say what is missing,
+   * because a town with no page has no page to label -- and the towns with no
+   * page are the entire product. The landscaper names Midhurst, Innisfil and
+   * Wasaga on its home page and has a page for none of them, which is the
+   * finding and was invisible to the labeller.
+   *
+   * So the page reader supplies the roster of places the business claims, and
+   * the labeller supplies which of them have a page. */
+  const read = await readWithModel(env, homeHtml, hubHtml, origin, pre.areas.map((a) => a.name), sitemap);
+  const grid = labels ? gridFromLabels(labels) : detectGrid(good, homeHtml, sitemap, hubHtml, read, pre);
+
+  if (labels && read) {
+    const seen = new Set(grid.areas.map((a) => a.slug));
+    const kc = (n) => String(n).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    for (const name of read.areas) {
+      const k = kc(name);
+      if (k && !seen.has(k) && grid.areas.length < 60) {
+        seen.add(k);
+        grid.areas.push({ slug: k, name, from: 'named on your site', own: null });
+      }
+    }
+  }
   return {
     origin,
     discovered_by: source,
@@ -282,7 +307,10 @@ async function audit(target, env) {
     cap: MAX_PAGES,
     discovered,
     sitemap,
-    read_by: read ? 'model' : 'markup rules',
+    read_by: labels ? 'pages labelled by model' : read ? 'model, name matched' : 'markup rules',
+    label_why: LABEL_WHY,
+    // Which page is which cell, read off the pages themselves.
+    cells: grid.cells || null,
     /* The pages that could not be read, with their status. Silent drops are
      * what let 17 failed fetches read as "nine towns you never built". */
     subrequests: SUBREQ,
@@ -657,6 +685,234 @@ function navGroups(html) {
 
 const HUB_PATH = /^\/(services?|our-services|what-we-do|services-we-offer)\/?$/i;
 
+/* ----------------------------------------------------------- labelling --
+ * ASK WHAT EACH PAGE IS. DO NOT MATCH A NAME TO A SLUG.
+ *
+ * Everything before this tried to pair a service NAME with a URL and failed on
+ * a real landscaper's site: the model read "Interlock Patios & Walkways" and
+ * "Stone Steps" off the pages, both correct, and the pages are at
+ * /interlock-service and /stone-staircases-service. Nothing that compares those
+ * two strings finds the pair, and loosening the comparison enough to catch
+ * "Stone Steps" also hands it /stone-work.
+ *
+ * The question was wrong. /stone-staircases-service is the Stone Steps page
+ * because THAT PAGE SAYS SO -- its own title and H1 say so, and they were sitting
+ * in the crawl the whole time, unread for this purpose. So each page is asked
+ * what it is, once, and the grid is assembled from what the pages say about
+ * themselves rather than from arithmetic over their spelling.
+ *
+ * This also gets the grid cells right for free. /custom-home-builder-barrie/ is
+ * not "a service token plus a leftover"; it is a page that says it is custom
+ * home building in Barrie, which is a thing to read, not to compute.
+ */
+function pageDigest(pages, paths) {
+  const seen = new Set();
+  const rows = [];
+  for (const p of pages) {
+    seen.add(p.url);
+    const t = String(p.title || '').replace(/\s+/g, ' ').slice(0, 90);
+    const h = String(p.h1_text || '').replace(/\s+/g, ' ').slice(0, 70);
+    rows.push(p.url + ' | ' + t + (h && h !== t ? ' | ' + h : ''));
+  }
+  // Pages we never fetched still have a URL, and a URL is still evidence.
+  for (const u of (paths || [])) {
+    if (!seen.has(u) && rows.length < 90) rows.push(u + ' |');
+  }
+  return rows;
+}
+
+async function labelPages(env, pages, paths, origin) {
+  if (!env || !env.AI) return null;
+  const rows = pageDigest(pages, paths);
+  if (rows.length < 2) return null;
+
+  const prompt = [
+    'You are reading the page list of a trades or home-service business.',
+    'Each line is:  url | title | h1',
+    '',
+    'For every url, say what that page IS. Return ONLY JSON:',
+    '{"pages":{"/url":{"service":"...","area":"..."}}}',
+    '',
+    'service: the service that page is about, in the words the business uses.',
+    '  null if the page is not about a service.',
+    'area: the town, city, county or region the page TARGETS. null if none.',
+    '  Set it ONLY when the page is specifically for that place - the place is',
+    '  normally in the title or the h1. Nearly every page of a local business',
+    '  mentions its home town somewhere; that does NOT make it a page for that',
+    '  town. A landscaper whose every page says "serving Barrie" still has one',
+    '  interlock page, not an interlock-in-Barrie page, and calling it the',
+    '  latter loses the service page entirely.',
+    '',
+    'So:',
+    '  a page about one service, no place        -> service set, area null',
+    '  a page about one place, no service        -> service null, area set',
+    '  a page about one service in one place     -> both set',
+    '  home, about, contact, blog, legal, faqs   -> both null',
+    '  a hub listing all services or all areas   -> both null',
+    '',
+    'READ THE TITLE, NOT THE URL SPELLING. /stone-staircases-service titled',
+    '"Stone Steps" is the Stone Steps page. Use the SAME wording for a service',
+    'every time it appears, so pages about one service group together.',
+    'Invent nothing: if a url is not in the list below, do not mention it.',
+    '',
+    'PAGES (' + origin + '):',
+    rows.join('\n'),
+  ].join('\n');
+
+  let raw;
+  try {
+    const res = await env.AI.run(AI_MODEL, {
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 3000,
+      temperature: 0,
+    });
+    const c = res && res.choices && res.choices[0];
+    raw = [
+      res, res && res.response, res && res.response && res.response.content,
+      c && c.message && c.message.content, c && c.text, res && res.result,
+    ].find((x) => typeof x === 'string' && x.trim()) || '';
+  } catch (e) {
+    LABEL_WHY = 'run threw: ' + String(e && e.message || e).slice(0, 120);
+    return null;
+  }
+
+  /* Fences first, then a repair for the one failure a long list produces: the
+   * answer runs out of tokens mid-object, which is valid JSON with the end
+   * missing. Closing it keeps the pages it did label instead of throwing the
+   * lot away and falling back -- measured, a six-page site hit this. */
+  let body = String(raw).replace(/^[\s\S]*?```(?:json)?/i, '').replace(/```[\s\S]*$/, '');
+  const open = body.indexOf('{');
+  if (open === -1) { LABEL_WHY = 'no json'; return null; }
+  body = body.slice(open);
+  let parsed = null;
+  for (let cut = body.length; cut > 40 && !parsed; cut = body.lastIndexOf('}', cut - 1)) {
+    const attempt = body.slice(0, cut + 1);
+    const depth = (attempt.match(/\{/g) || []).length - (attempt.match(/\}/g) || []).length;
+    try { parsed = JSON.parse(attempt + '}'.repeat(Math.max(0, depth))); } catch { /* try shorter */ }
+  }
+  if (!parsed) { LABEL_WHY = 'bad json: ' + body.slice(0, 120); return null; }
+  if (!parsed.pages || typeof parsed.pages !== 'object') { LABEL_WHY = 'no pages key'; return null; }
+
+  const known = new Set(rows.map((r) => r.split(' |')[0]));
+  const tidy = (v) => {
+    if (typeof v !== 'string') return null;
+    const t = v.replace(/\s+/g, ' ').trim();
+    if (!t || t.length > 48 || t.split(' ').length > 6) return null;
+    if (/^(null|none|n\/a|-)$/i.test(t)) return null;
+    if (NOT_A_SERVICE_NAME.test(t)) return null;
+    return t;
+  };
+
+  /* THE PLACE HAS TO BE ON THE PAGE. Told plainly that a page merely mentioning
+   * the home town is not a page for that town, the model still labelled a
+   * landscaper's /interlock-service with "Barrie & Simcoe County" -- every page
+   * on that site says it, so it read as targeting it. The service page was then
+   * a grid cell and the service had no page of its own, which is the exact
+   * complaint: three pages that exist, reported as missing.
+   *
+   * Instruction is not enforcement. A page that TARGETS a place says so where
+   * targeting lives -- the url, the title or the h1 -- so that is checked here
+   * rather than asked for. */
+  const said = new Map();
+  for (const pg of pages) said.set(pg.url, (pg.url + ' ' + (pg.title || '') + ' ' + (pg.h1_text || '')).toLowerCase());
+  const targets = (url, area) => {
+    const hay = said.get(url) || url.toLowerCase();
+    const words = String(area).toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2);
+    if (!words.length) return false;
+    return words.some((w) => hay.includes(w));
+  };
+
+  const labels = new Map();
+  for (const [url, v] of Object.entries(parsed.pages)) {
+    const u = String(url).replace(/^https?:\/\/[^/]+/, '') || '/';
+    /* A url the crawl never saw is one the model invented, and an invented url
+     * becomes a page reported as built. That is the one direction of error this
+     * report may never make, so unknown urls are dropped without apology. */
+    if (!known.has(u)) continue;
+    if (!v || typeof v !== 'object') continue;
+    const service = tidy(v.service);
+    let area = tidy(v.area);
+    if (area && !targets(u, area)) area = null;
+    if (!service && !area) continue;
+    labels.set(u, { service, area });
+  }
+  if (!labels.size) { LABEL_WHY = 'nothing labelled'; return null; }
+  LABEL_WHY = 'ok';
+  return labels;
+}
+
+/** Services, areas and cells, taken from what the pages said they were.
+ *  One spelling per service: the first one seen wins, and the rest fold into
+ *  it, because "Stone Steps" and "Stone steps" are one row of the grid. */
+function gridFromLabels(labels) {
+  const services = new Map();
+  const areas = new Map();
+  const cells = [];
+
+  /* ONE SERVICE, ONE SPELLING. Asked to keep its wording consistent the model
+   * still returned "Home Addition", "Home Additions" and "House Addition" as
+   * three services off one site's grid pages. Singular and plural are the same
+   * word, so names whose stemmed words match are one service and the first
+   * spelling seen wins. "House" and "home" are genuinely different words and
+   * are left alone -- the owner can untick one. */
+  const stemKey = (n) => String(n).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+    .map((w) => (w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w))
+    .sort().join('-');
+  const canon = new Map();
+  const key = (n) => {
+    const sk = stemKey(n);
+    if (!canon.has(sk)) canon.set(sk, String(n).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''));
+    return canon.get(sk);
+  };
+
+  /* ONE AREA ON EVERY PAGE IS THE HOME TERRITORY, NOT A GRID AXIS.
+   *
+   * A landscaper's pages are titled "Interlock Patios, Walkways & Driveways in
+   * Barrie & Simcoe County" and "Stone Steps & Staircases in Barrie & Simcoe
+   * County". The model was right to call those Barrie pages -- they say so --
+   * but taking that as a grid dimension made a 3x1 grid of cells and left the
+   * service-page column empty, so three pages that plainly exist were reported
+   * as missing. That was the complaint, and the model was not the one wrong.
+   *
+   * A business says where it works. Saying it on every service page makes it
+   * their territory, not a targeting choice, and their interlock page is the
+   * interlock page. A town is a grid axis when SOME pages carry it and others
+   * do not -- that is what makes it a dimension rather than a letterhead. */
+  const svcPages = [...labels.values()].filter((l) => l.service).length;
+  const areaTally = new Map();
+  for (const l of labels.values()) if (l.service && l.area) areaTally.set(l.area, (areaTally.get(l.area) || 0) + 1);
+  let home = null;
+  for (const [a, n] of areaTally) {
+    if (areaTally.size === 1 && svcPages > 1 && n >= svcPages * 0.6) home = a;
+  }
+
+  for (const [url, raw] of labels) {
+    // The home territory is dropped from the page's label, so a service page
+    // that names it is the service's own page rather than a cell.
+    const l = (home && raw.area === home) ? { service: raw.service, area: null } : raw;
+    if (l.service) {
+      const k = key(l.service);
+      if (!services.has(k)) services.set(k, { slug: k, name: l.service, from: 'read off your pages', own: null });
+      if (!l.area && !services.get(k).own) services.get(k).own = url;
+    }
+    if (l.area) {
+      const k = key(l.area);
+      if (!areas.has(k)) areas.set(k, { slug: k, name: l.area, from: 'read off your pages', own: null });
+      if (!l.service && !areas.get(k).own) areas.get(k).own = url;
+    }
+    if (l.service && l.area) cells.push({ service: key(l.service), area: key(l.area), url });
+  }
+
+  return {
+    services: [...services.values()].slice(0, 24),
+    areas: [...areas.values()].slice(0, 60),
+    cells,
+    home,
+  };
+}
+
+let LABEL_WHY = '';
+
 /* ---------------------------------------------------------------- read --
  * A MODEL READS THE PAGE. Everything below it is a fallback.
  *
@@ -701,7 +957,7 @@ function visibleText(html, max) {
     .slice(0, max || 4000);
 }
 
-async function readWithModel(env, homeHtml, hubHtml, origin, candidateAreas) {
+async function readWithModel(env, homeHtml, hubHtml, origin, candidateAreas, paths) {
   if (!env || !env.AI) return null;
 
   const text = [
@@ -726,7 +982,7 @@ async function readWithModel(env, homeHtml, hubHtml, origin, candidateAreas) {
      * are then kept unless named, which also means a truncated answer loses
      * nothing: it keeps too much, and the owner unticks. */
     'Return ONLY a JSON object, no prose, in exactly this shape:',
-    '{"services":["..."],"areas":["..."],"not_places":["..."]}',
+    '{"services":["..."],"areas":["..."],"not_places":["..."],"service_pages":{}}',
     '',
     'services: the things this business is hired to do, in their own words.',
     '  Not "Services", not "About", not "Contact", not "Privacy" - those are',
@@ -745,6 +1001,28 @@ async function readWithModel(env, homeHtml, hubHtml, origin, candidateAreas) {
         + ' they are all places, return []. The list: ' + candidateAreas.join(', ')
       : 'not_places: return [].'),
     'Use [] for any of the three if the page genuinely does not say.',
+    '',
+    /* ASK WHICH PAGE EACH SERVICE IS, BECAUSE THE NAME IS NOT THE URL.
+     *
+     * A landscaper's site: the model named "Interlock Patios & Walkways" and
+     * "Stone Steps" off the page, correctly, and the pages are at
+     * /interlock-service and /stone-staircases-service. Matching the name's
+     * words against the URL's words finds neither, so three pages that exist
+     * were reported as never built -- the single worst thing this tool can say.
+     *
+     * No amount of fuzzier matching fixes that: "Stone Steps" against
+     * /stone-staircases-service and /stone-work is a judgement, and loosening
+     * the match enough to catch one catches the other too. Which page is which
+     * is a reading question, and the model is already reading. It just has
+     * never been shown the URLs. */
+    (paths && paths.length
+      ? 'service_pages: these are this site\'s page URLs. For each service you'
+        + ' listed, give the ONE url that is that service\'s own page, or null if'
+        + ' it has none. Match on meaning, not spelling: a service called'
+        + ' "Interlock Patios & Walkways" may live at /interlock-service. Shape:'
+        + ' {"service_pages":{"Service Name":"/its-url"}}. The urls:\n'
+        + paths.slice(0, 80).join('\n')
+      : ''),
     '',
     'WEBSITE (' + origin + '):',
     text,
@@ -793,11 +1071,62 @@ async function readWithModel(env, homeHtml, hubHtml, origin, candidateAreas) {
     .filter((x) => !NOT_A_SERVICE_NAME.test(x))
     .slice(0, 24);
 
+  /* The name -> url mapping, kept only where the url is one we actually saw.
+   * A model naming a page that does not exist would otherwise invent a built
+   * page, which is the one direction of error this report must never make. */
+  const known = new Set(paths || []);
+  const pageFor = new Map();
+  if (parsed.service_pages && typeof parsed.service_pages === 'object') {
+    for (const [name, url] of Object.entries(parsed.service_pages)) {
+      if (typeof url !== 'string') continue;
+      const u = url.replace(/^https?:\/\/[^/]+/, '') || '/';
+      if (known.has(u) || known.has(u.replace(/\/+$/, ''))) pageFor.set(String(name).trim(), known.has(u) ? u : u.replace(/\/+$/, ''));
+    }
+  }
+
   const services = clean(parsed.services);
+
+  /* WHAT THE MODEL LEFT UNMAPPED, MATCHED BY OVERLAP. It mapped "Interlock
+   * Patios & Walkways" to /interlock-service and left "Stone Steps" unmapped,
+   * though /stone-staircases-service was sitting in the list. Asking again is
+   * not the answer; the pairing is now a small assignment problem with a
+   * correct greedy solution.
+   *
+   * Every service-url pair that shares a real word is scored, the strongest
+   * pairing is taken first, and both sides are then spent -- so "Stone Steps"
+   * takes /stone-staircases-service and "Stone Work", sharing only the word
+   * already spent, correctly gets nothing. One page, one service. */
+  {
+    const tk = (x) => String(x).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+      .filter((w) => w.length > 2 && !['and', 'the', 'our', 'service', 'services', 'page'].includes(w))
+      .map((w) => (w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w));
+
+    const taken = new Set(pageFor.values());
+    const pairs = [];
+    for (const name of services) {
+      if (pageFor.has(name)) continue;
+      const want = tk(name);
+      if (!want.length) continue;
+      for (const u of (paths || [])) {
+        if (taken.has(u)) continue;
+        const have = tk(u);
+        const shared = want.filter((w) => have.includes(w)).length;
+        if (shared) pairs.push({ name, u, score: shared / Math.max(want.length, have.length) });
+      }
+    }
+    pairs.sort((a, b) => b.score - a.score);
+    const spentName = new Set();
+    for (const pr of pairs) {
+      if (spentName.has(pr.name) || taken.has(pr.u)) continue;
+      pageFor.set(pr.name, pr.u);
+      spentName.add(pr.name);
+      taken.add(pr.u);
+    }
+  }
   const areas = clean(parsed.areas);
   const notPlaces = new Set(clean(parsed.not_places).map((x) => x.toLowerCase()));
-  if (!services.length && !areas.length && !notPlaces.size) return null;
-  return { services, areas, notPlaces };
+  if (!services.length && !areas.length && !notPlaces.size && !pageFor.size) return null;
+  return { services, areas, notPlaces, pageFor };
 }
 
 /** A name with no URL behind it still needs a key, and the key is what the grid
@@ -1061,7 +1390,13 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml, read, pre) {
     for (const x of (pre ? pre.areas.concat(pre.services) : [])) preSlug.set(nk(x.name), x.slug);
     const slugFor = (n) => preSlug.get(nk(n)) || keyOf(n);
 
-    for (const name of read.services) addSvc(slugFor(name), name, 'read off your site');
+    /* A service whose page the model identified takes THAT page's slug, so
+     * the grid finds the page that exists. Otherwise it falls back to the name,
+     * and correctly finds nothing. */
+    for (const name of read.services) {
+      const url = read.pageFor && read.pageFor.get(name);
+      addSvc(url ? (lastSeg(url) || keyOf(name)) : slugFor(name), name, 'read off your site');
+    }
     for (const name of read.areas) addArea(slugFor(name), name, 'read off your site');
 
     /* Every candidate the model did NOT name as a non-place is kept. This is

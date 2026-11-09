@@ -603,7 +603,16 @@
       });
       return extra.length === 0;
     };
-    var ownPage = function (slug, others) {
+    /* The worker now labels each page with what it IS, so when it says which url
+       is a service's own page that answer wins -- it was read off the page,
+       while anything below is inferred from spelling. The matching stays for
+       when there is no model to ask. */
+    var ownPage = function (slug, others, told) {
+      if (told) {
+        var r = pages.find(function (p) { return p.url === told; });
+        if (!r) return { state: 3, url: told };
+        return { state: r.filled >= 8 ? 2 : 1, url: told };
+      }
       var url = sitemap.find(function (u) {
         return covers(u, slug) && onlyAbout(u, slug)
           && !others.some(function (o) { return covers(u, o.slug); });
@@ -617,9 +626,12 @@
     var gridRows = services.map(function (s) {
       return {
         name: s.name,
-        own: ownPage(s.slug, areas),
+        own: ownPage(s.slug, areas, s.own),
         cells: areas.map(function (a) {
-          var url = sitemap.find(function (u) { return covers(u, s.slug) && covers(u, a.slug); });
+          // Same again: a cell the worker read off the page beats one inferred
+          // from the url's spelling.
+          var told = (audit.cells || []).find(function (c) { return c.service === s.slug && c.area === a.slug; });
+          var url = told ? told.url : sitemap.find(function (u) { return covers(u, s.slug) && covers(u, a.slug); });
           if (!url) return { state: 0 };
           built++;
           var read = pages.find(function (p) { return p.url === url; });
@@ -629,7 +641,7 @@
       };
     });
 
-    var areaOwn = areas.map(function (a) { return ownPage(a.slug, services); });
+    var areaOwn = areas.map(function (a) { return ownPage(a.slug, services, a.own); });
     var ownS = gridRows.filter(function (r) { return r.own.state > 0; }).length;
     var ownA = areaOwn.filter(function (c) { return c.state > 0; }).length;
 
@@ -747,14 +759,14 @@
          and the two singles are not mistaken for part of it. */
       + '<caption class="sr-only">Service pages by area, with each service page and area page on its own</caption>'
       + '<thead><tr><th scope="col">Service / Area</th>'
-      + '<th scope="col" class="sa-own">The service page</th>'
+      + '<th scope="col" class="sa-own">Its own page</th>'
       + areas.map(function (a) { return '<th scope="col">' + esc(a.name) + '</th>'; }).join('')
       + '</tr></thead><tbody>'
       /* The area row sits directly under the area headings, not at the foot of
          the table. The towns are named along the top; putting their own pages
          thirty rows below the names they belong to made the reader scroll to
          match a tick to a heading. */
-      + '<tr class="sa-ownrow"><th scope="row">The area page</th><td class="sa-own"></td>'
+      + '<tr class="sa-ownrow"><th scope="row">Its own page</th><td class="sa-own"></td>'
       + areaOwn.map(function (c) { return '<td>' + cellHtml(c) + '</td>'; }).join('')
       + '</tr>'
       + rows.map(function (r) {
@@ -786,9 +798,14 @@
            eleven specific jobs, so the report lists the ones not done -- that
            is the difference between a score and a worklist, and the worklist
            is the only half anybody can act on. */
+        /* The slug is left out on purpose. It is the one slot that is not a job:
+           renaming a live URL costs the rankings it already has, so "your slug
+           does not carry the phrase" is a fact about a page nobody should act
+           on. Listing it among nine things to fix invites exactly the one
+           change that can only do harm. */
         var missing = [];
         for (var k in p.slots) {
-          if (p.slots[k] === false) missing.push(slotName(k));
+          if (k !== 'slug' && p.slots[k] === false) missing.push(slotName(k));
         }
         return '<tr><th scope="row"><span class="sa-url">' + esc(p.url) + '</span>'
           + '<span class="sa-kind">' + esc(kindName(p.kind)) + '</span></th>'
@@ -829,7 +846,6 @@
      instead of silently never appearing. */
   var SLOT_NAMES = {
     title: 'Put the phrase in the title tag',
-    slug: 'Slug does not carry the phrase (never rename a live one)',
     h1: 'Put the phrase in the H1 — one H1 per page',
     meta: 'Write a meta description carrying the phrase',
     first_sentence: 'Start the first sentence with the phrase',
