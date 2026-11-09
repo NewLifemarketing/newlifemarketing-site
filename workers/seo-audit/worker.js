@@ -216,6 +216,10 @@ async function audit(target) {
   };
   urls.sort((a, b) => rank(a) - rank(b) || a.length - b.length);
 
+  /* How many pages the site HAS, kept before the slice. Without it the report
+   * can say "we read 20" but not "of 41", and "20 of 41" is the difference
+   * between a partial audit and one that looks complete. */
+  const discovered = urls.length;
   const capped = urls.length > MAX_PAGES;
   urls = urls.slice(0, MAX_PAGES);
   // The home page is the one URL that must be in every crawl.
@@ -245,6 +249,7 @@ async function audit(target) {
     failed: pages.length - good.length,
     capped,
     cap: MAX_PAGES,
+    discovered,
     /* The pages that could not be read, with their status. Silent drops are
      * what let 17 failed fetches read as "nine towns you never built". */
     subrequests: SUBREQ,
