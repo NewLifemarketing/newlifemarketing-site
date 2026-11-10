@@ -752,7 +752,12 @@ function navGroups(html) {
   return { services, areas };
 }
 
-const HUB_PATH = /^\/(services?|our-services|what-we-do|services-we-offer)\/?$/i;
+/* A hub is a top-level page whose name is about services in general: /services,
+ * /our-services, /all-services, /what-we-do. One real site uses /all-services
+ * and was missed, so its hub went unread and its services came back named off
+ * their slugs -- "Interlock Service" instead of the "Interlock" its own menu
+ * says. Matching the shape rather than listing the spellings. */
+const HUB_PATH = /^[/](all[-_]?)?(our[-_]?)?services?[/]?$|^[/](what[-_]we[-_]do|services[-_]we[-_]offer)[/]?$/i;
 
 /* ----------------------------------------------------------- labelling --
  * ASK WHAT EACH PAGE IS. DO NOT MATCH A NAME TO A SLUG.
@@ -1248,30 +1253,24 @@ const keyOf = (name) => String(name).toLowerCase()
  * reader and about the firm. "Interlock" and "Armourstone" name a thing you
  * can buy and contain none of these words. The address and the domain give
  * themselves away with an @ or a TLD. */
-const SLOGAN_WORDS = new Set(['you', 'your', 'yours', 'we', 'our', 'ours', 'us', 'why', 'how',
-  'what', 'when', 'where', 'guaranteed', 'guarantee', 'pricing', 'priced', 'quoted', 'quote',
-  'owned', 'operated', 'trusted', 'affordable', 'quality', 'best', 'cheap', 'fast', 'reliable',
-  'professional', 'experienced', 'insured', 'licensed', 'satisfaction', 'promise', 'difference']);
 /* Written WITHOUT a word-boundary escape on purpose. Twice now a word-boundary escape written
  * through a shell heredoc has arrived here as a literal backspace (0x08),
  * making a regex that can never match and a filter that silently does
  * nothing -- which is how "heavyads.ca" survived three deploys in a list of
  * services while the rule looked right in the source. A character class
  * cannot be mangled that way. check-no-control-chars.mjs exists for this. */
-const LOOKS_LIKE_CONTACT = /(@|[a-z0-9-]+[.](ca|com|net|org|co|io)([^a-z]|$))/i;
 
 /* Not services either, all from one real home page: "46 Five-Star Reviews",
  * "Direct Contact", "Services Interlock". Proof, a contact heading, and a
  * menu label with its parent still attached. None of them a thing to buy. */
-const NOT_A_SERVICE_SHAPE = /^[ ]*(services?|our services)[ ]+[^ ]|^[ ]*[0-9]|reviews?([^a-z]|$)|direct contact|five[- ]star/i;
 /* Cloudflare rewrites addresses to the literal text "[email protected]", which
  * carries no @ for the rule above to catch, and it reached the services list. */
-const OBFUSCATED_EMAIL = /\[email[^\]]*protected\]|email[ ]protected/i;
 
 const NOT_A_LABEL = /^(read|learn|see|view|more|details?|get|book|call|contact|back|next|prev(ious)?|home|menu|skip|close|toggle|submit|send|click)\b/i;
 
-function contentServices(html, scope) {
+function contentServices(html, scope, known) {
   const out = new Map();
+  const backed = new Set();
   if (!html) return out;
 
   let clean = strip(html).replace(/<(header|nav|footer|aside|form)\b[\s\S]*?<\/\1>/gi, ' ');
@@ -1297,8 +1296,6 @@ function contentServices(html, scope) {
     if (!text || text.length > 48) return;
     if (text.split(' ').length > 5) return;
     if (NOT_A_LABEL.test(text) || NOT_A_SERVICE_NAME.test(text)) return;
-    if (LOOKS_LIKE_CONTACT.test(text) || NOT_A_SERVICE_SHAPE.test(text) || OBFUSCATED_EMAIL.test(text)) return;
-    if (text.toLowerCase().split(/[^a-z]+/).some((w) => SLOGAN_WORDS.has(w))) return;
     if (!/[a-z]/i.test(text)) return;
 
     let slug = null;
@@ -1315,13 +1312,23 @@ function contentServices(html, scope) {
         .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     }
     if (!slug || slug.length < 3 || NOT_A_SERVICE.test(slug)) return;
-    if (!out.has(slug) && out.size < 16) out.set(slug, text);
+    if (!out.has(slug) && out.size < 16) {
+      out.set(slug, text);
+      if (known && [...known].some((k) => lastSeg(k) === slug)) backed.add(slug);
+    }
   };
 
   for (const m of body.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) take(m[2], m[1]);
   for (const m of body.matchAll(/<h([2-4])\b[^>]*>([\s\S]*?)<\/h\1>/gi)) take(m[2]);
   for (const m of body.matchAll(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi)) take(m[2]);
   for (const m of body.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)) take(m[1]);
+
+  /* Where two or more candidates have a page of their own, only those are
+   * offered. Evidence, not vocabulary: a footer link to the web designer's
+   * domain has no page here and drops out without anybody listing it. */
+  if (backed.size >= 2) {
+    for (const k of [...out.keys()]) if (!backed.has(k)) out.delete(k);
+  }
   return out;
 }
 
@@ -1463,7 +1470,6 @@ function areasFromProse(text) {
        * often each fires: words that address the reader, words that are not
        * names at all, and the brand itself. */
       const words = t.toLowerCase().split(' ');
-      if (words.some((w) => SLOGAN_WORDS.has(w))) continue;
       if (words.some((w) => NOT_A_PLACE_WORD.has(w))) continue;
       if (BRAND_FROM_HOST && words.some((w) => w.length > 3 && BRAND_FROM_HOST.includes(w))) continue;
       const k = t.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -1606,9 +1612,16 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml, read, pre) {
    * none of it was needed -- /service-areas/* had already given 45 towns off
    * the sitemap. A menu is a guess about where the areas are; the tree is the
    * site telling us. Having been told, stop guessing. */
+  const knownPaths = new Set(sitemapPaths || pages.map((x) => x.url));
+
   const nav = navGroups(homeHtml);
-  if (treeA < 2) for (const [slug, text] of nav.areas) addArea(slug, text, 'your menu');
+  /* SERVICES FIRST, THEN AREAS. A nav label matching "Service Areas" starts a
+   * run, and on a site with no areas menu that run collected the SERVICE links
+   * sitting after it -- so /interlock-service came back as a town called
+   * "Interlock". Reading the services first means addArea already knows those
+   * slugs are services and refuses them, with no list of words involved. */
   if (treeS < 2) for (const [slug, text] of nav.services) addSvc(slug, text, 'your menu');
+  if (treeA < 2) for (const [slug, text] of nav.areas) addArea(slug, text, 'your menu');
 
   /* 2b and 2c: READ THE HOMEPAGE, but only once the signals that actually
    * know have come back with less than a list. A site with a /services/ tree
@@ -1619,14 +1632,27 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml, read, pre) {
    * offer some rubbish, and that is still better than telling a business we
    * could not find services it lists on its front page. */
   if (!read && services.size < 2) {
-    for (const [slug, text] of contentServices(hubHtml)) addSvc(slug, text, 'your services page');
+    for (const [slug, text] of contentServices(hubHtml, false, knownPaths)) addSvc(slug, text, 'your services page');
   }
   if (!read && services.size < 2) {
-    for (const [slug, text] of contentServices(homeHtml, true)) addSvc(slug, text, 'your services section');
+    for (const [slug, text] of contentServices(homeHtml, true, knownPaths)) addSvc(slug, text, 'your services section');
   }
-  if (!read && services.size < 2) {
-    for (const [slug, text] of contentServices(homeHtml)) addSvc(slug, text, 'your home page');
-  }
+  /* THE UNSCOPED WHOLE-HOMEPAGE PASS IS GONE, AND SO IS WHAT IT NEEDED.
+   *
+   * It read every <strong> and <li> on the page and offered what it found as
+   * services, which is how "46 Five-Star Reviews", "Direct Contact", "Our Work
+   * Is Guaranteed", an obfuscated email address and the web designer's domain
+   * arrived in a list of things a landscaper sells. Six word lists then grew to
+   * strike those out by name -- five-star, reviews, guaranteed, before -- and
+   * that could never converge: the next site says "Fully Insured" and the list
+   * grows again, while a real service called "Quality Roofing" gets struck out
+   * for containing a marketing word.
+   *
+   * The fault was never the vocabulary. It was asking a question with no
+   * evidence behind it. A services region -- a /services/ page, or a homepage
+   * section under a services heading -- is a place a site has SAID these are
+   * its services. Arbitrary bold text is not evidence of anything, so it is no
+   * longer asked, and nothing has to be struck out by name afterwards. */
 
   // 3 and 4 run on the flat pages only. Anything a tree or the nav already
   // placed is settled and must not be guessed at a second time.
