@@ -475,19 +475,21 @@
 
   function askServices() {
     confirmBox.hidden = false;
-    /* A DEGRADED RUN SHOWS NO CHIPS AT ALL.
+    /* SHOW WHAT WAS FOUND, WHATEVER PATH FOUND IT.
      *
-     * Out of quota, the fallback offered a marketing agency the service areas
-     * of "Google", "Automation", "Setup", "Thunder", "Firms" and "City" -- 40
-     * chips, every one ticked, every wrong one something the owner has to
-     * notice and untick. The notice saying the run came up short was in the
-     * REPORT, which is two steps after the screen doing the damage.
+     * This used to blank the chips on any degraded run, because at the time a
+     * degraded run meant "Google", "Automation" and "Thunder" offered as towns.
+     * The free path was then rebuilt to read the sitemap and the page, and now
+     * returns 11 real services and 49 real towns on the same site -- so the
+     * blanking was throwing away correct answers and showing the owner an empty
+     * question, which reads as "it found nothing".
      *
-     * The rule from the single-chip case, which this is the extreme of: a bad
-     * guess costs more than no guess. Asking a trade to name their own services
-     * takes them ten seconds and is never wrong; handing them forty wrong
-     * answers to correct tells them the tool cannot read, and they are right. */
-    var found = audit.degraded ? [] : (audit.services || []);
+     * `degraded` says which reader ran. It was never a measure of whether the
+     * answer is any good, and using it as one outlived the thing it stood for
+     * by about an hour. The chips are shown; the notice still says the run was
+     * the quick kind. The one-or-fewer rule below still catches a thin answer
+     * on its own terms. */
+    var found = audit.services || [];
     /* ONE CANDIDATE IS NOT AN ANSWER. A real site returned exactly one --
        "Block Content Examples", a page its theme ships with -- and because the
        list was non-empty the page asked "Are these your services?" over it.
@@ -520,7 +522,7 @@
   }
 
   function askAreas() {
-    var found = audit.degraded ? [] : (audit.areas || []);
+    var found = audit.areas || [];
     // Same rule as the services step: one town is not a list of towns.
     var sure = found.length >= 2;
     confirmBox.innerHTML = '<div class="sa-q">'
