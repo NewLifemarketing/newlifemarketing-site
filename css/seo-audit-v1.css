@@ -261,3 +261,10 @@
 .sa-missing{margin:0;padding-left:1.1em;list-style:disc}
 .sa-missing li{margin:.15rem 0;font-size:.88rem;line-height:1.35}
 .sa-pages td{vertical-align:top}
+
+/* The promise bar. Blue rather than amber: it is not a warning, it is the
+   thing they came for arriving by email. */
+.sa-promise{margin:0 0 1rem;padding:.85rem 1.05rem;border-radius:12px;
+  background:rgba(33,150,243,.10);border:1px solid rgba(33,150,243,.32);
+  font-size:.93rem;line-height:1.5}
+.sa-promise strong{font-weight:800}

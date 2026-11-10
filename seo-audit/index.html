@@ -710,12 +710,12 @@
        number is wrong in OUR favour, which is the direction that has to be
        declared out loud rather than explained afterwards. */
     if (audit.capped) {
-      h += '<div class="sa-preview-note" role="note"><strong>We read '
+      h += '<div class="sa-promise" role="note"><strong>We read '
         + audit.crawled + ' of your ' + (audit.discovered || audit.crawled) + ' pages.</strong> '
-        + 'The free crawl stops at ' + (audit.cap || 20) + ', services and service areas first. '
-        + 'Anything past that we have not seen, so treat the missing pages below as '
-        + '“not found yet” rather than “not built” — '
-        + '<a href="/book/">ask us for the full crawl</a> and we will read the lot.</div>';
+        + 'This instant version stops at ' + (audit.cap || 20) + ' — services and service areas first. '
+        + 'We are running the full audit on all ' + (audit.discovered || audit.crawled)
+        + ' and will email it to you shortly. Until then, treat anything marked missing '
+        + 'below as <em>not found yet</em> rather than <em>not built</em>.</div>';
     }
     /* Say it before the score. A run that could not read the pages gives a
        thinner, worse report, and one that looks exactly like a good one is
@@ -769,7 +769,7 @@
          and the two singles are not mistaken for part of it. */
       + '<caption class="sr-only">Service pages by area, with each service page and area page on its own</caption>'
       + '<thead><tr><th scope="col">Service / Area</th>'
-      + '<th scope="col" class="sa-own">Its own page</th>'
+      + '<th scope="col" class="sa-own"></th>'
       + areas.map(function (a) { return '<th scope="col">' + esc(a.name) + '</th>'; }).join('')
       + '</tr></thead><tbody>'
       /* The area row sits directly under the area headings, not at the foot of

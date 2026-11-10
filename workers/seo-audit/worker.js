@@ -74,7 +74,7 @@ const json = (body, status, origin) => new Response(JSON.stringify(body), {
 });
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const origin = request.headers.get('Origin') || '';
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
     if (request.method !== 'POST') return json({ error: 'POST only' }, 405, origin);
@@ -100,24 +100,52 @@ export default {
 
     try {
       const result = await audit(target, env);
+
+      const lead = {
+        website: target.origin,
+        company: String(body.company || '').slice(0, 200),
+        name: String(body.name || '').slice(0, 200),
+        email: String(body.email || '').slice(0, 200),
+        phone: String(body.phone || '').slice(0, 60),
+        is_owner: body.is_owner === 'yes' ? 'yes' : body.is_owner === 'no' ? 'no' : '',
+        at: new Date().toISOString(),
+        pages_crawled: result.crawled,
+        pages_found: result.discovered,
+        services: (result.services || []).map((x) => x.name).join(', '),
+        areas: (result.areas || []).map((x) => x.name).join(', '),
+        tag: 'seo audit',
+      };
+
       // The lead is worth keeping whatever the crawl found.
       if (env && env.AUDIT_LEADS) {
         await env.AUDIT_LEADS.put(
           `${new Date().toISOString()}-${target.hostname}`,
-          JSON.stringify({
-            website: target.origin,
-            company: String(body.company || '').slice(0, 200),
-            name: String(body.name || '').slice(0, 200),
-            email: String(body.email || '').slice(0, 200),
-            phone: String(body.phone || '').slice(0, 60),
-            is_owner: body.is_owner === 'yes' ? 'yes' : body.is_owner === 'no' ? 'no' : '',
-            at: new Date().toISOString(),
-            pages_crawled: result.crawled,
-          }),
+          JSON.stringify(lead),
           { expirationTtl: 60 * 60 * 24 * 365 },
         ).catch(() => {});
       }
-      return json(result, 200, origin);
+
+      /* THE CRM, AND IT MUST NOT BE ABLE TO BREAK THE REPORT.
+       *
+       * GHL_WEBHOOK is a secret -- `wrangler secret put GHL_WEBHOOK` -- never a
+       * file in this repo. Where it is unset, the audit still runs and still
+       * returns; the lead simply is not forwarded, and `lead_sent` says so.
+       *
+       * waitUntil, not await: the visitor asked for a report, not for our CRM
+       * to be reachable. A slow or broken webhook must not hold their report
+       * back or fail it, which is the same rule as the KV write above. */
+      let leadSent = null;
+      if (env && env.GHL_WEBHOOK) {
+        leadSent = 'queued';
+        const send = fetch(env.GHL_WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lead),
+        }).catch(() => {});
+        if (ctx && ctx.waitUntil) ctx.waitUntil(send); else await send;
+      }
+
+      return json({ ...result, lead_sent: leadSent }, 200, origin);
     } catch (e) {
       return json({ error: String(e && e.message || e).slice(0, 300) }, 502, origin);
     }
