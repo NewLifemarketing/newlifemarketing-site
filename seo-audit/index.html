@@ -717,6 +717,16 @@
         + '“not found yet” rather than “not built” — '
         + '<a href="/book/">ask us for the full crawl</a> and we will read the lot.</div>';
     }
+    /* Say it before the score. A run that could not read the pages gives a
+       thinner, worse report, and one that looks exactly like a good one is
+       worse than no report at all. */
+    if (audit.degraded) {
+      h += '<div class="sa-preview-note" role="alert"><strong>This one ran short.</strong> '
+        + 'Our page reader was not available for this audit, so your services and areas '
+        + 'below were worked out from your page addresses alone — expect them to be '
+        + 'thinner and rougher than usual. Run it again later, or '
+        + '<a href="/book/">ask us</a> and we will do it properly.</div>';
+    }
     if (audit.unreadable && audit.unreadable.length) {
       h += '<div class="sa-preview-note" role="note"><strong>' + audit.unreadable.length
         + ' page' + (audit.unreadable.length === 1 ? '' : 's') + ' would not load for us.</strong> '

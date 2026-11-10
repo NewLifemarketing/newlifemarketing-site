@@ -324,6 +324,12 @@ async function audit(target, env) {
     sitemap,
     read_by: labels ? 'pages labelled by model' : read ? 'model, name matched' : 'markup rules',
     label_why: LABEL_WHY,
+    /* WHY THE WEAK ANSWER, IN THE RESPONSE. Out of quota, the audit falls back
+     * to the markup rules and quietly returns 3 services where there are 13.
+     * A degraded run that looks like a normal one is the exact failure this
+     * estate has a rule against -- silence is never green -- so the reason
+     * travels with the report and the page says it on screen. */
+    degraded: labels ? null : (LABEL_WHY || 'the reader was unavailable'),
     // Which page is which cell, read off the pages themselves.
     cells: grid.cells || null,
     /* The pages that could not be read, with their status. Silent drops are
