@@ -795,7 +795,12 @@
          the table. The towns are named along the top; putting their own pages
          thirty rows below the names they belong to made the reader scroll to
          match a tick to a heading. */
-      + '<tr class="sa-ownrow"><th scope="row">Its own page</th><td class="sa-own"></td>'
+      /* No label on either. The column sits beside the service it belongs to and
+         the row beneath the towns it belongs to; both read without being told.
+         sr-only text keeps the row header for a screen reader, which cannot
+         see the position doing the explaining. */
+      + '<tr class="sa-ownrow"><th scope="row"><span class="sr-only">Page for the area itself</span></th>'
+      + '<td class="sa-own"></td>'
       + areaOwn.map(function (c) { return '<td>' + cellHtml(c) + '</td>'; }).join('')
       + '</tr>'
       + rows.map(function (r) {
