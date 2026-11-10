@@ -163,6 +163,7 @@ async function get(url, accept) {
 
 // ------------------------------------------------------------------ crawl --
 async function audit(target, env) {
+  BRAND_FROM_HOST = String(target.hostname).replace(/^www\./i, '').split('.')[0] || '';
   SUBREQ = 0;
   /* RESOLVE THE CANONICAL ORIGIN FIRST, AND SPEND ONE SUBREQUEST DOING IT.
    *
@@ -290,12 +291,26 @@ async function audit(target, env) {
   if (labels && read) {
     const seen = new Set(grid.areas.map((a) => a.slug));
     const kc = (n) => String(n).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    for (const name of read.areas) {
+    /* THREE SOURCES OF TOWN, AND THE LABELLER IS THE NARROWEST.
+     *
+     * It only sees the ~90 urls that fit one answer, and only labels what it
+     * can finish, so on a 145-page site DMT's towns fell from 36 to 18 when
+     * labelling replaced the url passes. That is a regression and it is the
+     * expensive direction: a town that is never listed cannot be reported as
+     * missing, and the missing ones are the product.
+     *
+     * So all three go in: what the pages say they are, what the prose names,
+     * and the url-derived candidates the model did not reject as non-places. */
+    const add = (name, from) => {
       const k = kc(name);
       if (k && !seen.has(k) && grid.areas.length < 60) {
         seen.add(k);
-        grid.areas.push({ slug: k, name, from: 'named on your site', own: null });
+        grid.areas.push({ slug: k, name, from, own: null });
       }
+    };
+    for (const name of read.areas) add(name, 'named on your site');
+    for (const a of pre.areas) {
+      if (!read.notPlaces || !read.notPlaces.has(String(a.name).toLowerCase())) add(a.name, a.from);
     }
   }
   return {
@@ -440,8 +455,19 @@ function assess(p, html) {
   const imgs = [...clean.matchAll(/<img\b[^>]*>/gi)].map((m) => m[0]);
   const alts = imgs.map((i) => attr(i, 'alt'));
 
-  const footer = (clean.match(/<footer\b[\s\S]*?<\/footer>/i) || [''])[0]
+  /* NO <footer> TAG IS NOT NO FOOTER. A landscaper's site scored 0/3 with its
+   * phone number plainly on the page, because this read the <footer> ELEMENT
+   * and that site is built out of divs. Every bug in this file has been the
+   * same one: reading markup where a person reads content.
+   *
+   * A footer is the bottom of the page, whatever it is made of. Where the
+   * element exists it is exact and is used; where it does not, the last stretch
+   * of visible text is the footer, because that is where the contact block sits
+   * on every site ever built. */
+  const footerEl = (clean.match(/<footer\b[\s\S]*?<\/footer>/i) || [''])[0]
     .replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  const pageText = decode(clean.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ');
+  const footer = footerEl.trim().length > 40 ? footerEl : pageText.slice(-2200);
   const hasPhone = /(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/.test(footer);
   const hasPostal = /\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/i.test(footer)
     || /\b\d{1,6}\s+[A-Za-z][A-Za-z.\- ]{2,40}\s(st|street|rd|road|ave|avenue|dr|drive|blvd|way|hwy|highway|cres|crescent|lane|ln|court|ct)\b/i.test(footer);
@@ -452,10 +478,18 @@ function assess(p, html) {
    * from the report which of the three to go and fix. Google reads them
    * separately and so should this.
    *
-   * The name is taken from the title tag's brand clause, because that is the
-   * name the site gives itself; a title written "Service | Brand" puts it last. */
-  const brand = (String(title).split(/[|–—·]/).pop() || '').trim();
-  const hasName = brand.length > 2 && footer.toLowerCase().includes(brand.toLowerCase());
+   * The name is tried three ways, because a title tag is not a reliable place
+   * to find one: the last clause ("Service | Brand"), the first ("Brand -
+   * Service"), and the domain, which is the one spelling that always exists.
+   * Compared with the punctuation and spaces taken out of both, so a footer
+   * saying "MC Landscaping" matches mclandscaping.ca. */
+  const squash = (x) => String(x).toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const flatFooter = squash(footer);
+  const brands = String(title).split(/[|–—·]/).map((x) => x.trim()).concat([BRAND_FROM_HOST]);
+  const hasName = brands.some((b) => {
+    const f = squash(b);
+    return f.length > 3 && flatFooter.includes(f);
+  });
 
   const faq = /<details\b/i.test(clean)
     || /"@type"\s*:\s*"FAQPage"/i.test(html)
@@ -912,6 +946,11 @@ function gridFromLabels(labels) {
 }
 
 let LABEL_WHY = '';
+
+/* The domain's own label, e.g. mclandscaping.ca -> "mclandscaping". The one
+ * spelling of a business name that is guaranteed to exist, and the fallback
+ * when a title tag does not carry it. Set per audit. */
+let BRAND_FROM_HOST = '';
 
 /* ---------------------------------------------------------------- read --
  * A MODEL READS THE PAGE. Everything below it is a fallback.
