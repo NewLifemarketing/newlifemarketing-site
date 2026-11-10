@@ -955,6 +955,44 @@
     results.scrollIntoView({ block: 'start' });
   }
 
+
+  /* ---------------------------------------------------- the PDF seam ---
+   * The audit skill prints a PDF of this report, and it must be THIS report,
+   * not a second renderer that looks like it today and drifts by Friday. The
+   * repo has already paid for that mistake once -- a page builder copied per
+   * client, four copies, none of them in step.
+   *
+   * So the PDF loads this page with ?report=<url to the audit json>, and the
+   * page renders itself from it. One renderer, and the PDF cannot disagree
+   * with the screen because it IS the screen.
+   *
+   * The json may carry `confirmed` -- the services and areas as the owner
+   * ticked them -- because a report built from unconfirmed guesses is not the
+   * report anybody saw. */
+  window.__seoAuditRender = function (data) {
+    audit = data;
+    if (data.confirmed) {
+      if (data.confirmed.services) audit.services = data.confirmed.services;
+      if (data.confirmed.areas) audit.areas = data.confirmed.areas;
+    }
+    site.value = data.origin || data.website || '';
+    confirmBox.hidden = true;
+    statusBox.hidden = true;
+    render();
+    document.documentElement.classList.add('sa-printing');
+  };
+
+  (function bootFromQuery() {
+    var m = location.search.match(/[?&]report=([^&]+)/);
+    if (!m) return;
+    fetch(decodeURIComponent(m[1]))
+      .then(function (r) { return r.json(); })
+      .then(function (j) { window.__seoAuditRender(j); })
+      .catch(function (e) {
+        document.body.innerHTML = '<pre style="padding:2rem">Could not load the report: '
+          + String(e && e.message || e) + '</pre>';
+      });
+  })();
 })();
 </script>
 

@@ -268,3 +268,47 @@
   background:rgba(33,150,243,.10);border:1px solid rgba(33,150,243,.32);
   font-size:.93rem;line-height:1.5}
 .sa-promise strong{font-weight:800}
+
+/* ----------------------------------------------------------- printing ---
+   The PDF is the REPORT, not the page that sells it. Everything whose job is
+   to get a visitor to run an audit -- the hero, the form, the worked example,
+   the FAQ, the site chrome -- has done that job by the time a PDF exists, and
+   in a document sent to a business owner it reads as padding around the part
+   they asked for.
+
+   Driven by a class, not only @media print, because headless Chrome prints
+   what it is given and the same rules have to hold when the page is merely
+   being rendered for capture. */
+.sa-printing .proof-bar,
+.sa-printing .site-header,
+.sa-printing .site-footer,
+.sa-printing .mobile-cta,
+.sa-printing .overlay,
+.sa-printing .sa-overlay,
+.sa-printing #sa-form,
+.sa-printing .sa-hero,
+.sa-printing .sa-sample,
+.sa-printing .sa-faq,
+.sa-printing .sa-cta,
+.sa-printing .sa-confirm,
+/* Every band on the page EXCEPT the one holding the report. Named by what it
+   keeps, not by what it hides: `section:not(.sa-results-section)` was written
+   against a class that does not exist, so it hid the report's own section too
+   and printed a blank page. Chrome exits 0 doing that, which is why the script
+   counts the pages afterwards. */
+.sa-printing main section:not(#sa-run) { display: none !important; }
+
+.sa-printing #sa-run,
+.sa-printing #sa-results { display: block !important; }
+
+.sa-printing body { background: #fff !important; }
+.sa-printing .sa-report { max-width: none; margin: 0; }
+
+/* Keep a row, a card and the legend with what explains them. */
+.sa-printing .sa-bandcard,
+.sa-printing .sa-gridwrap,
+.sa-printing .sa-actions li,
+.sa-printing .sa-pages tr { break-inside: avoid; page-break-inside: avoid; }
+.sa-printing .sa-h3 { break-after: avoid; page-break-after: avoid; }
+
+@page { size: A4; margin: 14mm 12mm; }
