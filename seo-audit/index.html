@@ -475,7 +475,19 @@
 
   function askServices() {
     confirmBox.hidden = false;
-    var found = audit.services || [];
+    /* A DEGRADED RUN SHOWS NO CHIPS AT ALL.
+     *
+     * Out of quota, the fallback offered a marketing agency the service areas
+     * of "Google", "Automation", "Setup", "Thunder", "Firms" and "City" -- 40
+     * chips, every one ticked, every wrong one something the owner has to
+     * notice and untick. The notice saying the run came up short was in the
+     * REPORT, which is two steps after the screen doing the damage.
+     *
+     * The rule from the single-chip case, which this is the extreme of: a bad
+     * guess costs more than no guess. Asking a trade to name their own services
+     * takes them ten seconds and is never wrong; handing them forty wrong
+     * answers to correct tells them the tool cannot read, and they are right. */
+    var found = audit.degraded ? [] : (audit.services || []);
     /* ONE CANDIDATE IS NOT AN ANSWER. A real site returned exactly one --
        "Block Content Examples", a page its theme ships with -- and because the
        list was non-empty the page asked "Are these your services?" over it.
@@ -492,7 +504,10 @@
         : (found.length
           ? 'We could not work this out from your pages — all we found was ' + esc(found[0].name)
             + ', and that may not be right. Tell us what you sell.'
-          : 'We could not find a services section, so tell us what you sell.')) + '</p>'
+          : (audit.degraded
+          ? 'Our page reader was busy, so we could not read your site properly this time. '
+            + 'Tell us what you sell and the rest of the report still works.'
+          : 'We could not find a services section, so tell us what you sell.'))) + '</p>'
       + chipList('services', found, 'Anything missing?')
       + '<div class="sa-q-btns">'
       + '<button class="btn" type="button" data-q="yes">' + (sure ? 'Yes, that’s right' : 'Next') + '</button>'
@@ -505,7 +520,7 @@
   }
 
   function askAreas() {
-    var found = audit.areas || [];
+    var found = audit.degraded ? [] : (audit.areas || []);
     // Same rule as the services step: one town is not a list of towns.
     var sure = found.length >= 2;
     confirmBox.innerHTML = '<div class="sa-q">'
@@ -516,7 +531,9 @@
         : (found.length
           ? 'Only ' + esc(found[0].name) + ' came off your pages, so this one is on you — '
             + 'name the towns you work in.'
-          : 'We found no service-area pages, which is itself a finding. Name the towns you work in.')) + '</p>'
+          : (audit.degraded
+          ? 'Same again — name the towns you work in and we will measure against those.'
+          : 'We found no service-area pages, which is itself a finding. Name the towns you work in.'))) + '</p>'
       + chipList('areas', found, 'Towns we missed?')
       + '<div class="sa-q-btns">'
       + '<button class="btn" type="button" data-q="yes">See my report</button>'
