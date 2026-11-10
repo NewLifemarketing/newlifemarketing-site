@@ -223,8 +223,29 @@ async function audit(target, env) {
     } catch { /* keep what was typed */ }
   }
 
-  let urls = await fromSitemaps(origin);
-  let source = 'sitemap';
+  /* A SITEMAP IS A CLAIM, NOT AN INVENTORY. Union it with the links on the home
+   * page, always -- not only when the sitemap is empty.
+   *
+   * Measured on our own site: sitemap.xml lists 11 service pages and the site
+   * has 17. Google Ads, SEO, Social Media, Creative Production, CRM and
+   * Websites all return 200 and all are missing from it, so the audit reported
+   * 11 services and was reading correctly from a file that was wrong. A
+   * stale or partial sitemap is one of the commonest faults on a trades site --
+   * it is the kind of thing this tool is FOR -- so depending on it alone meant
+   * the sites with the problem got the worst reading of it.
+   *
+   * The home page costs nothing: it is already fetched to resolve the origin.
+   * Its menu is what a visitor navigates by and what Google follows, and when
+   * the two disagree the union is the honest answer. */
+  const fromMap = await fromSitemaps(origin);
+  const linked = [];
+  if (first.ok && first.text) {
+    for (const m of String(first.text).matchAll(/<a [^>]*href=["']([^"'#]+)["']/gi)) {
+      try { linked.push(new URL(m[1], origin).toString().split('#')[0]); } catch { /* skip */ }
+    }
+  }
+  let urls = fromMap.concat(linked);
+  let source = fromMap.length >= 2 ? (linked.length ? 'sitemap + links' : 'sitemap') : 'links';
 
   if (urls.length < 2) {
     urls = await fromLinks(origin);
@@ -303,7 +324,7 @@ async function audit(target, env) {
   /* ASK THE PAGES WHAT THEY ARE. This is the primary path now; the name-to-slug
    * machinery below it is the fallback for when there is no model to ask. */
   const labels = await labelPages(env, good, sitemap, origin);
-  const pre = detectGrid(good, homeHtml, sitemap, hubHtml, null);
+  const pre = detectGrid(good, homeHtml, sitemap, hubHtml, null, null, null);
   /* BOTH READS, AND THEY ANSWER DIFFERENT QUESTIONS.
    *
    * Labelling the pages says what EXISTS. It cannot say what is missing,
@@ -315,7 +336,38 @@ async function audit(target, env) {
    * So the page reader supplies the roster of places the business claims, and
    * the labeller supplies which of them have a page. */
   const read = await readWithModel(env, homeHtml, hubHtml, origin, pre.areas.map((a) => a.name), sitemap);
-  const grid = labels ? gridFromLabels(labels) : detectGrid(good, homeHtml, sitemap, hubHtml, read, pre);
+  /* What the site's own menu calls each page, keyed by slug. */
+  const linkText = new Map();
+  if (first.ok && first.text) {
+    for (const m of String(first.text).matchAll(/<a [^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+      /* A MENU ITEM IS ITS TITLE, NOT ITS TITLE PLUS ITS TEASER. A mega-menu
+       * link holds a title span and a sentence selling it, so taking the whole
+       * anchor produced "Meta Ads Facebook & Instagram funnels". Where the
+       * anchor has child elements the first one is the title; where it has
+       * none, the anchor's own text is. Trailing arrows go either way. */
+      const inner = m[2];
+      // The backreference is built as a string and compiled: a backslash-one
+      // typed through a shell heredoc arrives here as the control character
+      // 0x01 and matches nothing, silently. Same class of fault as the
+      // backspace that check-no-control-chars.mjs exists to catch.
+      const FIRST_EL = new RegExp('<([a-z]+)[^>]*>([^]*?)<[/]' + String.fromCharCode(92) + '1>', 'i');
+      const firstEl = inner.match(FIRST_EL);
+      const src = firstEl ? firstEl[2] : inner;
+      const t = decode(String(src).replace(/<[^>]+>/g, ' '))
+        .replace(/[→»>]+\s*$/, '')
+        .replace(/\s+/g, ' ').trim();
+      if (!t || t.length > 48) continue;
+      // "See the full stack" is a link to a service page, not the name of one.
+      if (NOT_A_LABEL.test(t)) continue;
+      try {
+        const seg = new URL(m[1], origin).pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+        const k = seg[seg.length - 1];
+        if (k && !linkText.has(k)) linkText.set(k, t);
+      } catch { /* skip */ }
+    }
+  }
+
+  const grid = labels ? gridFromLabels(labels) : detectGrid(good, homeHtml, sitemap, hubHtml, read, pre, linkText);
 
   if (labels && read) {
     const seen = new Set(grid.areas.map((a) => a.slug));
@@ -1514,7 +1566,7 @@ function residueAreas(urls) {
   return out;
 }
 
-function detectGrid(pages, homeHtml, sitemapPaths, hubHtml, read, pre) {
+function detectGrid(pages, homeHtml, sitemapPaths, hubHtml, read, pre, linkText) {
   const byUrl = new Map(pages.map((p) => [p.url, p]));
 
   const services = new Map();   // slug -> {name, from}
@@ -1593,7 +1645,12 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml, read, pre) {
     if (seg.length < 2) continue;
     const slug = seg[seg.length - 1];
     // Named by the page itself where we read it, else by its own slug.
-    const named = byUrl.get(url) ? pageName(byUrl.get(url)) : titleise(slug);
+    /* Named by the page where we read it, then by the words the site's own
+     * menu uses, then by the slug. A slug gives "Linkedin Ads" and "Seo"; the
+     * menu says "LinkedIn Ads" and "Search Engine Optimization", which is what
+     * the business calls it and what the owner expects to see. */
+    const named = byUrl.get(url) ? pageName(byUrl.get(url))
+      : (linkText && linkText.get(slug)) || titleise(slug);
     if (/^services?$/i.test(seg[0])) { const n = services.size; addSvc(slug, named, 'services tree'); if (services.size > n) treeS++; }
     else if (AREA_WORDS.test(seg[0])) { const n = areas.size; addArea(slug, named, 'areas tree'); if (areas.size > n) treeA++; }
   }
