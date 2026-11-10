@@ -1,0 +1,20 @@
+name = "newlife-seo-audit"
+main = "worker.js"
+compatibility_date = "2026-11-09"
+
+# Leads are kept in KV rather than emailed from here: an email send inside the
+# request would be one more subrequest off the ceiling (see worker.js), and a
+# failed send would fail the audit the visitor actually asked for. Create the
+# namespace and paste its id:
+#   npx wrangler kv namespace create AUDIT_LEADS
+#
+# [[kv_namespaces]]
+# binding = "AUDIT_LEADS"
+# id = "paste-the-id-here"
+#
+# Without the binding the worker still runs and still returns the audit; it
+# simply does not keep the lead. That is deliberate -- the visitor's report
+# must not depend on our CRM.
+
+[ai]
+binding = "AI"
