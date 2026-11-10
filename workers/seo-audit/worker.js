@@ -1593,9 +1593,22 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml, read, pre) {
   }
 
   // 2. the nav the owner built themselves
+  /* THE MENU IS ONLY ASKED WHEN THE TREE DID NOT ANSWER.
+   *
+   * Our own site has a "Service Areas" link in its header followed by Portfolio,
+   * Client Login and a menu of CLIENTS, all at the top level -- so the run that
+   * starts at the label swallowed them, and the audit offered "Dmt Building",
+   * "Chicken The Run", "Custom Homes" and "Heavy Projects" as towns served.
+   * They are client names from a navigation menu.
+   *
+   * The sibling-path rule cannot catch this: every one of those links is
+   * top-level, so the parent path never changes and the run never ends. But
+   * none of it was needed -- /service-areas/* had already given 45 towns off
+   * the sitemap. A menu is a guess about where the areas are; the tree is the
+   * site telling us. Having been told, stop guessing. */
   const nav = navGroups(homeHtml);
-  for (const [slug, text] of nav.areas) addArea(slug, text, 'your menu');
-  for (const [slug, text] of nav.services) addSvc(slug, text, 'your menu');
+  if (treeA < 2) for (const [slug, text] of nav.areas) addArea(slug, text, 'your menu');
+  if (treeS < 2) for (const [slug, text] of nav.services) addSvc(slug, text, 'your menu');
 
   /* 2b and 2c: READ THE HOMEPAGE, but only once the signals that actually
    * know have come back with less than a list. A site with a /services/ tree
@@ -1731,7 +1744,9 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml, read, pre) {
     }
 
     for (const [slug, v] of [...areas.entries()]) {
-      const kept = tok(v.name).filter((t) => !filler.has(t) && !/\d/.test(t) && t.length > 2);
+      // length > 1, not > 2: dropping two-letter tokens turned St Catharines
+      // into "Catharines" and would do the same to Mt Albert.
+      const kept = tok(v.name).filter((t) => !filler.has(t) && !/[0-9]/.test(t) && t.length > 1);
       // Nothing left once the trade is removed: it was never a place.
       if (!kept.length || kept.length > 3) { areas.delete(slug); continue; }
       const name = kept.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
