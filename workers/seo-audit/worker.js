@@ -191,6 +191,7 @@ async function get(url, accept) {
 
 // ------------------------------------------------------------------ crawl --
 async function audit(target, env) {
+  SVC_DROPPED = [];
   BRAND_FROM_HOST = String(target.hostname).replace(/^www\./i, '').split('.')[0] || '';
   SUBREQ = 0;
   /* RESOLVE THE CANONICAL ORIGIN FIRST, AND SPEND ONE SUBREQUEST DOING IT.
@@ -980,6 +981,7 @@ function gridFromLabels(labels) {
 }
 
 let LABEL_WHY = '';
+let SVC_DROPPED = [];
 
 /* The domain's own label, e.g. mclandscaping.ca -> "mclandscaping". The one
  * spelling of a business name that is guaranteed to exist, and the fallback
@@ -1234,6 +1236,38 @@ const keyOf = (name) => String(name).toLowerCase()
  * -- reporting "no services" instead both insults them and buries the thing we
  * are there to sell.
  */
+/* A SERVICE IS A THING YOU BUY. A SLOGAN IS A THING YOU READ.
+ *
+ * Reading a flat site's home page for services returned, alongside four real
+ * ones, "What We Build", "Competitive Pricing, Clearly Quoted", "Dates You Can
+ * Plan Around", "Designed Around Your Property", "Our Work Is Guaranteed",
+ * "Owner-Operated", an email address and the web designer's domain. Every one
+ * came from a <strong> or an <li>, exactly like the real ones.
+ *
+ * What separates them is not markup, it is grammar: a slogan speaks TO the
+ * reader and about the firm. "Interlock" and "Armourstone" name a thing you
+ * can buy and contain none of these words. The address and the domain give
+ * themselves away with an @ or a TLD. */
+const SLOGAN_WORDS = new Set(['you', 'your', 'yours', 'we', 'our', 'ours', 'us', 'why', 'how',
+  'what', 'when', 'where', 'guaranteed', 'guarantee', 'pricing', 'priced', 'quoted', 'quote',
+  'owned', 'operated', 'trusted', 'affordable', 'quality', 'best', 'cheap', 'fast', 'reliable',
+  'professional', 'experienced', 'insured', 'licensed', 'satisfaction', 'promise', 'difference']);
+/* Written WITHOUT a word-boundary escape on purpose. Twice now a word-boundary escape written
+ * through a shell heredoc has arrived here as a literal backspace (0x08),
+ * making a regex that can never match and a filter that silently does
+ * nothing -- which is how "heavyads.ca" survived three deploys in a list of
+ * services while the rule looked right in the source. A character class
+ * cannot be mangled that way. check-no-control-chars.mjs exists for this. */
+const LOOKS_LIKE_CONTACT = /(@|[a-z0-9-]+[.](ca|com|net|org|co|io)([^a-z]|$))/i;
+
+/* Not services either, all from one real home page: "46 Five-Star Reviews",
+ * "Direct Contact", "Services Interlock". Proof, a contact heading, and a
+ * menu label with its parent still attached. None of them a thing to buy. */
+const NOT_A_SERVICE_SHAPE = /^[ ]*(services?|our services)[ ]+[^ ]|^[ ]*[0-9]|reviews?([^a-z]|$)|direct contact|five[- ]star/i;
+/* Cloudflare rewrites addresses to the literal text "[email protected]", which
+ * carries no @ for the rule above to catch, and it reached the services list. */
+const OBFUSCATED_EMAIL = /\[email[^\]]*protected\]|email[ ]protected/i;
+
 const NOT_A_LABEL = /^(read|learn|see|view|more|details?|get|book|call|contact|back|next|prev(ious)?|home|menu|skip|close|toggle|submit|send|click)\b/i;
 
 function contentServices(html, scope) {
@@ -1263,6 +1297,8 @@ function contentServices(html, scope) {
     if (!text || text.length > 48) return;
     if (text.split(' ').length > 5) return;
     if (NOT_A_LABEL.test(text) || NOT_A_SERVICE_NAME.test(text)) return;
+    if (LOOKS_LIKE_CONTACT.test(text) || NOT_A_SERVICE_SHAPE.test(text) || OBFUSCATED_EMAIL.test(text)) return;
+    if (text.toLowerCase().split(/[^a-z]+/).some((w) => SLOGAN_WORDS.has(w))) return;
     if (!/[a-z]/i.test(text)) return;
 
     let slug = null;
@@ -1387,6 +1423,56 @@ function pickFamilyNames(grams) {
  * singular and plural together -- that is the only reason it exists -- and a
  * stem reaching the screen printed Angus as "Angu".
  */
+/* THE FREE PATH READS THE ONE SENTENCE THAT NAMES THE TOWNS.
+ *
+ * Without a model, a flat site returned no areas at all -- yet its footer says
+ * "Interlock and natural stone for homes and commercial properties across
+ * Barrie, Midhurst and Simcoe County", and its heading says "Service Areas
+ * Barrie Midhurst Innisfil Wasaga Simcoe County". Every town is on the page in
+ * plain sight; nothing deterministic was looking at prose.
+ *
+ * This is a narrow rule for a phrasing the trade uses constantly: a cue word,
+ * then a run of capitalised names. It will not read every site. It reads the
+ * common case, for nothing, with no model, and a wrong one is a chip to untick. */
+const NOT_A_PLACE_WORD = new Set(['before', 'after', 'many', 'more', 'most', 'now', 'today',
+  'all', 'every', 'each', 'new', 'other', 'others', 'both', 'some', 'any', 'this', 'that',
+  'these', 'those', 'here', 'there', 'homes', 'home', 'property', 'properties', 'project',
+  'projects', 'commercial', 'residential', 'areas', 'area', 'region', 'regions', 'and']);
+
+const AREA_CUE = /(serving|service areas?|areas? we serve|areas? served|proudly serve[sd]?|work(?:ing)? (?:in|throughout)|across|around)(?![a-z])/i;
+
+function areasFromProse(text) {
+  const out = new Map();
+  if (!text) return out;
+  const hay = String(text).replace(/\s+/g, ' ');
+  let m;
+  const cue = new RegExp(AREA_CUE.source, 'gi');
+  while ((m = cue.exec(hay)) !== null) {
+    // The run that follows the cue, stopping at a full stop or a cue for
+    // something else. 160 characters is about as long as such a list gets.
+    const after = hay.slice(m.index + m[0].length, m.index + m[0].length + 160).split(/[.!?|]/)[0];
+    const names = after.match(/[A-Z][a-z]+(?:[ -][A-Z][a-z]+){0,2}/g) || [];
+    for (const n of names) {
+      const t = n.trim();
+      if (t.length < 3 || t.split(' ').length > 3) continue;
+      if (NOT_A_SERVICE_NAME.test(t)) continue;
+      /* A capitalised word after "across" is not automatically a town. One
+       * real footer gave Barrie, Midhurst and Simcoe County -- correct -- and
+       * alongside them "Before", "Your Property Many" and "Landscaping", which
+       * is half the company's own name. Three cheap tests, in order of how
+       * often each fires: words that address the reader, words that are not
+       * names at all, and the brand itself. */
+      const words = t.toLowerCase().split(' ');
+      if (words.some((w) => SLOGAN_WORDS.has(w))) continue;
+      if (words.some((w) => NOT_A_PLACE_WORD.has(w))) continue;
+      if (BRAND_FROM_HOST && words.some((w) => w.length > 3 && BRAND_FROM_HOST.includes(w))) continue;
+      const k = t.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      if (k && !out.has(k) && out.size < 30) out.set(k, t);
+    }
+  }
+  return out;
+}
+
 function residueAreas(urls) {
   const df = new Map();
   const rows = [];
@@ -1480,11 +1566,30 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml, read, pre) {
     }
   }
 
-  // 1. the trees -- certain
-  for (const p of pages) {
-    const seg = slugOf(p.url);
-    if (seg.length > 1 && /^services?$/i.test(seg[0])) addSvc(seg[seg.length - 1], pageName(p), 'services tree');
-    if (seg.length > 1 && AREA_WORDS.test(seg[0])) addArea(seg[seg.length - 1], pageName(p), 'areas tree');
+  /* 1. THE TREES, OVER THE WHOLE SITEMAP -- certain, and free.
+   *
+   * This read the 20 CRAWLED pages. So a site with 11 service pages and 45
+   * service-area pages in its sitemap came back with the 3 services that
+   * happened to get crawled, and guessed the rest into nonsense -- "Google",
+   * "Automation", "Thunder" and "Firms" offered to a marketing agency as towns
+   * it serves.
+   *
+   * /service-areas/barrie IS a Barrie page. Knowing that costs nothing: the
+   * sitemap is one fetch and we already have it. No cleverness downstream beats
+   * reading the list a site publishes of its own pages. The crawl cap limits
+   * what can be GRADED and has never had anything to do with what can be
+   * FOUND, and conflating the two is what produced the guessing. */
+  let treeS = 0;
+  let treeA = 0;
+  const treeSrc = (sitemapPaths && sitemapPaths.length) ? sitemapPaths : pages.map((p) => p.url);
+  for (const url of treeSrc) {
+    const seg = slugOf(url);
+    if (seg.length < 2) continue;
+    const slug = seg[seg.length - 1];
+    // Named by the page itself where we read it, else by its own slug.
+    const named = byUrl.get(url) ? pageName(byUrl.get(url)) : titleise(slug);
+    if (/^services?$/i.test(seg[0])) { const n = services.size; addSvc(slug, named, 'services tree'); if (services.size > n) treeS++; }
+    else if (AREA_WORDS.test(seg[0])) { const n = areas.size; addArea(slug, named, 'areas tree'); if (areas.size > n) treeA++; }
   }
 
   // 2. the nav the owner built themselves
@@ -1561,8 +1666,16 @@ function detectGrid(pages, homeHtml, sitemapPaths, hubHtml, read, pre) {
    * better answer worse. A fallback that runs when the primary succeeded is not
    * a fallback. So where the model read the page, nothing below guesses at
    * areas; where it could not, the arithmetic is still better than nothing. */
-  if (!read) {
+  /* A site that publishes a /service-areas/ tree has told us its towns. Running
+   * the slug arithmetic on top could only add wrong ones, which is exactly what
+   * it did. Same reasoning as not inferring services when the site lists them. */
+  if (!read && treeA < 2) {
     for (const [slug, name] of residueAreas(flat)) addArea(slug, name, 'your URLs name it');
+    // And the sentence that says where they work, which no URL pass can see.
+    if (areas.size < 2 && homeHtml) {
+      const txt = decode(strip(homeHtml).replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ');
+      for (const [slug, name] of areasFromProse(txt)) addArea(slug, name, 'named on your page');
+    }
   }
 
   /* The flat-site fallback: no family recurs 4+ times and no tree or menu said
