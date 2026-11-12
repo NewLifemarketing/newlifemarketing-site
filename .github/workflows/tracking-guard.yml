@@ -1,0 +1,69 @@
+name: Tracking guard
+
+# Keeps Google Ads conversion tracking (Tag Manager GTM-K4PD7QK5) intact.
+# See TRACKING.md.
+#
+#  - check (every PR): scripts/check-tracking.mjs fails the PR if a change would
+#    stop conversions being counted (form success signal removed, GHL calendar
+#    swapped out, phone link removed, wrong/duplicate GTM container). Pages that
+#    merely lack the GTM snippet only warn, because...
+#  - install (every push to main that touches HTML): scripts/add-gtm.mjs --write
+#    adds the snippet to any page that went live without it (new blog posts,
+#    articles, landing pages) and commits the sweep, same pattern as
+#    sync-chrome.yml. Kept separate from auto-publish.yml on purpose: that
+#    workflow's PR gate is additive-only and this must never be able to block a
+#    post from publishing.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - "**.html"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Check conversion tracking is intact
+        run: node scripts/check-tracking.mjs
+
+  install:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: tracking-guard-install
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Add the GTM snippet to any page missing it
+        run: node scripts/add-gtm.mjs --write
+      - name: Commit sweep if anything changed
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name  "newlife-bot"
+            git config user.email "bot@newlifemarketing.ca"
+            git add -A
+            git commit -m "tracking: add Tag Manager to newly published pages"
+            git pull --rebase --autostash origin main
+            git push
+          else
+            echo "Every page already loads GTM-K4PD7QK5."
+          fi
+        # Loop-safe: pushes made with GITHUB_TOKEN never trigger workflows, and a
+        # second run would find nothing to add anyway.
+      - name: Report anything the sweep cannot fix
+        run: node scripts/check-tracking.mjs
