@@ -249,26 +249,56 @@ jobs:
       #
       # This step commits and pushes the same way the Open Graph step above
       # already does, so the pattern is not new to this workflow.
-      # Chrome drift NEVER blocks a post. It used to: the gate below compares
-      # every blog page against partials/, so one page anywhere on the site
-      # being out of date failed every new post. On 2026-10-14 two Community
-      # pages were created with an em dash in their BEGIN markers, sync-chrome
-      # could not match them, the sitewide sync stopped, and every blog publish
-      # failed for a day while the routine reported "succeeded".
+      # Chrome drift never blocks a post, and it is no longer REPAIRED site-wide
+      # from inside a blog PR either.
       #
-      # Drift is mechanical and has exactly one correct answer, so it is
-      # REPAIRED here rather than reported. Same commit-and-push pattern as the
-      # two steps above.
-      - name: Sync site chrome (repair, never block)
+      # The history, both halves of it. On 2026-10-14 two Community pages were
+      # created with an em dash in their BEGIN markers, sync-chrome could not
+      # match them, the sitewide sync stopped, and every blog publish failed for
+      # a day while the routine reported "succeeded". The answer then was to
+      # repair the whole site here instead of reporting it.
+      #
+      # That answer collided with the scope rule. On 2026-11-12 the partials had
+      # moved, so `--write` with no scope rewrote 48 pages -- 15 articles,
+      # articles/index.html and ~30 existing posts -- committed them onto the
+      # blog branch, and the gate below refused the PR with 43 "outside the
+      # allowed scope" failures. The workflow failed its own pull request, and
+      # the post never went live. A repair that cannot be merged is not a repair.
+      #
+      # So the repair now covers exactly what a blog PR is allowed to carry: the
+      # new post itself (see .github/scripts/validate-blog-pr.mjs). The new post
+      # is still born in sync, which is what the gate below actually checks.
+      #
+      # Drift anywhere else is REPORTED, not written. A daily blog publish
+      # quietly rewriting the rest of the site is one job doing another job's
+      # work, and the 2026-11-12 failure is what that costs.
+      - name: Sync the new post's chrome (in scope only, never block)
         run: |
-          node scripts/sync-chrome.mjs --write || true
-          if ! git diff --quiet; then
-            git config user.name  "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add -u
-            git commit -m "chrome: sync header and footer from partials" -m "Repaired automatically so sitewide drift can never hold up a post. A page that will not sync is reported by the gate below, which no longer blocks on it."
-            git push origin "HEAD:refs/heads/${{ steps.meta.outputs.head_ref }}"
+          git fetch -q origin main
+          base=$(git merge-base origin/main HEAD)
+          # The branch is blog/<date>-<slug> but the page is blog/<slug>/, so the
+          # path is taken from the diff rather than built from the branch name.
+          post=$(git diff --name-only --diff-filter=A "$base" HEAD -- 'blog/*/index.html' | head -1)
+          if [ -z "$post" ]; then
+            echo "::warning::No new blog post in this PR, so there was nothing to sync. The gate below decides whether that is a problem."
+          else
+            echo "syncing chrome for $post"
+            node scripts/sync-chrome.mjs --write --only "$post" || true
+            if ! git diff --quiet -- "$post"; then
+              git config user.name  "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add -- "$post"
+              git commit -m "chrome: sync the new post's header and footer from partials" -m "Scoped to the new post. Site-wide drift is reported, not committed here -- an unscoped repair failed this workflow's own PR on 2026-11-12."
+              git push origin "HEAD:refs/heads/${{ steps.meta.outputs.head_ref }}"
+            fi
           fi
+          # Report drift across the rest of the site. Never written here, never
+          # blocking: it is a site problem, not a reason to withhold a post.
+          if ! node scripts/sync-chrome.mjs --check > chrome-drift.txt 2>&1; then
+            echo "::warning::Site chrome drifts outside this PR. Not repaired here -- it is outside a blog PR's allowed scope. Run 'node scripts/sync-chrome.mjs --write' on its own PR."
+            cat chrome-drift.txt
+          fi
+          rm -f chrome-drift.txt
 
       # The blog index, in date order, by code rather than by instruction.
       #
