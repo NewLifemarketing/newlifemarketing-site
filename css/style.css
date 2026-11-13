@@ -3789,3 +3789,31 @@ body:not(.home-light) .svc-page .hero:not(:has(.hero-video)):not(:has(.hero-phot
 /* Blog and research articles: the first band paints white, which cut the glow
    off in a hard line just under the header. */
 body:not(.home-light) main > .post-band.post-light:first-child { background: transparent; }
+
+/* ---- Book / contact pages: homepage hero, form pulled up under it ---- */
+.svc-page .hero.lead-hero { padding-block: clamp(2rem, 4vw, 3rem) clamp(0.75rem, 1.5vw, 1.25rem); border-bottom: 0; }
+.lead-hero .lead { margin-bottom: 0; }
+body.home-light .svc-page section.lead-band { padding-top: 0.75rem; padding-bottom: clamp(2.5rem, 5vw, 4rem); background: transparent; }
+.lead-card {
+  position: relative; max-width: 48rem; margin: 0 auto; padding: clamp(1.4rem, 3vw, 2.4rem);
+  background: #fff; color: #0D0D14; border: 1px solid rgba(13, 13, 20, 0.08); border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(13, 13, 20, 0.10);
+}
+.lead-card-wide { max-width: 64rem; padding: clamp(0.75rem, 2vw, 1.25rem); }
+.lead-card-wide .embed-live { border: 0; box-shadow: none; }
+.lead-card .form-grid { max-width: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.1rem; }
+.lead-card .form-grid > .btn, .lead-card .form-grid > p, .lead-card .form-grid label:has(textarea) { grid-column: 1 / -1; }
+.lead-card .form-grid > .btn { justify-self: start; }
+.lead-card h2 { font-size: clamp(1.3rem, 2.4vw, 1.75rem); margin: 0 0 1.25rem; }
+.lead-card .kicker { margin-bottom: 0.4rem; }
+.lead-split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 1.5rem; max-width: 72rem; margin: 0 auto; align-items: start; }
+.lead-split .lead-card { max-width: none; margin: 0; }
+.lead-split > .card { margin: 0; }
+.lead-alt { text-align: center; margin: 1.1rem auto 0; }
+.lead-band .trust-in-hero { margin-top: 1.75rem; }
+.lead-band .trust-in-hero .t-item { color: #3A3A46; }
+.lead-band .trust-in-hero .t-item strong { color: #0D0D14; }
+.lead-band .trust-in-hero .risk-reversal { color: #55555F; text-align: center; width: 100%; }
+@media (max-width: 860px) { .lead-split { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .lead-card .form-grid { grid-template-columns: minmax(0, 1fr); } }
+
