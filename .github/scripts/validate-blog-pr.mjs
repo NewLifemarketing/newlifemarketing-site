@@ -269,6 +269,27 @@ if (newPostPath && exists(newPostPath)) {
     fail(`Expected exactly one <h1>, found ${h1Count} in ${newPostPath}.`);
   }
 
+  // the h1 must say something. On 2026-10-29 and 2026-11-14 a build script
+  // read the h1 from frontmatter with a key pattern that could not match
+  // "h1" (no digits), and two posts shipped with <h1>undefined</h1>: one h1,
+  // so the count above passed, and the only heading on the page carried no
+  // keyword at all.
+  const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  if (h1Match) {
+    const h1Text = h1Match[1].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+    if (!h1Text || /^(undefined|null|nan|\[object object\]|true|false)$/i.test(h1Text) || /\{\{|\}\}|\{[a-z_]+\}/i.test(h1Text)) {
+      fail(`The <h1> in ${newPostPath} has no real text (found "${h1Text}"). It must carry the primary keyword.`);
+    }
+  }
+
+  // the two visible dates must agree. The same 2026-11-14 post said "Posted
+  // November 14" above the h1 and "Posted on November 13" in the byline.
+  const dateLine = html.match(/class="post-date-line">\s*Posted\s+([^<]+?)\s*</i);
+  const byDate = html.match(/class="by-date">\s*Posted on\s+([^<]+?)\s*</i);
+  if (dateLine && byDate && dateLine[1] !== byDate[1]) {
+    fail(`The post date and the byline date disagree in ${newPostPath}: "${dateLine[1]}" vs "${byDate[1]}".`);
+  }
+
   // no leftover fact-checker markers
   if (html.includes("[NEEDS SOURCE")) {
     fail(`Leftover "[NEEDS SOURCE" marker found in ${newPostPath} — fact-checker must resolve every marker before publish.`);
