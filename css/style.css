@@ -3817,15 +3817,23 @@ body.home-light .svc-page section.lead-band { padding-top: 0.75rem; padding-bott
 @media (max-width: 860px) { .lead-split { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 640px) { .lead-card .form-grid { grid-template-columns: minmax(0, 1fr); } }
 
-/* ---- Client pages: logo badge in the homepage-style hero ---- */
-.client-logo {
-  display: inline-flex; align-items: center; justify-content: center; margin: 0 auto 1.1rem;
-  padding: 0.9rem 1.4rem; background: #fff; border-radius: 18px;
-  border: 1px solid rgba(13, 13, 20, 0.07); box-shadow: 0 14px 36px rgba(13, 13, 20, 0.10);
+/* ---- Client pages: copy on the left, the client's logo on the right ---- */
+.ch-split .wrap { text-align: left; }
+.ch-grid {
+  display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4.5rem); align-items: center;
 }
-.client-logo img { display: block; height: 64px; width: auto; max-width: 300px; object-fit: contain; }
-.client-logo img[width="290"], .client-logo img[width="296"][height="62"], .client-logo img[width="296"][height="64"] { height: 56px; }
-@media (max-width: 600px) { .client-logo img { height: 52px; max-width: 200px; } }
+.ch-split .hero-title, .ch-split h1, .ch-split .lead { margin-left: 0; margin-right: 0; }
+.ch-split .hero-ctas { justify-content: flex-start; }
+.ch-split .trust-in-hero .wrap { justify-content: flex-start; max-width: none; }
+.ch-split .trust-in-hero .risk-reversal { text-align: left; }
+.ch-logo { display: flex; align-items: center; justify-content: center; }
+.ch-logo-img { display: block; width: 100%; max-width: 380px; height: auto; max-height: 170px; object-fit: contain; }
+@media (max-width: 860px) {
+  .ch-grid { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+  .ch-logo { order: -1; justify-content: flex-start; }
+  .ch-logo-img { max-width: 220px; max-height: 90px; object-position: left center; }
+}
 .client-hero .hero-ctas { margin-top: 1.4rem; }
 .client-cs .cs-features { margin-top: 1.5rem; }
 
