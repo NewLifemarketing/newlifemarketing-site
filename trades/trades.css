@@ -581,3 +581,28 @@ details{border-bottom:1px solid var(--line);padding:1.1rem 0}summary{cursor:poin
 .yt .ytb:hover .ytp{background:#2196F3;transform:translate(-50%,-50%) scale(1.08)}
 .pod{max-width:1120px}.pgrid{gap:1.6rem}
 .vsl-top{padding:22px 0}.vsl-top .logo-row{margin-top:0}
+
+/* 2026-11-19: system flow sits below the heading again (video removed) */
+.sys .flow{margin-top:1.5rem!important}
+/* big CTA used across the page */
+.cta-big{padding:1.3rem 2.9rem;font-size:1.3rem;gap:.8rem}
+.cta-big svg{width:26px;height:26px}
+.cta-big.solid{background:#0D0D14}
+.cta-big.solid:hover{background:#1E2230}
+.hero-ctas .cta-big{margin:.4rem auto 0}
+.svc-ctas{display:flex;flex-wrap:wrap;gap:1rem;align-items:center}
+@media (max-width:560px){.cta-big{padding:1.1rem 1.6rem;font-size:1.05rem}}
+/* pyramid click cue: flowing line down the left side */
+.tri{position:relative}
+.tri-cue{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:4}
+.tc-base{fill:none;stroke:#C9D8EC;stroke-width:5;stroke-linecap:round;stroke-dasharray:10 10;animation:tc-dash .9s linear infinite}
+.tc-fill{fill:none;stroke:#2196F3;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .5s ease}
+.tc-run{fill:none;stroke:rgba(255,255,255,.9);stroke-width:3;stroke-linecap:round;stroke-dasharray:18 70;animation:tc-run 1.3s linear infinite}
+.tc-dot{fill:#fff;stroke:#2196F3;stroke-width:4;pointer-events:auto;cursor:pointer;transition:fill .3s}
+.tc-dot.done,.tc-dot.on{fill:#2196F3}
+.tc-dot.on{animation:tc-pulse 1.6s ease-out infinite}
+.tri-hint{position:absolute;z-index:4;font:800 italic .85rem Archivo;text-transform:uppercase;color:#2196F3;white-space:nowrap;pointer-events:none}
+@keyframes tc-dash{to{stroke-dashoffset:-20}}
+@keyframes tc-run{to{stroke-dashoffset:-88}}
+@keyframes tc-pulse{0%{stroke-width:4;stroke-opacity:1}70%{stroke-width:14;stroke-opacity:0}100%{stroke-width:4;stroke-opacity:0}}
+@media (prefers-reduced-motion:reduce){.tc-base,.tc-run,.tc-dot.on{animation:none}}
