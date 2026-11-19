@@ -25,3 +25,9 @@
 @keyframes tc-run{to{stroke-dashoffset:-88}}
 @keyframes tc-pulse{0%{stroke-width:4;stroke-opacity:1}70%{stroke-width:14;stroke-opacity:0}100%{stroke-width:4;stroke-opacity:0}}
 @media (prefers-reduced-motion:reduce){.tc-base,.tc-run,.tc-dot.on{animation:none}}
+
+/* logo strip: two rows of 5 */
+.vsl-top .logo-row{flex-wrap:nowrap!important;justify-content:space-between;max-width:980px}
+.vsl-top .logo-row.lr-bot{margin-top:1.6rem}
+.vsl-top .logo-row img.sq{height:86px;max-width:86px}
+@media (max-width:760px){.vsl-top .logo-row{flex-wrap:wrap!important;justify-content:center;gap:1.1rem 1.6rem}.vsl-top .logo-row img{height:44px;max-width:100px}.vsl-top .logo-row img[src$=".svg"]{height:56px;max-width:70px}.vsl-top .logo-row img.sq{height:62px;max-width:62px}}
