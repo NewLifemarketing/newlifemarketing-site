@@ -612,3 +612,5 @@ details{border-bottom:1px solid var(--line);padding:1.1rem 0}summary{cursor:poin
 .vsl-top .logo-row.lr-bot{margin-top:1.6rem}
 .vsl-top .logo-row img.sq{height:86px;max-width:86px}
 @media (max-width:760px){.vsl-top .logo-row{flex-wrap:wrap!important;justify-content:center;gap:1.1rem 1.6rem}.vsl-top .logo-row img{height:44px;max-width:100px}.vsl-top .logo-row img[src$=".svg"]{height:56px;max-width:70px}.vsl-top .logo-row img.sq{height:62px;max-width:62px}}
+
+.vsl-top .lr-title{margin:0 0 1.4rem;text-align:center;font:900 italic clamp(1.1rem,2.2vw,1.45rem) Archivo;text-transform:uppercase;letter-spacing:.01em;color:var(--ink)}
