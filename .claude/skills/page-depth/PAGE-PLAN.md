@@ -96,7 +96,7 @@ lands it needs a `VideoObject` block alongside the embed.
 - **Videos (10):** what a CRM buildout is · pipeline design · automation walkthrough ·
   missed-call recovery · review automation · who it suits · 6 benefits · mistakes
 
-### 7. `/services/account-based-marketing/` — **TBD** *(suggest: "account based marketing services")*
+### 7. `/guides/account-based-marketing/` — **TBD** *(suggest: "account based marketing services")*
 - **§10 deep dive:** The three tiers — one-to-one, one-to-few, one-to-many
 - **Counts:** 5 pillars · 5 benefits · 6 process steps · 4 mistakes
 - **Videos (10):** what ABM is · the ABM pyramid · demand gen vs ABM · who it
@@ -104,7 +104,7 @@ lands it needs a `VideoObject` block alongside the embed.
   engagement · when ABM is the wrong call
 - **Note:** already the best-written page on the site. Expand, do not rewrite.
 
-### 8. `/services/go-to-market-strategy/` — **TBD** *(suggest: "go to market strategy consulting")*
+### 8. `/guides/go-to-market-strategy/` — **TBD** *(suggest: "go to market strategy consulting")*
 - **§10 deep dive:** The five decisions — market, customer, offer, channel, motion
 - **Counts:** 5 pillars · 5 benefits · 5 process steps · 4 mistakes
 - **Videos (9):** what GTM strategy is · the five decisions · the 90-day track ·
