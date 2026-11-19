@@ -3817,23 +3817,12 @@ body.home-light .svc-page section.lead-band { padding-top: 0.75rem; padding-bott
 @media (max-width: 860px) { .lead-split { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 640px) { .lead-card .form-grid { grid-template-columns: minmax(0, 1fr); } }
 
-/* ---- Client pages: copy on the left, the client's logo on the right ---- */
-.ch-split .wrap { text-align: left; }
-.ch-grid {
-  display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-  gap: clamp(2rem, 5vw, 4.5rem); align-items: center;
+/* ---- Client pages: the client's logo (transparent PNG) above the name ---- */
+.client-hero .client-logo {
+  display: block; margin: 0 auto 1.4rem; width: auto; height: auto;
+  max-width: min(340px, 80%); max-height: 120px; object-fit: contain;
 }
-.ch-split .hero-title, .ch-split h1, .ch-split .lead { margin-left: 0; margin-right: 0; }
-.ch-split .hero-ctas { justify-content: flex-start; }
-.ch-split .trust-in-hero .wrap { justify-content: flex-start; max-width: none; }
-.ch-split .trust-in-hero .risk-reversal { text-align: left; }
-.ch-logo { display: flex; align-items: center; justify-content: center; }
-.ch-logo-img { display: block; width: 100%; max-width: 380px; height: auto; max-height: 170px; object-fit: contain; }
-@media (max-width: 860px) {
-  .ch-grid { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
-  .ch-logo { order: -1; justify-content: flex-start; }
-  .ch-logo-img { max-width: 220px; max-height: 90px; object-position: left center; }
-}
+@media (max-width: 600px) { .client-hero .client-logo { max-width: 70%; max-height: 84px; } }
 .client-hero .hero-ctas { margin-top: 1.4rem; }
 .client-cs .cs-features { margin-top: 1.5rem; }
 
