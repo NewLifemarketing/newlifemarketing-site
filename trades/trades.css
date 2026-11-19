@@ -580,3 +580,4 @@ details{border-bottom:1px solid var(--line);padding:1.1rem 0}summary{cursor:poin
 .ytp{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.6);border:2px solid #fff;display:grid;place-items:center;color:#fff;transition:transform .2s,background .2s}.ytp svg{width:26px;height:26px;margin-left:4px}
 .yt .ytb:hover .ytp{background:#2196F3;transform:translate(-50%,-50%) scale(1.08)}
 .pod{max-width:1120px}.pgrid{gap:1.6rem}
+.vsl-top{padding:22px 0}.vsl-top .logo-row{margin-top:0}
