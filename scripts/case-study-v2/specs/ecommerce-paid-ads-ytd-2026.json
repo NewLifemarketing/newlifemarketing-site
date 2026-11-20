@@ -1,0 +1,88 @@
+{
+  "slug": "ecommerce-paid-ads-ytd-2026",
+  "title": "$2.43M In Reported Sales In Under 11 Months",
+  "description": "A Canadian e-commerce brand selling high-value products online, with buyers in several markets across Canada. The brand isn't named, at its request.",
+  "services": [
+    {
+      "name": "Meta Ads",
+      "icon": "meta"
+    },
+    {
+      "name": "Google Ads",
+      "icon": "google"
+    },
+    {
+      "name": "Video Production",
+      "icon": "camera"
+    }
+  ],
+  "issue": [
+    "The brand needed a way to win online buyers that would scale: catch the people already searching for what it sells, create new demand from people who weren't, and grow beyond its home market.",
+    "<strong>And it had to work on a small budget.</strong> $28,736.09 across both platforms in nearly eleven months, about $89 a day, with no big launches or sale weekends to lean on. Every dollar had to find a real buyer, in a market where each one spends about $200 an order."
+  ],
+  "goals": [
+    {
+      "title": "Capture buyers already searching",
+      "detail": "Be there when people search for exactly what the brand sells.",
+      "icon": "search"
+    },
+    {
+      "title": "Create new demand",
+      "detail": "Reach new buyers who look like the brand's existing customers.",
+      "icon": "growth"
+    },
+    {
+      "title": "Grow beyond the home market",
+      "detail": "Scale past one city into markets across Canada.",
+      "icon": "map"
+    }
+  ],
+  "approach": {
+    "idea": "Their buyers spend about $200 an order, so the job was never cheap clicks. It was finding the right people, and letting the data, not a hunch, decide where the next dollar went.",
+    "steps": [
+      "<strong>One prospecting campaign, all year.</strong> Every dollar of 2026 Meta spend ran through a single, always-on prospecting campaign.",
+      "<strong>Split by market.</strong> One ad set per Canadian market on an equal daily budget, so every market got a fair test.",
+      "<strong>Look-alikes, not cold interests.</strong> Each ad set reached people who look like the brand's existing buyers, instead of guessing at interests.",
+      "<strong>Google Search for the people already looking.</strong> Meta created new demand; Google caught the buyers who were already searching.",
+      "<strong>Our own video, feeding both.</strong> Filmed in person and edited by our team. No stock footage, no recycled creative.",
+      "<strong>The budget follows the data.</strong> More reach didn't mean more buyers, so spend moved toward whichever market proved it could sell."
+    ],
+    "media": null,
+    "creative_html": null,
+    "creative_label": null
+  },
+  "extra_sections": [
+    {
+      "kicker": "The numbers",
+      "h2": "Both Platforms, Side By Side",
+      "html": "<div class=\"csx-table-wrap\"><table class=\"csx-table\"><thead><tr><th>1 Jan to 20 Nov 2026</th><th style=\"text-align:right\">Meta Ads</th><th>Google Ads</th></tr></thead><tbody><tr><td>Ad spend</td><td style=\"text-align:right;font-weight:700\">$12,704.91</td><td style=\"text-align:right;font-weight:700\">$16,031.18</td></tr><tr><td>Purchases</td><td style=\"text-align:right;font-weight:700\">6,901</td><td style=\"text-align:right;font-weight:700\">5,330</td></tr><tr><td>Purchase value</td><td style=\"text-align:right;font-weight:700\">$1,340,102.61</td><td style=\"text-align:right;font-weight:700\">$1,096,997.26</td></tr><tr><td>ROAS</td><td style=\"text-align:right;font-weight:700\">105.48x</td><td style=\"text-align:right;font-weight:700\">68.43x</td></tr><tr><td>Cost per purchase</td><td style=\"text-align:right;font-weight:700\">$1.84</td><td style=\"text-align:right;font-weight:700\">$3.01</td></tr><tr><td>Average order</td><td style=\"text-align:right;font-weight:700\">about $194</td><td style=\"text-align:right;font-weight:700\">about $206</td></tr><tr><td>Median e-commerce ROAS, same platform</td><td style=\"text-align:right;font-weight:700\">1.88x</td><td style=\"text-align:right;font-weight:700\">3.18x</td></tr></tbody></table></div><p class=\"csx-notes\">Platform-reported figures from the brand's Meta Ads Manager and Google Ads accounts. Google splits the credit for a sale across the ads that helped, so its purchase count comes out in fractions; it is shown as 5,330, never rounded up. Medians: <a href=\"https://www.triplewhale.com/blog/whats-a-good-roas\" target=\"_blank\" rel=\"noopener\" style=\"color:var(--blue)\">Triple Whale's 2026 ROAS benchmarks</a>, median ROAS by ad channel across e-commerce brands, 1 October 2025 to 30 September 2026.</p>"
+    }
+  ],
+  "results": {
+    "stats": [
+      {
+        "num": "$2.43M",
+        "what": "Reported sales from Meta and Google combined",
+        "ctx": "$2,437,099.87 (Meta $1,340,102.61 + Google $1,096,997.26) on $28,736.09 of ad spend, 1 January to 20 November 2026",
+        "icon": "cart"
+      },
+      {
+        "num": "105.48x",
+        "what": "Meta ROAS",
+        "ctx": "$1,340,102.61 from $12,704.91, about 56 times the median Meta ROAS",
+        "icon": "growth"
+      },
+      {
+        "num": "68.43x",
+        "what": "Google ROAS",
+        "ctx": "$1,096,997.26 from $16,031.18, about 21 times the median Google ROAS",
+        "icon": "target"
+      }
+    ],
+    "intro_html": "<p>About 84.8 dollars back for every dollar spent, across both platforms, at $1.84 a purchase on Meta. One honest caveat: each platform counts its own sales, so a buyer who saw both ads can be counted twice. The $2.43M is the two platforms' combined count, not audited revenue.</p>",
+    "proof_html": "<div class=\"csx-shots\"><figure class=\"camp-shot\"><img height=\"441\" width=\"1393\" src=\"/assets/campaigns/ecommerce-paid-ads-ytd-2026/google-ads-overview-ytd-2026.png\" alt=\"Google Ads overview for 2026 to date: $16K cost, 5.33K purchases, $1.1M conversion value, 6,842.90% actual ROAS, weekly chart\" loading=\"lazy\"><figcaption>Google Ads, 2026 to date: $16K in cost, $1.1M in conversion value, 6,842.90% Google ROAS.</figcaption></figure><figure class=\"camp-shot\"><img height=\"327\" width=\"2000\" src=\"/assets/campaigns/ecommerce-paid-ads-ytd-2026/meta-ads-manager-ytd-2026.png\" alt=\"Meta Ads Manager, 1 January to 20 November 2026: one active prospecting campaign, 6,901 website purchases at $1.84, $12,704.91 spent, 105.48 ROAS, $1,340,102.61 purchase value\" loading=\"lazy\"><figcaption>Meta Ads Manager, 1 January to 20 November 2026: every dollar in one prospecting campaign. Older campaign names are blurred to protect the client.</figcaption></figure></div>",
+    "note_html": "<p class=\"cs-asof\">Figures are frozen to 20 November 2026 and are platform-reported, as each ad account shows them: Meta on its 7-day click attribution setting, Google on its own attribution, which splits credit across ads. They are not audited revenue or profit. What else helped: the brand's existing customers, without whom there would be nothing for look-alike audiences to copy, and a period that runs into the start of the holiday buying season. The brand isn't named, at its request.</p>"
+  },
+  "quote_html": null,
+  "notes": "Built 2026-11-20 from clients/newlife/case-studies/ecommerce-paid-ads-ytd-2026.json (all twelve + page checks pass; drafts approved by the owner). ANONYMOUS: never add the client's name, logo, location, products or creative."
+}
