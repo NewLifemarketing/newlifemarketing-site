@@ -192,6 +192,7 @@ async function get(url, accept) {
 // ------------------------------------------------------------------ crawl --
 async function audit(target, env) {
   SVC_DROPPED = [];
+  MAP_TRIES = [];
   BRAND_FROM_HOST = String(target.hostname).replace(/^www\./i, '').split('.')[0] || '';
   SUBREQ = 0;
   /* RESOLVE THE CANONICAL ORIGIN FIRST, AND SPEND ONE SUBREQUEST DOING IT.
@@ -248,7 +249,7 @@ async function audit(target, env) {
   let source = fromMap.length >= 2 ? (linked.length ? 'sitemap + links' : 'sitemap') : 'links';
 
   if (urls.length < 2) {
-    urls = await fromLinks(origin);
+    urls = await fromLinks(origin, first);
     source = 'links';
   }
 
@@ -429,8 +430,14 @@ async function audit(target, env) {
   };
 }
 
+/* What robots.txt and the sitemaps answered. Kept so a failure can say whether
+ * ONE page is missing or the whole host is refusing us -- those are different
+ * answers and the report used to give neither. */
+let MAP_TRIES = [];
+
 async function fromSitemaps(origin) {
   const robots = await get(origin + '/robots.txt', 'text/plain');
+  MAP_TRIES.push(robots);
   let maps = [...String(robots.text).matchAll(/^\s*sitemap:\s*(\S+)/gim)].map((m) => m[1]);
   if (!maps.length) maps = [origin + '/sitemap.xml', origin + '/sitemap_index.xml'];
 
@@ -442,6 +449,7 @@ async function fromSitemaps(origin) {
     if (seen.has(m)) continue;
     seen.add(m);
     const r = await get(m, 'application/xml,text/xml');
+    MAP_TRIES.push(r);
     if (!r.ok) continue;
     const locs = [...String(r.text).matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)].map((x) => x[1]);
     if (/<sitemapindex/i.test(r.text)) {
@@ -461,9 +469,36 @@ async function fromSitemaps(origin) {
   return out;
 }
 
-async function fromLinks(origin) {
-  const home = await get(origin + '/');
-  if (!home.ok) throw new Error('Could not load that website.');
+/* SAY WHICH FAILURE IT WAS.
+ *
+ * This threw one sentence -- "Could not load that website." -- for a DNS
+ * failure, a timeout, a 404, and an edge that refuses anything that is not a
+ * browser. Four causes, four different things the reader should do, and the
+ * report named none of them. The status was already in hand from `get` and was
+ * being dropped on the floor.
+ *
+ * Measured on a real prospect, 2026-11-12: the site answered 200 to this
+ * crawler's own user agent from a laptop, the crawl failed anyway, and nothing
+ * in the output could say the host had refused the Worker. A tool whose only
+ * failure message is "could not load" cannot be debugged from its own output. */
+function whyUnreadable(origin, home) {
+  const h = home || { status: 0, why: 'no response' };
+  const said = (r) => (r.status ? `answered ${r.status}` : `did not answer (${r.why || 'network error'})`);
+  let msg = `Could not read ${origin}/ -- it ${said(h)}.`;
+  if (MAP_TRIES.length && MAP_TRIES.every((t) => t.status === h.status)) {
+    msg += ` robots.txt and the sitemap ${said(h)} too, so the whole host is refusing this crawler rather than missing one page.`;
+  } else if (MAP_TRIES.length) {
+    msg += ` (${MAP_TRIES.map((t) => `${t.url.replace(origin, '')} ${said(t)}`).join(', ')}.)`;
+  }
+  return msg.slice(0, 280);
+}
+
+async function fromLinks(origin, fetched) {
+  /* The home page is already in hand -- `audit` spends a subrequest on it to
+   * resolve the canonical origin. Fetching it again cost a second subrequest
+   * off a ceiling of about 25 AND threw away the first attempt's status. */
+  const home = fetched && fetched.ok ? fetched : (fetched || await get(origin + '/'));
+  if (!home.ok) throw new Error(whyUnreadable(origin, home));
   const hrefs = [...String(home.text).matchAll(/<a\b[^>]*href=["']([^"'#]+)["']/gi)].map((m) => m[1]);
   const abs = [];
   for (const h of hrefs) {
