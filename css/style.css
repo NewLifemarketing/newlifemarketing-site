@@ -3942,3 +3942,21 @@ body.home-light .svc-page section.lead-band { padding-top: 0.75rem; padding-bott
   .cs-feature-logo,.cs-feature-logo img{height:calc(var(--lh,76px)*.8);max-width:300px}
 }
 
+
+/* ---- Big call-to-action button (same as the trades page) ---- */
+.cta-big {
+  display: inline-flex; align-items: center; gap: 0.8rem; padding: 1.3rem 2.9rem; border-radius: 14px;
+  background: rgba(13, 13, 20, 0.72); color: #fff; text-decoration: none;
+  font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 1.3rem; line-height: 1.1;
+  text-transform: uppercase; letter-spacing: 0.01em; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, background 0.2s;
+}
+.cta-big:hover { transform: translateY(-2px); background: rgba(13, 13, 20, 0.9); }
+.cta-big svg { width: 26px; height: 26px; flex: 0 0 auto; }
+.cta-big.solid { background: #0D0D14; }
+.cta-big.solid:hover { background: #1E2230; }
+.cta-big-wrap { flex-direction: column; align-items: center; gap: 0.9rem; }
+.cta-big-wrap.cta-left { align-items: flex-start; }
+.cta-sub { font-size: 0.95rem; font-weight: 600; color: #1565C0; text-decoration: none; }
+.cta-sub:hover { text-decoration: underline; }
+@media (max-width: 560px) { .cta-big { padding: 1.1rem 1.6rem; font-size: 1.05rem; } }
