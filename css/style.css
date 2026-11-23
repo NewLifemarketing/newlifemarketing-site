@@ -3963,3 +3963,7 @@ body.home-light .svc-page section.lead-band { padding-top: 0.75rem; padding-bott
 .eg-cta .cta-big svg { width: 20px; height: 20px; }
 @media (max-width: 560px) { .cta-big { padding: 1.1rem 1.6rem; font-size: 1.05rem; } }
 
+
+/* Header Book button: same rounded corners and paper-plane icon as the big CTA */
+.header-cta .hdr-book { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 12px; }
+.header-cta .hdr-book svg { width: 16px; height: 16px; flex: 0 0 auto; }
