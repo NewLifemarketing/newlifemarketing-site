@@ -3955,44 +3955,11 @@ body.home-light .svc-page section.lead-band { padding-top: 0.75rem; padding-bott
 .cta-big svg { width: 26px; height: 26px; flex: 0 0 auto; }
 .cta-big.solid { background: var(--blue); box-shadow: 0 14px 36px rgba(33, 150, 243, 0.35); }
 .cta-big.solid:hover { background: #1976D2; }
-.cta-big-wrap { flex-direction: column; align-items: center; gap: 0.9rem; }
+.cta-big-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.9rem; }
 .cta-big-wrap.cta-left { align-items: flex-start; }
 .cta-sub { font-size: 0.95rem; font-weight: 600; color: #1565C0; text-decoration: none; }
 .cta-sub:hover { text-decoration: underline; }
+.eg-cta .cta-big { font-size: 1rem; padding: 1rem 1.4rem; gap: 0.6rem; white-space: nowrap; }
+.eg-cta .cta-big svg { width: 20px; height: 20px; }
 @media (max-width: 560px) { .cta-big { padding: 1.1rem 1.6rem; font-size: 1.05rem; } }
 
-/* =====================================================================
-   Experiment (homepage): blue only on things you can click.
-   Switched on by body.blue-clicks; remove the class to undo.
-   ===================================================================== */
-body.blue-clicks {
-  background-image:
-    radial-gradient(ellipse 58% 46% at 10% 0%,  rgba(13, 13, 20, 0.06) 0%, rgba(13, 13, 20, 0) 68%),
-    radial-gradient(ellipse 48% 40% at 92% 10%, rgba(13, 13, 20, 0.04) 0%, rgba(13, 13, 20, 0) 70%),
-    radial-gradient(ellipse 72% 30% at 50% 62%, rgba(13, 13, 20, 0.03) 0%, rgba(13, 13, 20, 0) 72%);
-}
-body.blue-clicks .proof-bar { background: #0D0D14; }
-body.blue-clicks .kicker, body.blue-clicks .pf-step, body.blue-clicks .pw-eyebrow,
-body.blue-clicks .pick-group { color: #55555F; }
-body.blue-clicks .pick-group::after { background: var(--line); }
-body.blue-clicks .tb:not(.cta-big)::before,
-body.blue-clicks .pw-panel.active::before,
-body.blue-clicks .hp-sw-panel::before,
-body.blue-clicks .pf-panel::before {
-  background: conic-gradient(from var(--pw-a), rgba(13, 13, 20, 0) 0deg, rgba(13, 13, 20, 0.06) 90deg,
-              rgba(13, 13, 20, 0.25) 230deg, rgba(13, 13, 20, 0.55) 320deg, rgba(13, 13, 20, 0.15) 352deg, rgba(13, 13, 20, 0) 360deg);
-}
-body.blue-clicks .pf-fill, body.blue-clicks .eg-fill, body.blue-clicks .rv2-fill { background: #0D0D14; }
-body.blue-clicks .eg-node.on .eg-dot { color: #0D0D14; box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.18); }
-body.blue-clicks .eg { background: linear-gradient(135deg, #1E1E2A 0, #12121A 100%); }
-body.blue-clicks .pl-stage { background: rgba(13, 13, 20, 0.06); border-color: rgba(13, 13, 20, 0.25); }
-body.blue-clicks .pl-stage.won { background: #0D0D14; border-color: #0D0D14; color: #fff; }
-body.blue-clicks .rv2-card { border-top-color: #0D0D14; box-shadow: 0 10px 28px rgba(13, 13, 20, 0.08); }
-body.blue-clicks .rv2-av { background: #ECECF1; color: #0D0D14; }
-body.blue-clicks .of-ic { background: rgba(13, 13, 20, 0.06); color: #0D0D14; }
-body.blue-clicks .loop-thumb:not([data-lightbox]) { background: #ECECF1; }
-body.blue-clicks .pf-big { -webkit-text-stroke-color: #0D0D14; }
-body.blue-clicks .of-frame, body.blue-clicks .pw-vid { background-color: #EEEEF2; }
-body.blue-clicks .pw-tabs { background: #EFEFF3; }
-body.blue-clicks .rv2-prog, body.blue-clicks .pf-base { background: #DEDEE5; }
-body.blue-clicks .eg-dot { background: #2A2A38; }
