@@ -36,5 +36,5 @@
 
 .cta-big,.cta-big.solid{background:#2196F3;box-shadow:0 14px 36px rgba(33,150,243,.35)}.cta-big:hover,.cta-big.solid:hover{background:#1976D2}
 
-.cta-big-wrap{display:flex;flex-direction:column;align-items:center;gap:.9rem}.cta-big-wrap.cta-row{width:100%;margin-top:2rem}.cta-sub{font-size:.95rem;font-weight:600;color:#1565C0;text-decoration:none}.cta-sub:hover{text-decoration:underline}.wbn>.wrap>.wbn-act{flex-direction:column;align-items:center;margin-top:2rem}
+.cta-big-wrap{display:flex;flex-direction:column;align-items:center;gap:.9rem}.cta-big-wrap.cta-row{width:100%;margin-top:2rem}.cta-sub{font-size:.95rem;font-weight:600;color:#1565C0;text-decoration:none}.cta-sub:hover{text-decoration:underline}
 .pf-panel>.pf-act{grid-column:1/-1;justify-self:center;margin-top:.4rem}
