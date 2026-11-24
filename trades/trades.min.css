@@ -38,3 +38,4 @@
 
 .cta-big-wrap{display:flex;flex-direction:column;align-items:center;gap:.9rem}.cta-big-wrap.cta-row{width:100%;margin-top:2rem}.cta-sub{font-size:.95rem;font-weight:600;color:#1565C0;text-decoration:none}.cta-sub:hover{text-decoration:underline}
 .pf-panel>.pf-act{grid-column:1/-1;justify-self:center;margin-top:.4rem}
+.work-sec>.cta-row{margin-bottom:1.6rem}
