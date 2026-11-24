@@ -588,11 +588,11 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
   .nav-travel .mega .ind-top { justify-content: center; }
   .nav-travel .mega .ind-row a:not(.btn):not(.mf-link) { flex: 1 1 0; min-width: 0; }
   .nav-travel .mega .ind-top a:not(.btn):not(.mf-link) {
-    flex: 0 0 calc((100% - 3.4rem) / 3);
+    flex: 1 1 0;               /* two wide boxes share the whole row, so the text sits on fewer lines */
     min-width: 0;
-    padding: 0.8rem 1rem;
+    padding: 0.5rem 0.8rem;
     border: 2px solid #1565C0;
-    border-radius: 12px;
+    border-radius: 10px;
     background: #F2F8FF;
     transition: background 0.15s ease;
   }
