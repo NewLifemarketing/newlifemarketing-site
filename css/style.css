@@ -576,6 +576,28 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
     background: #E8F1FC; color: #0B3C7D; border-color: #E8F1FC;
   }
 
+  /* Industries panel (Cruz, 2026-11-24). Top row: Trades (left) and E-Commerce (right), centred, the same
+     width as the three cards on the second row and outlined in blue so the two stand apart. Desktop only:
+     the mobile drawer shows the same five links as a plain list. */
+  .nav-travel .mega .ind-top,
+  .nav-travel .mega .ind-row {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 0.95rem 1.7rem;
+  }
+  .nav-travel .mega .ind-top { justify-content: center; }
+  .nav-travel .mega .ind-row a:not(.btn):not(.mf-link) { flex: 1 1 0; min-width: 0; }
+  .nav-travel .mega .ind-top a:not(.btn):not(.mf-link) {
+    flex: 0 0 calc((100% - 3.4rem) / 3);
+    min-width: 0;
+    padding: 0.8rem 1rem;
+    border: 2px solid #1565C0;
+    border-radius: 12px;
+    background: #F2F8FF;
+    transition: background 0.15s ease;
+  }
+  .nav-travel .mega .ind-top a:not(.btn):not(.mf-link):hover { background: #E3F0FD; }
+
   /* Hook strip across the bottom of the white side — the menu's last word
      before the visitor closes it. Pinned to the card's bottom-left corner the
      same way the rail is pinned to the right, so it meets both edges cleanly
