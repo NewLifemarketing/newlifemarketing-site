@@ -614,3 +614,14 @@ details{border-bottom:1px solid var(--line);padding:1.1rem 0}summary{cursor:poin
 @media (max-width:760px){.vsl-top .logo-row{flex-wrap:wrap!important;justify-content:center;gap:1.1rem 1.6rem}.vsl-top .logo-row img{height:44px;max-width:100px}.vsl-top .logo-row img[src$=".svg"]{height:56px;max-width:70px}.vsl-top .logo-row img.sq{height:62px;max-width:62px}}
 
 .vsl-top .lr-title{margin:0 0 1.4rem;text-align:center;font:900 italic clamp(1.1rem,2.2vw,1.45rem) Archivo;text-transform:uppercase;letter-spacing:.01em;color:var(--ink)}
+
+/* Blue CTA, matching the homepage */
+.cta-big,.cta-big.solid{background:#2196F3;box-shadow:0 14px 36px rgba(33,150,243,.35)}
+.cta-big:hover,.cta-big.solid:hover{background:#1976D2}
+
+/* Centred CTA rows */
+.cta-big-wrap{display:flex;flex-direction:column;align-items:center;gap:.9rem}
+.cta-big-wrap.cta-row{width:100%;margin-top:2rem}
+.cta-sub{font-size:.95rem;font-weight:600;color:#1565C0;text-decoration:none}.cta-sub:hover{text-decoration:underline}
+.wbn-card>.wbn-act{grid-column:1/-1;flex-direction:column;align-items:center;margin-top:.2rem}
+.pf-panel>.pf-act{grid-column:1/-1;justify-self:center;margin-top:.4rem}
