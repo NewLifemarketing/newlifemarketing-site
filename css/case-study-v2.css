@@ -159,3 +159,7 @@
    one under another, so the numbers in them can actually be read */
 .csx-shots{display:grid;grid-template-columns:1fr;gap:1.75rem;max-width:900px;margin:1rem auto 0}
 .csx-shots .camp-shot img{width:100%;height:auto;display:block}
+
+/* ---- carousel: feathered edges, overlapping cards that grow/shrink as they scroll, uncut shadow (2026-11-24) */
+.csx-loop{margin-top:-1.5rem}.csx-loop-track{padding-top:4rem;padding-bottom:5.5rem;margin-bottom:-3.5rem;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16%,#000 84%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 16%,#000 84%,transparent 100%)}.csx-loop-track>.cs-feature,.csx-loop-track>.cs-feature.is-active{position:relative;opacity:1;transform:none;transition:none;will-change:transform;box-shadow:0 30px 60px -12px rgba(13,13,20,.5),0 12px 24px -8px rgba(13,13,20,.28)}@media (max-width:620px){.csx-loop-track{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 7%,#000 93%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 7%,#000 93%,transparent 100%)}}
+.csx-loop{margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}.csx-prev{left:calc(50% - min(450px,44vw) - 24px)}.csx-next{right:calc(50% - min(450px,44vw) - 24px)}
