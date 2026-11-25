@@ -80,7 +80,7 @@
             '<label class="nlc-f"><input name="email" type="email" required autocomplete="email" placeholder=" "><span>Email *</span></label>' +
             '<label class="nlc-f"><input name="phone" type="tel" required autocomplete="tel" inputmode="tel" placeholder=" "><span>Phone *</span></label>' +
             '<label class="nlc-f"><textarea name="message" rows="1" placeholder=" "></textarea><span>Message</span></label>' +
-            '<input class="nlc-hp" type="text" name="website_confirm" tabindex="-1" autocomplete="off" aria-hidden="true">' +
+            '<div class="nlc-hp" aria-hidden="true"><input type="text" name="nlc_zx_hp" tabindex="-1" autocomplete="new-password" data-lpignore="true" data-1p-ignore></div>' +
             '<button class="nlc-send" type="submit">Send</button>' +
             '<p class="nlc-msg" role="status" hidden></p>' +
           '</form>' +
@@ -108,7 +108,7 @@
       pill.setAttribute("aria-expanded", o ? "true" : "false");
       if (o) {
         lift();
-        var first = form.querySelector("input:not(.nlc-hp)");
+        var first = form.querySelector("input[name=name]");
         if (first && window.matchMedia("(min-width:861px)").matches) first.focus();
       } else {
         pill.focus();
@@ -141,7 +141,7 @@
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var hp = form.querySelector("[name=website_confirm]");
+      var hp = form.querySelector("[name=nlc_zx_hp]");
       if (hp && hp.value) return; /* honeypot filled -> silent abort */
       if (!form.reportValidity()) return;
       var g = function (n) {
