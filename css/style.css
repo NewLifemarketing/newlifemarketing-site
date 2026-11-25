@@ -271,7 +271,7 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
 .nav-close { display: none; }
 /* Contact Us / Our Blog live in the utility bar on desktop; only the
    mobile drawer shows them as regular nav items */
-@media (min-width: 1281px) { .nav-item.nav-util-mobile { display: none; } }
+@media (min-width: 1100px) and (hover: hover) and (pointer: fine) { .nav-item.nav-util-mobile { display: none; } }
 .nav > .nav-item { position: relative; }
 .nav a.top, .nav button.top {
   display: inline-flex;
@@ -355,7 +355,7 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
    the script never runs the menu stays exactly as it was: six self-contained
    dropdowns that open on hover.
    ====================================================================== */
-@media (min-width: 1281px) {
+@media (min-width: 1100px) and (hover: hover) and (pointer: fine) {
   .nav:not(.nav-travel) .nav-item.has-mega:hover .mega { display: grid; }
 
   /* static so .mega, .nav-card and .nav-tail all resolve against the sticky
@@ -649,7 +649,7 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
 
 /* Desktop furniture only — the drawer keeps its accordion, where each panel
    sits in flow under its own trigger. */
-@media (max-width: 1280px) {
+@media (max-width: 1099px), (hover: none), (pointer: coarse) {
   .nav-card, .nav-tail { display: none; }
   /* The drawer already ends in Book a Strategy Call and the phone number, so
      repeating the rail and the hook under all six menus would just pad the
@@ -672,7 +672,7 @@ section.band.tight { padding-block: clamp(2.25rem, 5vw, 4rem); }
   cursor: pointer;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1099px), (hover: none), (pointer: coarse) {
   .nav-toggle { display: block; }
   .header-cta { display: none; }
   .nav {
@@ -2483,7 +2483,7 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
    `.mega` reset on specificity, so the panel was wider than the phone and the
    whole page scrolled sideways. Force one column and kill the min-width, then
    give the drawer some structure so it isn't a bare list of words. */
-@media (max-width: 1280px) {
+@media (max-width: 1099px), (hover: none), (pointer: coarse) {
   .nav .mega,
   .nav .mega.m2,
   .nav .mega.m3,
@@ -2543,7 +2543,7 @@ table.simple th { color: var(--dim); font-size: 0.78rem; text-transform: upperca
     font-size: 0.8rem; font-weight: 600; color: rgba(255, 255, 255, 0.7); text-decoration: none;
   }
 }
-@media (min-width: 1281px) { .nav-drawer-foot { display: none; } }
+@media (min-width: 1100px) and (hover: hover) and (pointer: fine) { .nav-drawer-foot { display: none; } }
 
 /* ---- Service areas: regional index -------------------------------------- */
 .sa-stats {
@@ -3477,27 +3477,40 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 /* Six top-level menus (Free Resources added after Company) no longer fit the 1200px bar:
    the logo was squeezed against "Services". The bar gets a little more room and the
    items a little less padding, on desktop only; the mobile drawer is untouched. */
-@media (min-width: 1281px) {
+@media (min-width: 1100px) and (hover: hover) and (pointer: fine) {
   .site-header .wrap { max-width: min(1280px, calc(100vw - 2rem)); }
   .nav a.top, .nav button.top { padding-inline: 0.5rem; }
   .site-header .logo { flex: none; }
+}
+/* Small laptops (Cruz, 2026-11-25): the full desktop header with its dropdowns now runs down to 1100px; the side drawer is
+   for phones, iPads and windows narrower than that. The bar was sized for 1280px, so between 1100 and 1279 it tightens
+   in two steps (menu spacing first, then logo size, menu type and the call-to-action) so the whole bar stays on one line. */
+@media (min-width: 1100px) and (max-width: 1279px) and (hover: hover) and (pointer: fine) {
+  .site-header .wrap { gap: 14px; }
+  .nav a.top, .nav button.top { padding-inline: 0.35rem; }
+}
+@media (min-width: 1100px) and (max-width: 1199px) and (hover: hover) and (pointer: fine) {
+  .site-header .logo .logo-text { font-size: 17px; letter-spacing: -0.34px; }
+  .site-header .logo { gap: 8px; }
+  .nav a.top, .nav button.top { font-size: 13.4px; padding-inline: 0.28rem; }
+  .header-cta .btn.sm { font-size: 12px; padding-inline: 0.85rem; letter-spacing: 0.3px; }
+  .header-cta .btn.sm svg { display: none; }
 }
 
 /* Mobile drawer: the light header sets every top-level label to near-black (specificity 0,3,1),
    but the drawer itself is dark, so Services / Industries / Clients / ... were invisible.
    White labels and a light-on-dark hover inside the drawer. */
-@media (max-width: 1280px) {
+@media (max-width: 1099px), (hover: none), (pointer: coarse) {
   .site-header .nav a.top, .site-header .nav button.top { color: #FFFFFF; }
   .site-header .nav a.top:hover, .site-header .nav button.top:hover { background: rgba(255, 255, 255, 0.08); }
   .site-header .nav button.top .caret { color: #AFB4C2; }
 }
 
 /* ======================= Menu drawer, v2: a coloured side panel =======================
-   Replaces the full-screen black sheet. At 1280px and below (phones, iPad portrait and
-   landscape, small laptops) the menu is a panel that slides in from the right and takes
+   Replaces the full-screen black sheet. On phones, iPads (any orientation) and windows under 1100px the menu is a panel that slides in from the right and takes
    most of the screen but not all of it, over a dimmed backdrop you can tap to close.
    Brand-blue gradient, white labels, white tap-cards for the links. */
-@media (max-width: 1280px) {
+@media (max-width: 1099px), (hover: none), (pointer: coarse) {
   .nav {
     position: fixed;
     inset: 0 0 0 auto;
@@ -3575,7 +3588,7 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 @media (prefers-reduced-motion: reduce) {
   .nav, body.nav-open .nav { transition-duration: 0.01ms; }
 }
-@media (min-width: 1281px) { body.nav-open .site-header::after { display: none; } body.nav-open { overflow: auto; } }
+@media (min-width: 1100px) and (hover: hover) and (pointer: fine) { body.nav-open .site-header::after { display: none; } body.nav-open { overflow: auto; } }
 
 /* Free Resources menu: red "Limited time" tag on the Free Website For Trades item */
 /* ---- Hero title that is NOT the H1 --------------------------------------
@@ -3620,7 +3633,7 @@ body.home-light section.band.tight { padding-block: clamp(1.75rem, 3.5vw, 2.75re
 .mega .m-span { grid-column: 1 / -1; }
 .mega .m-two { display: grid; grid-template-columns: 1fr 1fr; gap: 0.95rem 1.5rem; }
 .mega .m-two-col { display: flex; flex-direction: column; gap: 0.95rem; min-width: 0; }
-@media (max-width: 1280px) {
+@media (max-width: 1099px), (hover: none), (pointer: coarse) {
   .nav .mega .m-two { grid-template-columns: 1fr; gap: 0; }
   .nav .mega .m-two-col { gap: 0; }
 }

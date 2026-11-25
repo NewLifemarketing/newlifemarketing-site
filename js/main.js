@@ -46,7 +46,7 @@
   var tail = document.querySelector(".nav-tail");
   var header = document.querySelector(".site-header");
   var panels = [].slice.call(document.querySelectorAll(".nav-item.has-mega .mega"));
-  var desktop = function () { return window.matchMedia("(min-width: 1281px)").matches; };
+  var desktop = function () { return window.matchMedia("(min-width: 1100px) and (hover: hover) and (pointer: fine)").matches; };
   var EDGE = 16;          /* keep the card this far off either viewport edge */
 
   /* Opt in to the travelling layout only once the script is live. Without
