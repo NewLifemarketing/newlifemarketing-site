@@ -17,9 +17,9 @@
      already booking or contacting us. */
   if (/^\/(editor|portal|book|contact)\//.test(path) || document.getElementById("nln")) return;
 
-  /* GoHighLevel inbound webhook for newsletter signups.
-     [NEEDS: newsletter webhook URL from GoHighLevel] */
-  var NEWSLETTER_WEBHOOK = "";
+  /* GoHighLevel workflow "Newsletter - Website Signups": creates/updates the
+     contact and adds the "newsletter" tag (the Newsletter smart list). */
+  var NEWSLETTER_WEBHOOK = "https://services.leadconnectorhq.com/hooks/RFnM9KZ3YGnxyFfaekIT/webhook-trigger/2f9712d9-3c47-45bf-9bfd-a7690a2e3ac6";
 
   var DELAY = 5000, SNOOZE_DAYS = 7;
   var K_SEEN = "nl_nlpop_seen", K_SNOOZE = "nl_nlpop_snooze", K_JOINED = "nl_nlpop_joined";

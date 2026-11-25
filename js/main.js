@@ -497,12 +497,37 @@
     });
   });
 
-  /* ---------- Newsletter (placeholder) ---------- */
+  /* ---------- Footer newsletter -> GoHighLevel "Newsletter - Website Signups" ----------
+     Same webhook as the newsletter pop-up (js/newsletter-popup.js). Adds the
+     email to GHL with the "newsletter" tag. Not a lead: no nl:form-success. */
+  var NEWSLETTER_WEBHOOK = "https://services.leadconnectorhq.com/hooks/RFnM9KZ3YGnxyFfaekIT/webhook-trigger/2f9712d9-3c47-45bf-9bfd-a7690a2e3ac6";
   document.querySelectorAll(".newsletter").forEach(function (f) {
     f.addEventListener("submit", function (e) {
       e.preventDefault();
-      /* [NEEDS: newsletter/email platform signup endpoint] */
-      f.innerHTML = '<p class="small" style="margin:0">Thanks — you’re on the list once the email platform is connected.</p>';
+      var input = f.querySelector("input[type=email]");
+      var email = input ? input.value.trim() : "";
+      if (!email || (input.checkValidity && !input.checkValidity())) { if (input && input.reportValidity) input.reportValidity(); return; }
+      var btn = f.querySelector("button");
+      if (btn) btn.disabled = true;
+      fetch(NEWSLETTER_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, source: "newlife_newsletter", placement: "footer", page: window.location.pathname })
+      }).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        try { localStorage.setItem("nl_nlpop_joined", "1"); } catch (err) {}
+        try {
+          (window.dataLayer = window.dataLayer || []).push({ event: "nl_newsletter_signup", placement: "footer" });
+          if (typeof gtag === "function") gtag("event", "sign_up", { method: "newsletter", placement: "footer" });
+        } catch (err) {}
+        f.innerHTML = '<p class="small" style="margin:0">&#10003; You’re on the list. Watch your inbox.</p>';
+      }).catch(function () {
+        if (btn) btn.disabled = false;
+        var m = f.parentNode.querySelector(".nl-err") || f.parentNode.insertBefore(document.createElement("p"), f.nextSibling);
+        m.className = "small nl-err";
+        m.style.margin = ".4rem 0 0";
+        m.textContent = "That didn’t go through. Please try again.";
+      });
     });
   });
 
