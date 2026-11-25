@@ -31,6 +31,10 @@ for (const f of ["js/main.js", "js/main.min.js"]) {
   need(f, (s) => count(s, "nl:form-success") >= 2,
     'must dispatch "nl:form-success" for BOTH the book form and the contact form (Form Lead conversion). If you edited main.js, rebuild main.min.js too.');
 }
+for (const f of ["js/contact-popup.js", "js/contact-popup.min.js"]) {
+  need(f, (s) => s.includes("nl:form-success"),
+    'the "Talk to Our Experts" pop-up must dispatch "nl:form-success" after the webhook succeeds (Form Lead conversion). If you edited contact-popup.js, rebuild the .min twin too.');
+}
 need("trades/free-website/index.html", (s) => s.includes("nl:form-success"),
   'Free Website form must dispatch "nl:form-success" after the webhook succeeds (Form Lead conversion).');
 

@@ -7,7 +7,7 @@ Google Ads counts leads through Google Tag Manager container **`GTM-K4PD7QK5`**.
 | # | Keep this | Where | Feeds |
 |---|---|---|---|
 | 1 | The GTM snippet right after `<head>` on every page (one copy, this ID only) | every `*.html` | everything, including the ad click ID (Conversion Linker) |
-| 2 | `document.dispatchEvent(new CustomEvent("nl:form-success", {detail:{form:"…"}}))` fired **after** the GHL webhook succeeds | `js/main.js` **and** `js/main.min.js` (book + contact forms), `trades/free-website/index.html` | Form Lead |
+| 2 | `document.dispatchEvent(new CustomEvent("nl:form-success", {detail:{form:"…"}}))` fired **after** the GHL webhook succeeds | `js/main.js` **and** `js/main.min.js` (book + contact forms), `js/contact-popup.js` **and** `.min.js` (the "Talk to Our Experts" corner pop-up on every page), `trades/free-website/index.html` | Form Lead |
 | 3 | The GoHighLevel calendar embed (`api.leadconnectorhq.com/widget/booking/…`) | `book/call/index.html` (and any other page that embeds it) | Booked Call |
 | 4 | The phone number as a link: `<a href="tel:+17053021097">` | `partials/header.html`, `partials/footer.html`, any page that shows the number | Phone Click |
 | 5 | The hardcoded GA4 tag `G-N3TBK96H9F` | page `<head>` | Bookings reported to GA4 |
