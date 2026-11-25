@@ -12,7 +12,7 @@ disagree. Re-running is safe: the output is the same.
 
 Spec fields: slug, hide_logos[] (logo-file substrings to drop from the client wall, for anonymous cases), title, description, services[{name,icon}], issue[html],
 goals[{title,detail,icon}], approach{idea,steps[html],media{type:video|photo|img,
-src,alt,pos?,caption?}|null,creative_html,creative_label}, extra_sections[{kicker,
+src,alt,pos?,caption?}|{type:youtube,id,lead,kicker?}|null,creative_html,creative_label}, extra_sections[{kicker,
 h2,html,place?:before_approach|after_results}], results{heading?,stats[{num,
 what,ctx,icon}],intro_html,proof_html,note_html}, quote_html.
 
@@ -119,7 +119,7 @@ def build(spec):
     ap = spec['approach']
     media = ''
     m = ap.get('media')
-    if m:
+    if m and m['type'] != 'youtube':   # youtube is placed by add-video.apply() below
         alt = H.escape(m.get('alt') or '')
         if m['type'] == 'video':
             media = f'<div class="csx-approach-media"><video src="{m["src"]}" autoplay muted loop playsinline preload="metadata" aria-label="{alt}"></video></div>'
@@ -210,8 +210,21 @@ def build(spec):
         assert mm, 'no v1 stylesheet link on ' + path
         s = s[:mm.end()] + '\n' + V2_LINK + s[mm.end():]
 
+    # a page that had a video and no longer does must lose its player script and VideoObject too
+    s = re.sub(r'<script[^>]*data-csx-video>.*?</script>\n?', '', s, flags=re.S)
+    if m and m['type'] == 'youtube':
+        av = load_add_video()
+        s = av.apply(s, m['id'], m['lead'], av.youtube_meta(m['id']), m.get('kicker') or 'Watch the breakdown')
+
     open(path, 'w', encoding='utf-8', newline='').write(s)
     print('built', slug, len(s), 'colour', colour)
+
+def load_add_video():
+    # python -I keeps this folder off sys.path, so load the sibling by file path
+    import importlib.util, os
+    sp = importlib.util.spec_from_file_location('add_video', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'add-video.py'))
+    mod = importlib.util.module_from_spec(sp); sp.loader.exec_module(mod)
+    return mod
 
 for p in sys.argv[1:]:
     build(json.load(open(p, encoding='utf-8')))
