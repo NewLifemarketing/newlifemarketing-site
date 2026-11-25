@@ -1,0 +1,189 @@
+/* NewLife Marketing: "Talk to Our Experts" corner pop-up, loaded on every page.
+   CONVERSION TRACKING DEPENDS ON THIS FILE. Read TRACKING.md before editing:
+   the nl:form-success dispatch below is what Tag Manager (GTM-K4PD7QK5) turns
+   into the Form Lead conversion. Edit this file, then rebuild the .min twin
+   and its ?v= stamp. */
+(function () {
+  "use strict";
+  /* Same helpers as js/main.js: 10-digit phone to +1XXXXXXXXXX, PostHog id. */
+  function nlPhone(raw) {
+    var d = String(raw || "").replace(/\D/g, "");
+    if (d.length === 11 && d.charAt(0) === "1") d = d.slice(1);
+    return d.length === 10 ? "+1" + d : "";
+  }
+  function nlVisitorId() {
+    try {
+      return (window.posthog && typeof window.posthog.get_distinct_id === "function" && window.posthog.get_distinct_id()) || "";
+    } catch (e) { return ""; }
+  }
+  var PHONE_ERR = "Please enter a 10-digit phone number, like 705-555-0142.";
+
+  /* ---------- "Talk to Our Experts" pop-up (bottom right, every page) ----------
+     The contact page form in a corner pop-up. Same fields, same GoHighLevel
+     webhook, and the same nl:form-success + generate_lead signals as
+     #contact-form, so Tag Manager counts it as a Form Lead exactly like
+     /contact/. detail.placement ("popup") tells the two apart in reports. */
+  (function () {
+    var path = window.location.pathname;
+    if (/^\/(editor|portal)\//.test(path) || document.getElementById("nlc")) return;
+    var CHAT_WEBHOOK = "https://services.leadconnectorhq.com/hooks/RFnM9KZ3YGnxyFfaekIT/webhook-trigger/d1d8da26-2d8a-4501-98e4-30656ae0dec2";
+    var css = "" +
+      "#nlc{--nlc-b:0px;position:fixed;right:20px;bottom:calc(20px + var(--nlc-b));z-index:5000;font-family:inherit;color:#1d1d24;display:flex;flex-direction:column;align-items:flex-end;gap:12px;pointer-events:none}" +
+      "#nlc>*{pointer-events:auto}" +
+      "#nlc .nlc-pill{display:flex;align-items:center;gap:10px;height:52px;padding:0 22px 0 7px;border:0;border-radius:999px;background:#2196F3;color:#fff;font:inherit;font-size:15px;cursor:pointer;box-shadow:0 14px 36px rgba(33,150,243,.35);transition:transform .2s,background .2s}" +
+      "#nlc .nlc-pill:hover{background:#1976D2;transform:translateY(-2px)}" +
+      "#nlc .nlc-pill strong{font-weight:800}" +
+      "#nlc .nlc-logo{width:38px;height:38px;border-radius:50%;background:#fff;display:grid;place-items:center;flex:none}" +
+      "#nlc .nlc-logo img{width:26px;height:auto;display:block}" +
+      "#nlc .nlc-x{width:44px;height:44px;border:0;border-radius:50%;background:#2196F3;color:#fff;cursor:pointer;display:grid;place-items:center;box-shadow:0 10px 26px rgba(33,150,243,.35)}" +
+      "#nlc .nlc-x:hover{background:#1976D2}" +
+      "#nlc .nlc-x svg{width:16px;height:16px}" +
+      "#nlc .nlc-panel{width:min(340px,calc(100vw - 24px));max-height:calc(100vh - 110px - var(--nlc-b));overflow:auto;background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(13,13,20,.35),0 6px 16px rgba(13,13,20,.18);transform-origin:100% 100%;animation:nlcIn .22s ease-out}" +
+      "@keyframes nlcIn{from{transform:translateY(12px) scale(.96)}to{transform:none}}" +
+      "#nlc[data-open=false] .nlc-panel,#nlc[data-open=false] .nlc-x,#nlc[data-open=true] .nlc-pill{display:none}" +
+      "#nlc .nlc-head{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 16px;background:#2196F3;color:#fff;font-weight:700;font-size:15px}" +
+      "#nlc .nlc-head .nlc-logo{width:32px;height:32px}" +
+      "#nlc .nlc-head .nlc-logo img{width:22px}" +
+      "#nlc .nlc-body{padding:16px 18px 18px}" +
+      "#nlc .nlc-bubble{margin:0 0 6px;padding:11px 14px;background:#f1f2f5;border-radius:12px;font-size:13.5px;line-height:1.45;color:#3a3a44}" +
+      "#nlc .nlc-f{position:relative;display:block;margin-top:14px}" +
+      "#nlc .nlc-f input,#nlc .nlc-f textarea{width:100%;box-sizing:border-box;border:0;border-bottom:1.5px solid #d3d4da;border-radius:0;background:transparent;padding:16px 0 6px;font:inherit;font-size:14.5px;color:#1d1d24;outline:none;resize:none}" +
+      "#nlc .nlc-f textarea{min-height:44px;max-height:140px;overflow:auto}" +
+      "#nlc .nlc-f input:focus,#nlc .nlc-f textarea:focus{border-bottom-color:#2196F3}" +
+      "#nlc .nlc-f span{position:absolute;left:0;top:15px;font-size:14px;color:#6b6c76;pointer-events:none;transition:top .15s,font-size .15s,color .15s}" +
+      "#nlc .nlc-f input:focus+span,#nlc .nlc-f textarea:focus+span,#nlc .nlc-f input:not(:placeholder-shown)+span,#nlc .nlc-f textarea:not(:placeholder-shown)+span{top:0;font-size:11.5px;color:#2196F3}" +
+      "#nlc .nlc-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}" +
+      "#nlc .nlc-send{display:block;width:100%;margin-top:18px;border:0;border-radius:999px;padding:12px 22px;background:#2196F3;color:#fff;font:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:background .2s}" +
+      "#nlc .nlc-send:hover{background:#1976D2}" +
+      "#nlc .nlc-send:disabled{background:#c4c5cb;cursor:default}" +
+      "#nlc .nlc-msg{margin:10px 0 0;font-size:13px;font-weight:600;color:#C0392B}" +
+      "#nlc .nlc-done{padding:18px 4px 8px;text-align:center;font-size:14.5px;line-height:1.5;color:#1d1d24}" +
+      "#nlc .nlc-done b{display:block;font-size:17px;margin-bottom:4px;color:#2196F3}" +
+      "@media (max-width:860px){#nlc{right:12px;bottom:calc(12px + var(--nlc-b))}#nlc .nlc-pill{height:46px;font-size:14px;padding:0 16px 0 5px}#nlc .nlc-logo{width:36px;height:36px}}" +
+      "@media print{#nlc{display:none}}";
+    var st = document.createElement("style");
+    st.textContent = css;
+    document.head.appendChild(st);
+
+    var logo = '<span class="nlc-logo"><img src="/assets/brand/nl-icon.svg" alt="" width="26" height="20"></span>';
+    var w = document.createElement("div");
+    w.id = "nlc";
+    w.setAttribute("data-open", "false");
+    w.innerHTML =
+      '<div class="nlc-panel" id="nlc-panel" role="dialog" aria-labelledby="nlc-title">' +
+        '<div class="nlc-head">' + logo + '<span id="nlc-title">Need help? Message us.</span></div>' +
+        '<div class="nlc-body">' +
+          '<p class="nlc-bubble">Enter your contact info, and a marketing specialist will get back to you within one business day.</p>' +
+          '<form id="nlc-form">' +
+            '<label class="nlc-f"><input name="name" type="text" required autocomplete="name" placeholder=" "><span>Your name *</span></label>' +
+            '<label class="nlc-f"><input name="email" type="email" required autocomplete="email" placeholder=" "><span>Email *</span></label>' +
+            '<label class="nlc-f"><input name="phone" type="tel" required autocomplete="tel" inputmode="tel" placeholder=" "><span>Phone *</span></label>' +
+            '<label class="nlc-f"><textarea name="message" rows="1" placeholder=" "></textarea><span>Message</span></label>' +
+            '<input class="nlc-hp" type="text" name="website_confirm" tabindex="-1" autocomplete="off" aria-hidden="true">' +
+            '<button class="nlc-send" type="submit" disabled>Send</button>' +
+            '<p class="nlc-msg" role="status" hidden></p>' +
+          '</form>' +
+        '</div>' +
+      '</div>' +
+      '<button class="nlc-pill" type="button" aria-expanded="false" aria-controls="nlc-panel">' + logo + '<span><strong>Talk</strong> to Our Experts</span></button>' +
+      '<button class="nlc-x" type="button" aria-label="Close message form"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg></button>';
+    document.body.appendChild(w);
+
+    var pill = w.querySelector(".nlc-pill"), x = w.querySelector(".nlc-x");
+    var form = w.querySelector("#nlc-form"), send = w.querySelector(".nlc-send");
+    var msg = w.querySelector(".nlc-msg"), ta = w.querySelector("textarea");
+
+    /* Sit above the mobile Book/Call bar when it is showing. */
+    var bar = document.querySelector(".mobile-cta");
+    function lift() {
+      var h = bar && getComputedStyle(bar).display !== "none" ? bar.offsetHeight : 0;
+      w.style.setProperty("--nlc-b", h + "px");
+    }
+    lift();
+    window.addEventListener("resize", lift);
+
+    function setOpen(o) {
+      w.setAttribute("data-open", o ? "true" : "false");
+      pill.setAttribute("aria-expanded", o ? "true" : "false");
+      if (o) {
+        lift();
+        var first = form.querySelector("input:not(.nlc-hp)");
+        if (first && window.matchMedia("(min-width:861px)").matches) first.focus();
+      } else {
+        pill.focus();
+      }
+    }
+    pill.addEventListener("click", function () { setOpen(true); });
+    x.addEventListener("click", function () { setOpen(false); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && w.getAttribute("data-open") === "true") setOpen(false);
+    });
+
+    /* Send stays grey until name, email and phone are filled in. */
+    function check() {
+      var ok = ["name", "email", "phone"].every(function (n) {
+        return form.querySelector("[name=" + n + "]").value.trim() !== "";
+      });
+      send.disabled = !ok;
+    }
+    form.addEventListener("input", function (e) {
+      if (e.target === ta) { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 140) + "px"; }
+      check();
+    });
+
+    function showErr(text) { msg.textContent = text; msg.hidden = false; }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var hp = form.querySelector("[name=website_confirm]");
+      if (hp && hp.value) return; /* honeypot filled -> silent abort */
+      if (!form.reportValidity()) return;
+      var g = function (n) {
+        var f = form.querySelector("[name=" + n + "]");
+        return f ? f.value.trim() : "";
+      };
+      var phone = nlPhone(g("phone"));
+      if (!phone) {
+        showErr(PHONE_ERR);
+        form.querySelector("[name=phone]").focus();
+        return;
+      }
+      msg.hidden = true;
+      var full = g("name");
+      var sp = full.indexOf(" ");
+      var payload = {
+        first_name: sp === -1 ? full : full.slice(0, sp),
+        last_name: sp === -1 ? "" : full.slice(sp + 1),
+        full_name: full,
+        email: g("email"),
+        phone: phone,
+        web_visitor_id: nlVisitorId(),
+        message: g("message"),
+        source: "newlife_contact_form",
+        placement: "popup",
+        page: path
+      };
+      send.disabled = true;
+      send.textContent = "Sending…";
+      fetch(CHAT_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        /* Analytics only, wrapped so tracking can never break lead capture. */
+        try {
+          document.dispatchEvent(new CustomEvent("nl:form-success", { detail: { form: "contact", placement: "popup" } }));
+          if (typeof gtag === "function") {
+            gtag("event", "generate_lead", { form: "contact", placement: "popup", value: 0, currency: "CAD" });
+          }
+        } catch (err) {}
+        form.outerHTML = '<div class="nlc-done" role="status"><b>&#10003; Message sent</b>Thanks! A marketing specialist will get back to you within one business day.</div>';
+      }).catch(function () {
+        showErr("Something went wrong sending your message. Please try again, or call 705-302-1097.");
+        send.textContent = "Send";
+        check();
+      });
+    });
+  })();
+})();
