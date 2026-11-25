@@ -326,6 +326,30 @@
   }
   var PHONE_ERR = "Please enter a 10-digit phone number, like 705-555-0142.";
 
+  /* ---------- Newsletter opt-in (the "Yes, send me the newsletter" box) ----------
+     Only people who tick the box go on the newsletter list. After the form's own
+     webhook has succeeded, a ticked box also sends the email to the GoHighLevel
+     workflow "Newsletter - Website Signups" (tags the contact "newsletter").
+     Fire-and-forget: it can never block or fail the lead itself. */
+  var NEWSLETTER_WEBHOOK = "https://services.leadconnectorhq.com/hooks/RFnM9KZ3YGnxyFfaekIT/webhook-trigger/2f9712d9-3c47-45bf-9bfd-a7690a2e3ac6";
+  function nlOptedIn(form) {
+    var box = form.querySelector("[name=newsletter_opt_in]");
+    return !!(box && box.checked);
+  }
+  function nlNewsletterOptIn(form, p, placement) {
+    if (!nlOptedIn(form)) return;
+    try {
+      fetch(NEWSLETTER_WEBHOOK, {
+        method: "POST",
+        keepalive: true,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: p.email, first_name: p.first_name, last_name: p.last_name, phone: p.phone, source: "newlife_newsletter", placement: placement, page: window.location.pathname })
+      });
+      (window.dataLayer = window.dataLayer || []).push({ event: "nl_newsletter_signup", placement: placement });
+      if (typeof gtag === "function") gtag("event", "sign_up", { method: "newsletter", placement: placement });
+    } catch (err) {}
+  }
+
   /* ---------- Booking form → calendar page ---------- */
   var bookForm = document.getElementById("book-form");
   if (bookForm) {
@@ -372,6 +396,7 @@
         service_interest: g("service"),
         budget_range: g("budget"),
         primary_goal: g("goal"),
+        newsletter_opt_in: nlOptedIn(bookForm) ? "yes" : "no",
         source: "newlife_strategy_call_form"
       };
       var btn = bookForm.querySelector("button[type=submit]");
@@ -397,6 +422,7 @@
             gtag("event", "generate_lead", { form: "book", value: 0, currency: "CAD" });
           }
         } catch (err) {}
+        nlNewsletterOptIn(bookForm, payload, "book");
         /* Hand the details to /book/call/ so the calendar opens already filled in. Session
            storage only, never the address bar (Google Analytics records full page addresses);
            the calendar page reads it once and deletes it. */
@@ -453,6 +479,7 @@
         phone: phone,
         web_visitor_id: nlVisitorId(),
         message: g("message"),   /* optional: an empty string, never an error */
+        newsletter_opt_in: nlOptedIn(contactForm) ? "yes" : "no",
         source: "newlife_contact_form"
       };
       var btn = contactForm.querySelector("button[type=submit]");
@@ -469,6 +496,7 @@
             gtag("event", "generate_lead", { form: "contact", value: 0, currency: "CAD" });
           }
         } catch (err) {}
+        nlNewsletterOptIn(contactForm, payload, "contact");
         showContactMsg("✓ Message sent — we'll get back to you within one business day.", true);
         contactForm.reset();
         if (btn) btn.disabled = false;
@@ -497,12 +525,36 @@
     });
   });
 
-  /* ---------- Newsletter (placeholder) ---------- */
+  /* ---------- Footer newsletter -> GoHighLevel "Newsletter - Website Signups" ----------
+     Same webhook as the newsletter pop-up (js/newsletter-popup.js). Adds the
+     email to GHL with the "newsletter" tag. Not a lead: no nl:form-success. */
   document.querySelectorAll(".newsletter").forEach(function (f) {
     f.addEventListener("submit", function (e) {
       e.preventDefault();
-      /* [NEEDS: newsletter/email platform signup endpoint] */
-      f.innerHTML = '<p class="small" style="margin:0">Thanks — you’re on the list once the email platform is connected.</p>';
+      var input = f.querySelector("input[type=email]");
+      var email = input ? input.value.trim() : "";
+      if (!email || (input.checkValidity && !input.checkValidity())) { if (input && input.reportValidity) input.reportValidity(); return; }
+      var btn = f.querySelector("button");
+      if (btn) btn.disabled = true;
+      fetch(NEWSLETTER_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, source: "newlife_newsletter", placement: "footer", page: window.location.pathname })
+      }).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        try { localStorage.setItem("nl_nlpop_joined", "1"); } catch (err) {}
+        try {
+          (window.dataLayer = window.dataLayer || []).push({ event: "nl_newsletter_signup", placement: "footer" });
+          if (typeof gtag === "function") gtag("event", "sign_up", { method: "newsletter", placement: "footer" });
+        } catch (err) {}
+        f.innerHTML = '<p class="small" style="margin:0">&#10003; You’re on the list. Watch your inbox.</p>';
+      }).catch(function () {
+        if (btn) btn.disabled = false;
+        var m = f.parentNode.querySelector(".nl-err") || f.parentNode.insertBefore(document.createElement("p"), f.nextSibling);
+        m.className = "small nl-err";
+        m.style.margin = ".4rem 0 0";
+        m.textContent = "That didn’t go through. Please try again.";
+      });
     });
   });
 

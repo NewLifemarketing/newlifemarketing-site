@@ -27,6 +27,9 @@
     var path = window.location.pathname;
     if (/^\/(editor|portal)\//.test(path) || document.getElementById("nlc")) return;
     var CHAT_WEBHOOK = "https://services.leadconnectorhq.com/hooks/RFnM9KZ3YGnxyFfaekIT/webhook-trigger/d1d8da26-2d8a-4501-98e4-30656ae0dec2";
+    /* Newsletter list (GHL "Newsletter - Website Signups"). Only used when the
+       visitor ticks the newsletter box. */
+    var NEWSLETTER_WEBHOOK = "https://services.leadconnectorhq.com/hooks/RFnM9KZ3YGnxyFfaekIT/webhook-trigger/2f9712d9-3c47-45bf-9bfd-a7690a2e3ac6";
     var css = "" +
       "#nlc{--nlc-b:0px;position:fixed;right:20px;bottom:calc(20px + var(--nlc-b));z-index:5000;font-family:inherit;color:#1d1d24;display:flex;flex-direction:column;align-items:flex-end;gap:12px;pointer-events:none}" +
       "#nlc>*{pointer-events:auto}" +
@@ -53,9 +56,12 @@
       "#nlc .nlc-f span{position:absolute;left:0;top:15px;font-size:14px;color:#6b6c76;pointer-events:none;transition:top .15s,font-size .15s,color .15s}" +
       "#nlc .nlc-f input:focus+span,#nlc .nlc-f textarea:focus+span,#nlc .nlc-f input:not(:placeholder-shown)+span,#nlc .nlc-f textarea:not(:placeholder-shown)+span{top:0;font-size:11.5px;color:#2196F3}" +
       "#nlc .nlc-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}" +
+      "#nlc .nlc-opt{display:flex;align-items:flex-start;gap:9px;margin-top:16px;font-size:12.5px;line-height:1.45;color:#3a3a44;cursor:pointer}" +
+      "#nlc .nlc-opt input{width:16px;height:16px;margin:1px 0 0;flex:none;accent-color:#2196F3;cursor:pointer}" +
       "#nlc .nlc-send{display:block;width:100%;margin-top:18px;border:0;border-radius:999px;padding:12px 22px;background:#2196F3;color:#fff;font:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:background .2s}" +
       "#nlc .nlc-send:hover{background:#1976D2}" +
-      "#nlc .nlc-send:disabled{background:#c4c5cb;cursor:default}" +
+      "#nlc .nlc-send:not(.ready){background:#c4c5cb}" +
+      "#nlc .nlc-send:disabled{cursor:default;opacity:.8}" +
       "#nlc .nlc-msg{margin:10px 0 0;font-size:13px;font-weight:600;color:#C0392B}" +
       "#nlc .nlc-done{padding:18px 4px 8px;text-align:center;font-size:14.5px;line-height:1.5;color:#1d1d24}" +
       "#nlc .nlc-done b{display:block;font-size:17px;margin-bottom:4px;color:#2196F3}" +
@@ -79,8 +85,9 @@
             '<label class="nlc-f"><input name="email" type="email" required autocomplete="email" placeholder=" "><span>Email *</span></label>' +
             '<label class="nlc-f"><input name="phone" type="tel" required autocomplete="tel" inputmode="tel" placeholder=" "><span>Phone *</span></label>' +
             '<label class="nlc-f"><textarea name="message" rows="1" placeholder=" "></textarea><span>Message</span></label>' +
-            '<input class="nlc-hp" type="text" name="website_confirm" tabindex="-1" autocomplete="off" aria-hidden="true">' +
-            '<button class="nlc-send" type="submit" disabled>Send</button>' +
+            '<label class="nlc-opt"><input type="checkbox" name="newsletter_opt_in" value="yes"><span>Yes, send me the NewLife newsletter: free resources, events, webinars and new offers.</span></label>' +
+            '<div class="nlc-hp" aria-hidden="true"><input type="text" name="nlc_zx_hp" tabindex="-1" autocomplete="new-password" data-lpignore="true" data-1p-ignore></div>' +
+            '<button class="nlc-send" type="submit">Send</button>' +
             '<p class="nlc-msg" role="status" hidden></p>' +
           '</form>' +
         '</div>' +
@@ -107,7 +114,7 @@
       pill.setAttribute("aria-expanded", o ? "true" : "false");
       if (o) {
         lift();
-        var first = form.querySelector("input:not(.nlc-hp)");
+        var first = form.querySelector("input[name=name]");
         if (first && window.matchMedia("(min-width:861px)").matches) first.focus();
       } else {
         pill.focus();
@@ -119,23 +126,28 @@
       if (e.key === "Escape" && w.getAttribute("data-open") === "true") setOpen(false);
     });
 
-    /* Send stays grey until name, email and phone are filled in. */
+    /* Send LOOKS grey until name, email and phone are filled in, but it is
+       never disabled: phone autofill often fills fields without firing an
+       input event, and a disabled button there means a lead that can't be
+       sent. Tapping it early just points at the missing field. */
     function check() {
+      if (!document.contains(send)) return;
       var ok = ["name", "email", "phone"].every(function (n) {
         return form.querySelector("[name=" + n + "]").value.trim() !== "";
       });
-      send.disabled = !ok;
+      send.classList.toggle("ready", ok);
     }
+    ["input", "change", "focusout", "keyup"].forEach(function (ev) { form.addEventListener(ev, check); });
     form.addEventListener("input", function (e) {
       if (e.target === ta) { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 140) + "px"; }
-      check();
     });
+    setInterval(function () { if (w.getAttribute("data-open") === "true") check(); }, 700);
 
     function showErr(text) { msg.textContent = text; msg.hidden = false; }
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var hp = form.querySelector("[name=website_confirm]");
+      var hp = form.querySelector("[name=nlc_zx_hp]");
       if (hp && hp.value) return; /* honeypot filled -> silent abort */
       if (!form.reportValidity()) return;
       var g = function (n) {
@@ -149,6 +161,8 @@
         return;
       }
       msg.hidden = true;
+      var optBox = form.querySelector("[name=newsletter_opt_in]");
+      var optIn = !!(optBox && optBox.checked);
       var full = g("name");
       var sp = full.indexOf(" ");
       var payload = {
@@ -161,6 +175,7 @@
         message: g("message"),
         source: "newlife_contact_form",
         placement: "popup",
+        newsletter_opt_in: optIn ? "yes" : "no",
         page: path
       };
       send.disabled = true;
@@ -178,10 +193,23 @@
             gtag("event", "generate_lead", { form: "contact", placement: "popup", value: 0, currency: "CAD" });
           }
         } catch (err) {}
+        if (optIn) {
+          try {
+            fetch(NEWSLETTER_WEBHOOK, {
+              method: "POST",
+              keepalive: true,
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: payload.email, first_name: payload.first_name, last_name: payload.last_name, phone: payload.phone, source: "newlife_newsletter", placement: "contact-popup", page: path })
+            });
+            (window.dataLayer = window.dataLayer || []).push({ event: "nl_newsletter_signup", placement: "contact-popup" });
+            if (typeof gtag === "function") gtag("event", "sign_up", { method: "newsletter", placement: "contact-popup" });
+          } catch (err) {}
+        }
         form.outerHTML = '<div class="nlc-done" role="status"><b>&#10003; Message sent</b>Thanks! A marketing specialist will get back to you within one business day.</div>';
       }).catch(function () {
         showErr("Something went wrong sending your message. Please try again, or call 705-302-1097.");
         send.textContent = "Send";
+        send.disabled = false;
         check();
       });
     });

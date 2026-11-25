@@ -1,0 +1,141 @@
+/* NewLife Marketing: newsletter pop-up.
+   Shows once per visit (browser session), 5 seconds after someone lands on the
+   site from anywhere: Google, an ad, a link. Moving between pages in the same
+   visit never shows it again. Closing it keeps it away for 7 days; joining
+   keeps it away for good.
+
+   The form is the footer's "Subscribe to our Newsletter" form (same markup,
+   same .newsletter styling). It is NOT a lead: it never fires nl:form-success,
+   so Google Ads conversions are untouched. It reports a GA4 sign_up event and a
+   dataLayer nl_newsletter_signup instead.
+
+   Edit this file, then rebuild the .min twin and its ?v= stamp. */
+(function () {
+  "use strict";
+  var path = window.location.pathname;
+  /* Never over the team editor, the portal, or the pages where someone is
+     already booking or contacting us. */
+  if (/^\/(editor|portal|book|contact)\//.test(path) || document.getElementById("nln")) return;
+
+  /* GoHighLevel workflow "Newsletter - Website Signups": creates/updates the
+     contact and adds the "newsletter" tag (the Newsletter smart list). */
+  var NEWSLETTER_WEBHOOK = "https://services.leadconnectorhq.com/hooks/RFnM9KZ3YGnxyFfaekIT/webhook-trigger/2f9712d9-3c47-45bf-9bfd-a7690a2e3ac6";
+
+  var DELAY = 5000, SNOOZE_DAYS = 7;
+  var K_SEEN = "nl_nlpop_seen", K_SNOOZE = "nl_nlpop_snooze", K_JOINED = "nl_nlpop_joined";
+  function sget(k) { try { return window.sessionStorage.getItem(k); } catch (e) { return "1"; } }
+  function sset(k, v) { try { window.sessionStorage.setItem(k, v); } catch (e) {} }
+  function lget(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
+  function lset(k, v) { try { window.localStorage.setItem(k, v); } catch (e) {} }
+
+  /* "This visit" = this browser session. The clock starts on the first page
+     they land on; if they click to another page before 5 seconds are up, it
+     still appears 5 seconds after they arrived, then never again this visit.
+     If storage is blocked (some private modes) sget says "seen", so it never nags. */
+  var K_START = "nl_nlpop_start";
+  var preview = /[?&]nl_newsletter_preview\b/.test(window.location.search);
+  var wait = 300;
+  if (!preview) {
+    if (sget(K_SEEN)) return;
+    if (lget(K_JOINED)) return;
+    var snooze = +lget(K_SNOOZE) || 0;
+    if (snooze && Date.now() < snooze) return;
+    var start = +sget(K_START) || 0;
+    if (!start) { start = Date.now(); sset(K_START, String(start)); }
+    wait = Math.max(0, start + DELAY - Date.now());
+  }
+
+  var css = "" +
+    "#nln{position:fixed;inset:0;z-index:5001;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,6,10,.62)}" +
+    "#nln .nln-card{position:relative;width:min(460px,100%);background:#0D0D14;color:#fff;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:34px 30px 30px;box-shadow:0 30px 80px rgba(0,0,0,.5);text-align:center}" +
+    "#nln .nln-x{position:absolute;top:12px;right:12px;width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;cursor:pointer;display:grid;place-items:center}" +
+    "#nln .nln-x:hover{background:rgba(255,255,255,.16)}" +
+    "#nln .nln-x svg{width:14px;height:14px}" +
+    "#nln h2{margin:0 0 12px;font-size:clamp(1.35rem,4.5vw,1.7rem);line-height:1.15;color:#fff}" +
+    "#nln p{margin:0 auto;max-width:30rem;font-size:15px;line-height:1.55;color:rgba(255,255,255,.78)}" +
+    /* The footer's .newsletter form styles, repeated here so the pop-up looks
+       the same on the standalone pages that don't load style.css. */
+    "#nln .newsletter{display:flex;gap:.5rem;margin-top:22px}" +
+    "#nln .newsletter input{flex:1;min-width:0;background:#0D0D14;border:1px solid #2A2A38;border-radius:999px;color:#fff;padding:.75rem 1.1rem;font:inherit;font-size:15px;outline:none}" +
+    "#nln .newsletter input:focus{border-color:#2196F3}" +
+    "#nln .newsletter .btn{display:inline-flex;align-items:center;font-family:var(--font-display,inherit);font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:.55rem 1.3rem;font-size:.82rem;border-radius:999px;border:2px solid #2196F3;background:#2196F3;color:#fff;cursor:pointer;transition:background .15s}" +
+    "#nln .newsletter .btn:hover{background:#1976D2;border-color:#1976D2}" +
+    "#nln .newsletter .btn:disabled{opacity:.7;cursor:default}" +
+    "#nln .nln-done{margin-top:20px;font-weight:700;color:#4DABF5}" +
+    "#nln .nln-err{margin-top:10px;font-size:13px;font-weight:600;color:#ff8a80}" +
+    "@media (max-width:620px){#nln{align-items:flex-end;padding:0}#nln .nln-card{width:100%;border-radius:18px 18px 0 0;padding:30px 20px calc(24px + env(safe-area-inset-bottom))}}" +
+    "@media print{#nln{display:none}}";
+
+  function show() {
+    /* Wait if the visitor already has the "Talk to Our Experts" form open. */
+    var chat = document.getElementById("nlc");
+    if (chat && chat.getAttribute("data-open") === "true") { setTimeout(show, 4000); return; }
+
+    if (!preview) sset(K_SEEN, "1");
+    var st = document.createElement("style");
+    st.textContent = css;
+    document.head.appendChild(st);
+
+    var w = document.createElement("div");
+    w.id = "nln";
+    w.setAttribute("role", "dialog");
+    w.setAttribute("aria-modal", "true");
+    w.setAttribute("aria-labelledby", "nln-title");
+    w.innerHTML =
+      '<div class="nln-card">' +
+        '<button class="nln-x" type="button" aria-label="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg></button>' +
+        '<h2 id="nln-title">Subscribe to our Newsletter</h2>' +
+        '<p>Be the first to hear about every free resource we drop, our in-person networking events, our live webinars and any new offer we launch.</p>' +
+        '<form class="newsletter"><input type="email" placeholder="you@business.ca" aria-label="Email address" required autocomplete="email"><button class="btn sm" type="submit">Join</button></form>' +
+      '</div>';
+    document.body.appendChild(w);
+    requestAnimationFrame(function () { w.classList.add("in"); });
+
+    var form = w.querySelector("form"), input = form.querySelector("input");
+    var lastFocus = document.activeElement;
+
+    function close(joined) {
+      if (!joined) lset(K_SNOOZE, String(Date.now() + SNOOZE_DAYS * 864e5));
+      document.removeEventListener("keydown", onKey);
+      w.classList.remove("in");
+      setTimeout(function () { w.remove(); }, 260);
+      if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) {} }
+    }
+    function onKey(e) { if (e.key === "Escape") close(false); }
+    document.addEventListener("keydown", onKey);
+    w.querySelector(".nln-x").addEventListener("click", function () { close(false); });
+    w.addEventListener("click", function (e) { if (e.target === w) close(false); });
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var email = input.value.trim();
+      if (!email || !input.checkValidity()) { input.reportValidity(); return; }
+      var btn = form.querySelector("button");
+      btn.disabled = true;
+      var send = NEWSLETTER_WEBHOOK
+        ? fetch(NEWSLETTER_WEBHOOK, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, source: "newlife_newsletter", placement: "popup", page: path })
+          }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); })
+        : Promise.reject(new Error("newsletter webhook not set"));
+      send.then(function () {
+        lset(K_JOINED, "1");
+        try {
+          (window.dataLayer = window.dataLayer || []).push({ event: "nl_newsletter_signup", placement: "popup" });
+          if (typeof gtag === "function") gtag("event", "sign_up", { method: "newsletter", placement: "popup" });
+        } catch (err) {}
+        form.outerHTML = '<p class="nln-done" role="status">&#10003; You’re on the list. Watch your inbox.</p>';
+        setTimeout(function () { close(true); }, 2600);
+      }).catch(function () {
+        btn.disabled = false;
+        var m = form.querySelector(".nln-err") || form.appendChild(document.createElement("p"));
+        m.className = "nln-err";
+        m.setAttribute("role", "status");
+        m.textContent = "That didn’t go through. Please try again in a moment.";
+      });
+    });
+  }
+
+  setTimeout(show, wait);
+})();
