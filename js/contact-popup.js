@@ -33,7 +33,7 @@
       "#nlc .nlc-pill{display:flex;align-items:center;gap:10px;height:52px;padding:0 22px 0 7px;border:0;border-radius:999px;background:#2196F3;color:#fff;font:inherit;font-size:15px;cursor:pointer;box-shadow:0 14px 36px rgba(33,150,243,.35);transition:transform .2s,background .2s}" +
       "#nlc .nlc-pill:hover{background:#1976D2;transform:translateY(-2px)}" +
       "#nlc .nlc-pill strong{font-weight:800}" +
-      "#nlc .nlc-logo{width:38px;height:38px;border-radius:50%;background:#0D0D14;display:grid;place-items:center;flex:none}" +
+      "#nlc .nlc-logo{width:38px;height:38px;border-radius:50%;background:#fff;display:grid;place-items:center;flex:none}" +
       "#nlc .nlc-logo img{width:26px;height:auto;display:block}" +
       "#nlc .nlc-x{width:44px;height:44px;border:0;border-radius:50%;background:#2196F3;color:#fff;cursor:pointer;display:grid;place-items:center;box-shadow:0 10px 26px rgba(33,150,243,.35)}" +
       "#nlc .nlc-x:hover{background:#1976D2}" +
