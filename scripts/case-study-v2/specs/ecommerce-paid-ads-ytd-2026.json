@@ -47,7 +47,11 @@
       "<strong>Our own video, feeding both.</strong> Filmed in person and edited by our team. No stock footage, no recycled creative.",
       "<strong>The budget follows the data.</strong> More reach didn't mean more buyers, so spend moved toward whichever market proved it could sell."
     ],
-    "media": null,
+    "media": {
+      "type": "youtube",
+      "id": "qFXMvjADpsA",
+      "lead": "How we ran Meta and Google ads on about $89 a day, and every number from both accounts, in 5 minutes."
+    },
     "creative_html": null,
     "creative_label": null
   },
