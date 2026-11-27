@@ -183,3 +183,7 @@
 @media (max-width:860px){.csx-approach-media.is-video{text-align:center}}
 @media (max-width:620px){.csx-video{border-radius:14px}.csx-play{width:68px;height:68px;margin:-34px 0 0 -34px}.csx-play::after{left:28px;top:21px;border-width:13px 0 13px 21px}}
 @media (prefers-reduced-motion:reduce){.csx-video-play img,.csx-play{transition:none}}
+
+/* ---- hero logo keeps its shape (2026-11-27): a fixed height with a capped width squashed every
+   wordmark wider than ~4:1 (Chicken On The Run 6.25:1 drew at 2.65:1). Height now follows the width. */
+.csx-logo{height:auto;max-height:clamp(64px,8vw,96px);max-width:min(440px,86%);object-fit:contain}

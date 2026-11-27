@@ -1,0 +1,50 @@
+{
+  "slug": "chicken-on-the-run-fall-2026",
+  "title": "$34K In Online Orders From $1,398 In Meta Ads",
+  "description": "Chicken On The Run sells fresh meat from local Ontario farms online, delivered to the door within 24 hours.",
+  "services": [
+    {"name": "Meta Ads", "icon": "meta"},
+    {"name": "Video Production", "icon": "camera"}
+  ],
+  "issue": [
+    "Chicken On The Run sells fresh meat online and delivers it to the door. The job this fall was to win orders from buyers outside Barrie, in the towns and cottage country around it, not just in the city.",
+    "<strong>And it had to pay on a small budget.</strong> One campaign at $15 a day. The store's break-even is 3.7x ROAS, worked out from its margins when we started: below that, an order costs more to win than it earns."
+  ],
+  "goals": [
+    {"title": "Reach buyers beyond Barrie", "detail": "Get meat orders from cottage country and the towns around it, not just the city.", "icon": "map"},
+    {"title": "Stay above break-even", "detail": "Every ad dollar comes back at more than the 3.7x break-even.", "icon": "growth"},
+    {"title": "Make a small budget go far", "detail": "One campaign at $15 a day, with no wasted spend.", "icon": "price"}
+  ],
+  "approach": {
+    "idea": "The ad was filmed in cottage country, at the Gravenhurst \"Gateway to Muskoka\" sign, and it sold one thing: fresh, local meat, delivered to the door.",
+    "steps": [
+      "<strong>One always-on campaign.</strong> Running since September 2025, and set to find online orders, not clicks or views.",
+      "<strong>Twelve towns, Barrie to Muskoka.</strong> Alliston, Angus, Bala, Barrie, Bracebridge, Bradford, Gravenhurst, Holland Landing, Innisfil, Newmarket, Orillia and Wasaga Beach, for people 30 and up.",
+      "<strong>$15 a day.</strong> The whole campaign ran on one small daily budget.",
+      "<strong>One video, filmed in cottage country.</strong> \"Real Canadian Meat. Delivered To Your Door.\" Refreshed and switched back on 12 August 2026.",
+      "<strong>Switched off on 13 November.</strong> The fall run ended there. Black Friday runs as its own campaign and is not counted here."
+    ],
+    "media": {"type": "photo", "src": "/assets/clients/chicken-on-the-run/02.jpg", "alt": "A Chicken On The Run delivery van driving through a residential street", "pos": "center"},
+    "creative_html": null,
+    "creative_label": null
+  },
+  "extra_sections": [
+    {
+      "kicker": "The numbers",
+      "h2": "Same Campaign, One Year Apart",
+      "html": "<div class=\"csx-table-wrap\"><table class=\"csx-table\"><thead><tr><th>1 Aug to 25 Nov</th><th style=\"text-align:right\">2025</th><th>2026</th></tr></thead><tbody><tr><td>Ad spend</td><td style=\"text-align:right;font-weight:700\">$2,137.06</td><td style=\"text-align:right;font-weight:700\">$1,398.37</td></tr><tr><td>Online orders</td><td style=\"text-align:right;font-weight:700\">65</td><td style=\"text-align:right;font-weight:700\">151</td></tr><tr><td>Reported sales</td><td style=\"text-align:right;font-weight:700\">$12,828.29</td><td style=\"text-align:right;font-weight:700\">$34,186.84</td></tr><tr><td>ROAS</td><td style=\"text-align:right;font-weight:700\">6.0x</td><td style=\"text-align:right;font-weight:700\">24.45x</td></tr><tr><td>Cost per order</td><td style=\"text-align:right;font-weight:700\">$32.88</td><td style=\"text-align:right;font-weight:700\">$9.26</td></tr><tr><td>Break-even ROAS</td><td style=\"text-align:right;font-weight:700\">3.7x</td><td style=\"text-align:right;font-weight:700\">3.7x</td></tr></tbody></table></div><p class=\"csx-notes\">The same Meta campaign, aimed at the same twelve towns, over the same dates in both years. Figures as Meta Ads Manager reports them, read 27 November 2026, counting a purchase within 7 days of a click or 1 day of a view or engagement.</p>"
+    }
+  ],
+  "results": {
+    "stats": [
+      {"num": "24.45x", "what": "Meta ROAS", "ctx": "Up from 6.0x for the same campaign, towns and dates last year. Break-even is 3.7x.", "icon": "growth"},
+      {"num": "$34.1K", "what": "Reported sales", "ctx": "$34,186.84 from $1,398.37 of ad spend, 1 August to 25 November 2026. Last fall: $12,828.29.", "icon": "target"},
+      {"num": "151", "what": "Online orders", "ctx": "Up from 65 last fall, at $9.26 each against $32.88.", "icon": "cart"}
+    ],
+    "intro_html": "<p>Same campaign, same towns, same dates, one year apart. This fall it spent less and brought in 2.7 times the sales. Over the last 30 days, Meta's own comparison puts its cost per order 71% below similar advertisers: $6.84, against a $21.53 median.</p>",
+    "proof_html": "<div class=\"csx-shots\"><figure class=\"camp-shot\"><img src=\"/assets/campaigns/chicken-on-the-run-fall-2026/meta-campaigns-fall-2026.jpg\" alt=\"Meta Ads Manager, 1 August to 25 November 2026: the Cottage Country campaign at 151 website purchases, $1,398.37 spent, $34,186.84 purchase value\" width=\"1200\" height=\"216\" loading=\"lazy\"><figcaption>Meta Ads Manager, 1 August to 25 November 2026.</figcaption></figure><figure class=\"camp-shot\"><img src=\"/assets/campaigns/chicken-on-the-run-fall-2026/meta-campaigns-fall-2025.jpg\" alt=\"Meta Ads Manager, 1 August to 25 November 2025: the same campaign at 65 website purchases, $2,137.06 spent, $12,828.29 purchase value\" width=\"1200\" height=\"216\" loading=\"lazy\"><figcaption>The same view, same dates, a year earlier.</figcaption></figure></div>",
+    "note_html": "<p class=\"cs-asof\">Figures are frozen to 25 November 2026 and are Meta-reported, not audited sales or profit. What changed between the two autumns: the ad was refreshed in August 2026 and spend was lower; the campaign, towns and dates were the same. Which of those drove the jump isn't measured. What else may have helped: Meta now counts purchases through the Conversions API as well as the store's pixel, and if that was connected between the two autumns, part of the rise is better tracking rather than more sales. Chicken On The Run also ran other campaigns and its own social media in both years, and regulars order without ads. Black Friday campaigns are not included.</p>"
+  },
+  "quote_html": null,
+  "notes": "Built 2026-11-27 from clients/newlife/case-studies/chicken-on-the-run-fall-2026.json on the owner's instruction to use the account data. Requirements 1, 4, 5, 6, 8 and 11 are open in the record."
+}
